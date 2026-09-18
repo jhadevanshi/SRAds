@@ -1,0 +1,1 @@
+const {Pool}=require('pg'); require('dotenv').config(); const pool=new Pool(); pool.query(\SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_name IN ('wallet_transactions', 'playback_logs', 'ads', 'campaigns')\).then(res=>console.log(res.rows)).catch(console.error).finally(()=>pool.end());

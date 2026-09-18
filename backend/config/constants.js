@@ -1,0 +1,1 @@
+module.exports = { AD_RATE_PER_SECOND: 0.35 };
