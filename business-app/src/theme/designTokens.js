@@ -51,17 +51,19 @@ export const colors = {
   black: '#000000',
 };
 
+import { Platform } from 'react-native';
+
 export const fonts = {
-  regular: 'PlusJakartaSans_400Regular',
-  medium: 'PlusJakartaSans_500Medium',
-  semiBold: 'PlusJakartaSans_600SemiBold',
-  bold: 'PlusJakartaSans_700Bold',
-  extraBold: 'PlusJakartaSans_800ExtraBold',
-  displayMedium: 'Outfit_500Medium',
-  displaySemiBold: 'Outfit_600SemiBold',
-  displayBold: 'Outfit_700Bold',
-  displayExtraBold: 'Outfit_800ExtraBold',
-  displayBlack: 'Outfit_900Black',
+  regular: Platform.select({ ios: 'System', android: 'sans-serif' }),
+  medium: Platform.select({ ios: 'System', android: 'sans-serif-medium' }),
+  semiBold: Platform.select({ ios: 'System', android: 'sans-serif-medium' }),
+  bold: Platform.select({ ios: 'System', android: 'sans-serif-medium' }),
+  extraBold: Platform.select({ ios: 'System', android: 'sans-serif' }),
+  displayMedium: Platform.select({ ios: 'System', android: 'sans-serif-medium' }),
+  displaySemiBold: Platform.select({ ios: 'System', android: 'sans-serif-medium' }),
+  displayBold: Platform.select({ ios: 'System', android: 'sans-serif-medium' }),
+  displayExtraBold: Platform.select({ ios: 'System', android: 'sans-serif' }),
+  displayBlack: Platform.select({ ios: 'System', android: 'sans-serif' }),
 };
 
 export const typography = {
