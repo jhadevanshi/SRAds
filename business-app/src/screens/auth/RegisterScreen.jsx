@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, 
-  KeyboardAvoidingView, Platform, ScrollView, StyleSheet 
+  KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Keyboard 
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -14,11 +14,42 @@ import {
 
 export default function RegisterScreen({ navigation }) {
   const { isDark } = useTheme();
+  const scrollViewRef = useRef(null);
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        setKeyboardVisible(true);
+        setKeyboardHeight(e.endCoordinates?.height || 280);
+      }
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+        setKeyboardHeight(0);
+      }
+    );
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const handleInputFocus = (offset = 120) => {
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: offset, animated: true });
+    }, 120);
+  };
   
   const [form, setForm] = useState({
     company_name: '',
@@ -56,7 +87,11 @@ export default function RegisterScreen({ navigation }) {
       return Alert.alert('Invalid Phone', 'Please enter a valid 10-digit mobile number.');
     }
 
+    Keyboard.dismiss();
     setStep(2);
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    }, 100);
   };
 
   const handleRegister = async () => {
@@ -71,6 +106,7 @@ export default function RegisterScreen({ navigation }) {
       return Alert.alert('Terms Required', 'Please accept the Advertiser Terms & Conditions to complete account setup.');
     }
 
+    Keyboard.dismiss();
     setLoading(true);
     try {
       const res = await businessService.register({
@@ -105,25 +141,37 @@ export default function RegisterScreen({ navigation }) {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? '#090614' : '#F8F7FF' }]}>
       <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
         style={styles.flex1}
-        enabled={Platform.OS === 'ios'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
       >
         <ScrollView 
-          contentContainerStyle={styles.scrollContent} 
+          ref={scrollViewRef}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: keyboardVisible ? Math.max(keyboardHeight, 160) + 40 : 60 }
+          ]} 
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="none"
-          removeClippedSubviews={false}
-          bounces={false}
-          overScrollMode="never"
+          keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+          bounces={true}
+          overScrollMode="always"
         >
           <View style={styles.container}>
             
             {/* ── Top Bar ──────────────────────────────────────────────── */}
             <View style={styles.topBar}>
               <TouchableOpacity 
-                onPress={() => step === 2 ? setStep(1) : navigation.goBack()}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  if (step === 2) {
+                    setStep(1);
+                    setTimeout(() => scrollViewRef.current?.scrollTo({ y: 0, animated: true }), 100);
+                  } else {
+                    navigation.goBack();
+                  }
+                }}
                 style={[
                   styles.backBtn,
                   { backgroundColor: isDark ? '#181033' : '#FFFFFF', borderColor: isDark ? '#281B4B' : '#E2E8F0' }
@@ -186,6 +234,7 @@ export default function RegisterScreen({ navigation }) {
                       cursorColor={isDark ? '#C084FC' : '#7C3AED'}
                       selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                       value={form.company_name}
+                      onFocus={() => handleInputFocus(0)}
                       onChangeText={(v) => setForm(f => ({ ...f, company_name: v }))}
                     />
                   </View>
@@ -209,6 +258,7 @@ export default function RegisterScreen({ navigation }) {
                       cursorColor={isDark ? '#C084FC' : '#7C3AED'}
                       selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                       value={form.owner_name}
+                      onFocus={() => handleInputFocus(60)}
                       onChangeText={(v) => setForm(f => ({ ...f, owner_name: v }))}
                     />
                   </View>
@@ -234,6 +284,7 @@ export default function RegisterScreen({ navigation }) {
                       cursorColor={isDark ? '#C084FC' : '#7C3AED'}
                       selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                       value={form.email}
+                      onFocus={() => handleInputFocus(140)}
                       onChangeText={(v) => setForm(f => ({ ...f, email: v }))}
                     />
                   </View>
@@ -258,6 +309,7 @@ export default function RegisterScreen({ navigation }) {
                       cursorColor={isDark ? '#C084FC' : '#7C3AED'}
                       selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                       value={form.phone}
+                      onFocus={() => handleInputFocus(220)}
                       onChangeText={(v) => setForm(f => ({ ...f, phone: v }))}
                     />
                   </View>
@@ -303,6 +355,7 @@ export default function RegisterScreen({ navigation }) {
                       cursorColor={isDark ? '#C084FC' : '#7C3AED'}
                       selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                       value={form.password}
+                      onFocus={() => handleInputFocus(0)}
                       onChangeText={(v) => setForm(f => ({ ...f, password: v }))}
                     />
                     <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.showPasswordBtn}>
@@ -350,6 +403,7 @@ export default function RegisterScreen({ navigation }) {
                       cursorColor={isDark ? '#C084FC' : '#7C3AED'}
                       selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                       value={form.confirm_password}
+                      onFocus={() => handleInputFocus(110)}
                       onChangeText={(v) => setForm(f => ({ ...f, confirm_password: v }))}
                     />
                   </View>
@@ -373,6 +427,7 @@ export default function RegisterScreen({ navigation }) {
                       cursorColor={isDark ? '#C084FC' : '#7C3AED'}
                       selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                       value={form.area}
+                      onFocus={() => handleInputFocus(200)}
                       onChangeText={(v) => setForm(f => ({ ...f, area: v }))}
                     />
                   </View>

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, 
-  KeyboardAvoidingView, Platform, ScrollView, StyleSheet 
+  KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Keyboard 
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -38,12 +38,43 @@ function GoogleIcon({ size = 20 }) {
 export default function LoginScreen({ navigation }) {
   const { login } = useAuth();
   const { isDark } = useTheme();
+  const scrollViewRef = useRef(null);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        setKeyboardVisible(true);
+        setKeyboardHeight(e.endCoordinates?.height || 280);
+      }
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+        setKeyboardHeight(0);
+      }
+    );
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const handleInputFocus = (offset = 100) => {
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: offset, animated: true });
+    }, 120);
+  };
 
   useEffect(() => {
     const loadRememberedEmail = async () => {
@@ -71,6 +102,7 @@ export default function LoginScreen({ navigation }) {
       return;
     }
 
+    Keyboard.dismiss();
     setLoading(true);
     try {
       if (rememberMe) {
@@ -100,18 +132,22 @@ export default function LoginScreen({ navigation }) {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? '#090614' : '#F8F7FF' }]}>
       <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
         style={styles.flex1}
-        enabled={Platform.OS === 'ios'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
       >
         <ScrollView 
-          contentContainerStyle={styles.scrollContent} 
+          ref={scrollViewRef}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: keyboardVisible ? Math.max(keyboardHeight, 140) + 40 : 50 }
+          ]} 
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="none"
-          removeClippedSubviews={false}
-          bounces={false}
-          overScrollMode="never"
+          keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+          bounces={true}
+          overScrollMode="always"
         >
           <View style={styles.container}>
             
@@ -184,6 +220,7 @@ export default function LoginScreen({ navigation }) {
                     cursorColor={isDark ? '#C084FC' : '#7C3AED'}
                     selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                     value={email}
+                    onFocus={() => handleInputFocus(0)}
                     onChangeText={setEmail}
                   />
                 </View>
@@ -218,6 +255,7 @@ export default function LoginScreen({ navigation }) {
                     selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                     onSubmitEditing={handleLogin}
                     value={password}
+                    onFocus={() => handleInputFocus(100)}
                     onChangeText={setPassword}
                   />
                   <TouchableOpacity 

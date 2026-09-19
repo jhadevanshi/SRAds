@@ -21,17 +21,34 @@ expo-env.d.ts
 # Metro
 .metro-health-check*
 
-# debug
+# debug & logs
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+logs/
+*.log
+trace.txt
 
-# macOS
+# macOS & OS
 .DS_Store
+Thumbs.db
 *.pem
 
+# Assistant & Editor
+.claude/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
 # local env files
+.env
 .env*.local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # typescript
 *.tsbuildinfo
@@ -39,3 +56,4 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
