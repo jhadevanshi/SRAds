@@ -40,11 +40,14 @@ export default function UploadAdScreen({ navigation }) {
       const asset = result.assets[0];
       
       if (asset.type === 'video') {
-        const durationSec = (asset.duration || 0) / 1000;
-        setMedia(asset);
+        const rawDur = asset.duration || 0;
+        const durationSec = rawDur > 1000 ? rawDur / 1000 : (rawDur > 0 ? rawDur : 30);
+        setMedia({ ...asset, calculatedDuration: durationSec });
+        setTrimData({ start: 0, end: Math.min(30, durationSec), duration: Math.min(30, durationSec) });
         setShowTrimmer(true);
       } else {
         setMedia(asset);
+        setTrimData(null);
       }
     }
   };
@@ -62,7 +65,7 @@ export default function UploadAdScreen({ navigation }) {
       formData.append('budget', '0'); 
       formData.append('cost_per_play', media.type === 'video' ? '2' : '1');
       
-      if (trimData) {
+      if (trimData && media.type === 'video') {
         formData.append('video_trim_start', String(Math.floor(trimData.start)));
         formData.append('video_trim_end', String(Math.ceil(trimData.end)));
         formData.append('play_duration', String(Math.ceil(trimData.end - trimData.start)));
@@ -99,7 +102,7 @@ export default function UploadAdScreen({ navigation }) {
     return (
       <VideoTrimmer 
         uri={media.uri}
-        originalDurationSec={(media.duration || 0) / 1000}
+        originalDurationSec={media.calculatedDuration || (media.duration ? (media.duration > 1000 ? media.duration / 1000 : media.duration) : 30)}
         onSave={(data) => {
           setTrimData(data);
           setShowTrimmer(false);
@@ -271,21 +274,38 @@ export default function UploadAdScreen({ navigation }) {
               className="border-2 rounded-3xl overflow-hidden shadow-sm"
             >
               {media.type === 'video' ? (
-                <View style={{ backgroundColor: '#090614' }} className="h-56 justify-center items-center">
-                  <Video size={48} color="#38BDF8" className="mb-2" />
-                  <Text className="text-white font-extrabold text-sm">{media.fileName || 'Video Creative.mp4'}</Text>
-                  {trimData && (
-                    <Text className="text-purple-300 text-xs font-semibold mt-1">
-                      Trim: {Math.floor(trimData.start)}s – {Math.ceil(trimData.end)}s ({Math.ceil(trimData.end - trimData.start)}s total)
+                <View style={{ backgroundColor: isDark ? '#0F0A21' : '#F5F3FF' }} className="py-7 px-5 justify-center items-center">
+                  <LinearGradient
+                    colors={['#7C3AED', '#9333EA']}
+                    className="w-16 h-16 rounded-2xl items-center justify-center mb-3 shadow-md"
+                  >
+                    <Video size={30} color="#FFFFFF" />
+                  </LinearGradient>
+                  <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-black text-base text-center mb-1" numberOfLines={1}>
+                    {media.fileName || 'Video Creative.mp4'}
+                  </Text>
+                  {trimData ? (
+                    <View style={{ backgroundColor: isDark ? 'rgba(168, 85, 247, 0.18)' : '#EDE9FE', borderColor: isDark ? 'rgba(168, 85, 247, 0.4)' : '#DDD6FE' }} className="border px-3 py-1.5 rounded-full flex-row items-center gap-1.5 mt-1 mb-3">
+                      <Scissors size={13} color={isDark ? '#C084FC' : '#7C3AED'} />
+                      <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="text-xs font-black">
+                        Playback Range: {trimData.start.toFixed(1)}s – {trimData.end.toFixed(1)}s ({trimData.duration.toFixed(1)}s flight)
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold mt-0.5 mb-3">
+                      Full Duration: {(media.calculatedDuration || 30).toFixed(1)}s
                     </Text>
                   )}
                   <TouchableOpacity 
                     onPress={() => setShowTrimmer(true)}
-                    style={{ backgroundColor: isDark ? '#201642' : '#EDE9FE' }}
-                    className="mt-3 px-4 py-2 rounded-xl flex-row items-center"
+                    style={{ backgroundColor: isDark ? '#201642' : '#EDE9FE', borderColor: isDark ? '#3B2A68' : '#DDD6FE' }}
+                    className="px-4 py-2.5 rounded-xl border flex-row items-center shadow-sm"
+                    activeOpacity={0.8}
                   >
-                    <Scissors size={14} color="#A855F7" style={{ marginRight: 6 }} />
-                    <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="font-bold text-xs">Re-Trim Video</Text>
+                    <Scissors size={14} color={isDark ? '#C084FC' : '#7C3AED'} style={{ marginRight: 6 }} />
+                    <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="font-extrabold text-xs uppercase tracking-wider">
+                      {trimData ? 'Adjust Video Trim' : 'Trim Video'}
+                    </Text>
                   </TouchableOpacity>
                 </View>
               ) : (
