@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, 
-  KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Pressable 
+  KeyboardAvoidingView, Platform, ScrollView, StyleSheet 
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,7 +9,7 @@ import Svg, { Path } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { Mail, Lock, Eye, EyeOff, Check, Sparkles, MonitorSmartphone } from 'lucide-react-native';
+import { Mail, Lock, Eye, EyeOff, Check, MonitorSmartphone } from 'lucide-react-native';
 
 // Authentic Google 4-Color Vector Icon
 function GoogleIcon({ size = 20 }) {
@@ -44,14 +44,13 @@ export default function LoginScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-  const [focusedField, setFocusedField] = useState(null);
 
   useEffect(() => {
     const loadRememberedEmail = async () => {
       try {
         const savedEmail = await AsyncStorage.getItem('remembered_email');
         if (savedEmail) {
-          setEmail(savedEmail);
+          setEmail(prev => (prev ? prev : savedEmail));
           setRememberMe(true);
         }
       } catch (e) {
@@ -108,8 +107,11 @@ export default function LoginScreen({ navigation }) {
         <ScrollView 
           contentContainerStyle={styles.scrollContent} 
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="always"
+          keyboardShouldPersistTaps="handled"
           keyboardDismissMode="none"
+          removeClippedSubviews={false}
+          bounces={false}
+          overScrollMode="never"
         >
           <View style={styles.container}>
             
@@ -154,7 +156,7 @@ export default function LoginScreen({ navigation }) {
               
               {/* Email Input */}
               <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: isDark ? '#CBD5E1' : '#374151' }]}>
+                <Text style={[styles.inputLabel, { color: isDark ? '#E2E8F0' : '#374151' }]}>
                   Work Email
                 </Text>
                 <View 
@@ -162,16 +164,13 @@ export default function LoginScreen({ navigation }) {
                     styles.inputWrapper,
                     { 
                       backgroundColor: isDark ? '#140F24' : '#FFFFFF',
-                      borderColor: focusedField === 'email' 
-                        ? '#A855F7' 
-                        : (isDark ? '#281B4B' : '#E2E8F0'),
-                    },
-                    focusedField === 'email' && (isDark ? styles.inputFocusedDark : styles.inputFocusedLight)
+                      borderColor: isDark ? 'rgba(168, 85, 247, 0.45)' : '#CBD5E1',
+                    }
                   ]}
                 >
-                  <Mail size={19} color={focusedField === 'email' ? '#A855F7' : (isDark ? '#64748B' : '#94A3B8')} style={styles.inputIcon} />
+                  <Mail size={19} color={isDark ? '#A855F7' : '#7C3AED'} style={styles.inputIcon} />
                   <TextInput
-                    style={[styles.inputField, { color: isDark ? '#F8FAFC' : '#111827' }]}
+                    style={[styles.inputField, { color: isDark ? '#FFFFFF' : '#111827' }]}
                     placeholder="name@company.com"
                     placeholderTextColor={isDark ? '#64748B' : '#9CA3AF'}
                     keyboardType="email-address"
@@ -181,17 +180,18 @@ export default function LoginScreen({ navigation }) {
                     autoComplete="email"
                     importantForAutofill="yes"
                     returnKeyType="next"
+                    underlineColorAndroid="transparent"
+                    cursorColor={isDark ? '#C084FC' : '#7C3AED'}
+                    selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                     value={email}
                     onChangeText={setEmail}
-                    onFocus={() => setFocusedField('email')}
-                    onBlur={() => setFocusedField(null)}
                   />
                 </View>
               </View>
 
               {/* Password Input */}
               <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: isDark ? '#CBD5E1' : '#374151' }]}>
+                <Text style={[styles.inputLabel, { color: isDark ? '#E2E8F0' : '#374151' }]}>
                   Password
                 </Text>
                 <View 
@@ -199,16 +199,13 @@ export default function LoginScreen({ navigation }) {
                     styles.inputWrapper,
                     { 
                       backgroundColor: isDark ? '#140F24' : '#FFFFFF',
-                      borderColor: focusedField === 'password' 
-                        ? '#A855F7' 
-                        : (isDark ? '#281B4B' : '#E2E8F0'),
-                    },
-                    focusedField === 'password' && (isDark ? styles.inputFocusedDark : styles.inputFocusedLight)
+                      borderColor: isDark ? 'rgba(168, 85, 247, 0.45)' : '#CBD5E1',
+                    }
                   ]}
                 >
-                  <Lock size={19} color={focusedField === 'password' ? '#A855F7' : (isDark ? '#64748B' : '#94A3B8')} style={styles.inputIcon} />
+                  <Lock size={19} color={isDark ? '#A855F7' : '#7C3AED'} style={styles.inputIcon} />
                   <TextInput
-                    style={[styles.inputField, { color: isDark ? '#F8FAFC' : '#111827' }]}
+                    style={[styles.inputField, { color: isDark ? '#FFFFFF' : '#111827' }]}
                     placeholder="••••••••"
                     placeholderTextColor={isDark ? '#64748B' : '#9CA3AF'}
                     secureTextEntry={!showPassword}
@@ -216,11 +213,12 @@ export default function LoginScreen({ navigation }) {
                     autoComplete="password"
                     importantForAutofill="yes"
                     returnKeyType="done"
+                    underlineColorAndroid="transparent"
+                    cursorColor={isDark ? '#C084FC' : '#7C3AED'}
+                    selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                     onSubmitEditing={handleLogin}
                     value={password}
                     onChangeText={setPassword}
-                    onFocus={() => setFocusedField('password')}
-                    onBlur={() => setFocusedField(null)}
                   />
                   <TouchableOpacity 
                     style={styles.showPasswordBtn} 
@@ -294,7 +292,7 @@ export default function LoginScreen({ navigation }) {
               {/* ── Or continue with Divider ─────────────────────────────── */}
               <View style={styles.dividerRow}>
                 <View style={[styles.dividerLine, { backgroundColor: isDark ? '#281B4B' : '#E5E7EB' }]} />
-                <Text style={[styles.dividerText, { color: isDark ? '#64748B' : '#9CA3AF' }]}>
+                <Text style={[styles.dividerText, { color: isDark ? '#94A3B8' : '#9CA3AF' }]}>
                   Or continue with
                 </Text>
                 <View style={[styles.dividerLine, { backgroundColor: isDark ? '#281B4B' : '#E5E7EB' }]} />
@@ -306,9 +304,9 @@ export default function LoginScreen({ navigation }) {
                   styles.googleButton,
                   { 
                     backgroundColor: isDark ? '#140F24' : '#FFFFFF',
-                    borderColor: isDark ? '#281B4B' : '#E2E8F0',
+                    borderColor: isDark ? 'rgba(168, 85, 247, 0.4)' : '#CBD5E1',
                     shadowColor: isDark ? '#7C3AED' : '#000000',
-                    shadowOpacity: isDark ? 0.2 : 0.06,
+                    shadowOpacity: isDark ? 0.25 : 0.08,
                   }
                 ]}
                 activeOpacity={0.8}
@@ -351,7 +349,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 28,
+    paddingTop: 32,
     paddingBottom: 44,
   },
   container: {
@@ -400,13 +398,13 @@ const styles = StyleSheet.create({
   },
   brandTitle: {
     fontSize: 26,
-    fontWeight: '900',
-    letterSpacing: -0.8,
+    fontWeight: 'bold',
+    letterSpacing: -0.6,
     marginBottom: 3,
   },
   brandSubtitle: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
     letterSpacing: 0.2,
   },
 
@@ -417,8 +415,8 @@ const styles = StyleSheet.create({
   },
   welcomeTitle: {
     fontSize: 24,
-    fontWeight: '900',
-    letterSpacing: -0.6,
+    fontWeight: 'bold',
+    letterSpacing: -0.5,
     marginBottom: 4,
   },
   welcomeSubtitle: {
@@ -456,25 +454,9 @@ const styles = StyleSheet.create({
   },
   inputField: {
     flex: 1,
-    height: '100%',
     fontSize: 15,
-    fontWeight: '600',
-    letterSpacing: 0.2,
-    paddingVertical: 0,
-  },
-  inputFocusedDark: {
-    borderColor: '#C084FC',
-    shadowColor: '#A855F7',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.45,
-    shadowRadius: 10,
-  },
-  inputFocusedLight: {
-    borderColor: '#7C3AED',
-    shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    fontWeight: '500',
+    paddingVertical: 8,
   },
   showPasswordBtn: {
     paddingVertical: 8,
@@ -487,7 +469,7 @@ const styles = StyleSheet.create({
   },
   showPasswordText: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
     letterSpacing: 0.3,
   },
 
@@ -531,7 +513,7 @@ const styles = StyleSheet.create({
   },
   forgotPasswordText: {
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '700',
     letterSpacing: 0.1,
   },
 
@@ -562,9 +544,9 @@ const styles = StyleSheet.create({
   },
   ctaButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: 0.4,
+    fontSize: 15,
+    fontWeight: 'bold',
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
   },
 
@@ -602,7 +584,7 @@ const styles = StyleSheet.create({
   },
   googleButtonText: {
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '700',
     letterSpacing: 0.2,
   },
 
@@ -619,7 +601,7 @@ const styles = StyleSheet.create({
   },
   signUpText: {
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: 'bold',
     letterSpacing: 0.2,
   },
 });

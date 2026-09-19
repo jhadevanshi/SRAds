@@ -9,16 +9,15 @@ import { useTheme } from '../../context/ThemeContext';
 import { businessService } from '../../services/business';
 import { 
   Building2, User, Mail, Phone, Lock, Eye, EyeOff, 
-  ArrowLeft, Check, Sparkles, MapPin, ShieldCheck, CheckCircle2 
+  ArrowLeft, Check, MapPin 
 } from 'lucide-react-native';
 
 export default function RegisterScreen({ navigation }) {
-  const { isDarkMode } = useTheme();
+  const { isDark } = useTheme();
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [focusedField, setFocusedField] = useState(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
   
   const [form, setForm] = useState({
@@ -104,15 +103,20 @@ export default function RegisterScreen({ navigation }) {
   const strength = getPasswordStrength(form.password);
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: isDarkMode ? '#090614' : '#F8F7FF' }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? '#090614' : '#F8F7FF' }]}>
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
         style={styles.flex1}
+        enabled={Platform.OS === 'ios'}
       >
         <ScrollView 
           contentContainerStyle={styles.scrollContent} 
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="none"
+          removeClippedSubviews={false}
+          bounces={false}
+          overScrollMode="never"
         >
           <View style={styles.container}>
             
@@ -122,15 +126,15 @@ export default function RegisterScreen({ navigation }) {
                 onPress={() => step === 2 ? setStep(1) : navigation.goBack()}
                 style={[
                   styles.backBtn,
-                  { backgroundColor: isDarkMode ? '#181033' : '#FFFFFF', borderColor: isDarkMode ? '#281B4B' : '#E2E8F0' }
+                  { backgroundColor: isDark ? '#181033' : '#FFFFFF', borderColor: isDark ? '#281B4B' : '#E2E8F0' }
                 ]}
                 activeOpacity={0.7}
               >
-                <ArrowLeft size={18} color={isDarkMode ? '#F8FAFC' : '#1E1B4B'} />
+                <ArrowLeft size={18} color={isDark ? '#F8FAFC' : '#1E1B4B'} />
               </TouchableOpacity>
 
               <View style={styles.stepBadge}>
-                <Text style={[styles.stepBadgeText, { color: isDarkMode ? '#C084FC' : '#7C3AED' }]}>
+                <Text style={[styles.stepBadgeText, { color: isDark ? '#C084FC' : '#7C3AED' }]}>
                   Step {step} of 2
                 </Text>
               </View>
@@ -138,10 +142,10 @@ export default function RegisterScreen({ navigation }) {
 
             {/* ── Heading ──────────────────────────────────────────────── */}
             <View style={styles.headingSection}>
-              <Text style={[styles.mainTitle, { color: isDarkMode ? '#F8FAFC' : '#111827' }]}>
+              <Text style={[styles.mainTitle, { color: isDark ? '#F8FAFC' : '#111827' }]}>
                 {step === 1 ? 'Create Business Account' : 'Security & Location'}
               </Text>
-              <Text style={[styles.subtitle, { color: isDarkMode ? '#94A3B8' : '#6B7280' }]}>
+              <Text style={[styles.subtitle, { color: isDark ? '#94A3B8' : '#6B7280' }]}>
                 {step === 1 
                   ? 'Join Adsnetvo to launch dynamic DOOH campaigns across smart transit displays' 
                   : 'Set up your secure password and company headquarters'}
@@ -150,7 +154,7 @@ export default function RegisterScreen({ navigation }) {
 
             {/* ── Step Progress Indicator ───────────────────────────────── */}
             <View style={styles.progressRow}>
-              <View style={[styles.progressTrack, { backgroundColor: isDarkMode ? '#281B4B' : '#E2E8F0' }]}>
+              <View style={[styles.progressTrack, { backgroundColor: isDark ? '#281B4B' : '#E2E8F0' }]}>
                 <LinearGradient
                   colors={['#7C3AED', '#A855F7']}
                   start={{ x: 0, y: 0 }}
@@ -166,91 +170,95 @@ export default function RegisterScreen({ navigation }) {
                 
                 {/* Business Name */}
                 <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, { color: isDarkMode ? '#CBD5E1' : '#374151' }]}>
+                  <Text style={[styles.inputLabel, { color: isDark ? '#E2E8F0' : '#374151' }]}>
                     Business / Company Name
                   </Text>
                   <View style={[
                     styles.inputWrapper,
-                    { backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF', borderColor: focusedField === 'company_name' ? '#A855F7' : (isDarkMode ? '#281B4B' : '#E2E8F0') }
+                    { backgroundColor: isDark ? '#140F24' : '#FFFFFF', borderColor: isDark ? 'rgba(168, 85, 247, 0.45)' : '#CBD5E1' }
                   ]}>
-                    <Building2 size={19} color={focusedField === 'company_name' ? '#A855F7' : (isDarkMode ? '#64748B' : '#94A3B8')} style={styles.inputIcon} />
+                    <Building2 size={19} color={isDark ? '#A855F7' : '#7C3AED'} style={styles.inputIcon} />
                     <TextInput
-                      style={[styles.inputField, { color: isDarkMode ? '#F8FAFC' : '#111827' }]}
+                      style={[styles.inputField, { color: isDark ? '#FFFFFF' : '#111827' }]}
                       placeholder="e.g. Blue Dart Logistics Ltd."
-                      placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
+                      placeholderTextColor={isDark ? '#64748B' : '#9CA3AF'}
+                      underlineColorAndroid="transparent"
+                      cursorColor={isDark ? '#C084FC' : '#7C3AED'}
+                      selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                       value={form.company_name}
                       onChangeText={(v) => setForm(f => ({ ...f, company_name: v }))}
-                      onFocus={() => setFocusedField('company_name')}
-                      onBlur={() => setFocusedField(null)}
                     />
                   </View>
                 </View>
 
                 {/* Owner Name */}
                 <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, { color: isDarkMode ? '#CBD5E1' : '#374151' }]}>
+                  <Text style={[styles.inputLabel, { color: isDark ? '#E2E8F0' : '#374151' }]}>
                     Authorized Contact Person
                   </Text>
                   <View style={[
                     styles.inputWrapper,
-                    { backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF', borderColor: focusedField === 'owner_name' ? '#A855F7' : (isDarkMode ? '#281B4B' : '#E2E8F0') }
+                    { backgroundColor: isDark ? '#140F24' : '#FFFFFF', borderColor: isDark ? 'rgba(168, 85, 247, 0.45)' : '#CBD5E1' }
                   ]}>
-                    <User size={19} color={focusedField === 'owner_name' ? '#A855F7' : (isDarkMode ? '#64748B' : '#94A3B8')} style={styles.inputIcon} />
+                    <User size={19} color={isDark ? '#A855F7' : '#7C3AED'} style={styles.inputIcon} />
                     <TextInput
-                      style={[styles.inputField, { color: isDarkMode ? '#F8FAFC' : '#111827' }]}
+                      style={[styles.inputField, { color: isDark ? '#FFFFFF' : '#111827' }]}
                       placeholder="Full Name (e.g. Rahul Sharma)"
-                      placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
+                      placeholderTextColor={isDark ? '#64748B' : '#9CA3AF'}
+                      underlineColorAndroid="transparent"
+                      cursorColor={isDark ? '#C084FC' : '#7C3AED'}
+                      selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                       value={form.owner_name}
                       onChangeText={(v) => setForm(f => ({ ...f, owner_name: v }))}
-                      onFocus={() => setFocusedField('owner_name')}
-                      onBlur={() => setFocusedField(null)}
                     />
                   </View>
                 </View>
 
                 {/* Work Email */}
                 <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, { color: isDarkMode ? '#CBD5E1' : '#374151' }]}>
+                  <Text style={[styles.inputLabel, { color: isDark ? '#E2E8F0' : '#374151' }]}>
                     Work Email Address
                   </Text>
                   <View style={[
                     styles.inputWrapper,
-                    { backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF', borderColor: focusedField === 'email' ? '#A855F7' : (isDarkMode ? '#281B4B' : '#E2E8F0') }
+                    { backgroundColor: isDark ? '#140F24' : '#FFFFFF', borderColor: isDark ? 'rgba(168, 85, 247, 0.45)' : '#CBD5E1' }
                   ]}>
-                    <Mail size={19} color={focusedField === 'email' ? '#A855F7' : (isDarkMode ? '#64748B' : '#94A3B8')} style={styles.inputIcon} />
+                    <Mail size={19} color={isDark ? '#A855F7' : '#7C3AED'} style={styles.inputIcon} />
                     <TextInput
-                      style={[styles.inputField, { color: isDarkMode ? '#F8FAFC' : '#111827' }]}
+                      style={[styles.inputField, { color: isDark ? '#FFFFFF' : '#111827' }]}
                       placeholder="name@company.com"
-                      placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
+                      placeholderTextColor={isDark ? '#64748B' : '#9CA3AF'}
                       keyboardType="email-address"
                       autoCapitalize="none"
+                      underlineColorAndroid="transparent"
+                      cursorColor={isDark ? '#C084FC' : '#7C3AED'}
+                      selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                       value={form.email}
                       onChangeText={(v) => setForm(f => ({ ...f, email: v }))}
-                      onFocus={() => setFocusedField('email')}
-                      onBlur={() => setFocusedField(null)}
                     />
                   </View>
                 </View>
 
                 {/* Phone */}
                 <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, { color: isDarkMode ? '#CBD5E1' : '#374151' }]}>
+                  <Text style={[styles.inputLabel, { color: isDark ? '#E2E8F0' : '#374151' }]}>
                     Phone Number
                   </Text>
                   <View style={[
                     styles.inputWrapper,
-                    { backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF', borderColor: focusedField === 'phone' ? '#A855F7' : (isDarkMode ? '#281B4B' : '#E2E8F0') }
+                    { backgroundColor: isDark ? '#140F24' : '#FFFFFF', borderColor: isDark ? 'rgba(168, 85, 247, 0.45)' : '#CBD5E1' }
                   ]}>
-                    <Phone size={19} color={focusedField === 'phone' ? '#A855F7' : (isDarkMode ? '#64748B' : '#94A3B8')} style={styles.inputIcon} />
+                    <Phone size={19} color={isDark ? '#A855F7' : '#7C3AED'} style={styles.inputIcon} />
                     <TextInput
-                      style={[styles.inputField, { color: isDarkMode ? '#F8FAFC' : '#111827' }]}
+                      style={[styles.inputField, { color: isDark ? '#FFFFFF' : '#111827' }]}
                       placeholder="+91 98765 43210"
-                      placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
+                      placeholderTextColor={isDark ? '#64748B' : '#9CA3AF'}
                       keyboardType="phone-pad"
+                      underlineColorAndroid="transparent"
+                      cursorColor={isDark ? '#C084FC' : '#7C3AED'}
+                      selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                       value={form.phone}
                       onChangeText={(v) => setForm(f => ({ ...f, phone: v }))}
-                      onFocus={() => setFocusedField('phone')}
-                      onBlur={() => setFocusedField(null)}
                     />
                   </View>
                 </View>
@@ -265,7 +273,7 @@ export default function RegisterScreen({ navigation }) {
                     colors={['#7C3AED', '#9333EA', '#A855F7']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
-                    style={[styles.ctaGradient, isDarkMode ? styles.ctaGlowDark : styles.ctaGlowLight]}
+                    style={[styles.ctaGradient, isDark ? styles.ctaGlowDark : styles.ctaGlowLight]}
                   >
                     <Text style={styles.ctaButtonText}>Continue to Step 2 →</Text>
                   </LinearGradient>
@@ -278,23 +286,24 @@ export default function RegisterScreen({ navigation }) {
                 
                 {/* Password */}
                 <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, { color: isDarkMode ? '#CBD5E1' : '#374151' }]}>
+                  <Text style={[styles.inputLabel, { color: isDark ? '#E2E8F0' : '#374151' }]}>
                     Create Password
                   </Text>
                   <View style={[
                     styles.inputWrapper,
-                    { backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF', borderColor: focusedField === 'password' ? '#A855F7' : (isDarkMode ? '#281B4B' : '#E2E8F0') }
+                    { backgroundColor: isDark ? '#140F24' : '#FFFFFF', borderColor: isDark ? 'rgba(168, 85, 247, 0.45)' : '#CBD5E1' }
                   ]}>
-                    <Lock size={19} color={focusedField === 'password' ? '#A855F7' : (isDarkMode ? '#64748B' : '#94A3B8')} style={styles.inputIcon} />
+                    <Lock size={19} color={isDark ? '#A855F7' : '#7C3AED'} style={styles.inputIcon} />
                     <TextInput
-                      style={[styles.inputField, { color: isDarkMode ? '#F8FAFC' : '#111827' }]}
+                      style={[styles.inputField, { color: isDark ? '#FFFFFF' : '#111827' }]}
                       placeholder="Minimum 6 characters"
-                      placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
+                      placeholderTextColor={isDark ? '#64748B' : '#9CA3AF'}
                       secureTextEntry={!showPassword}
+                      underlineColorAndroid="transparent"
+                      cursorColor={isDark ? '#C084FC' : '#7C3AED'}
+                      selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                       value={form.password}
                       onChangeText={(v) => setForm(f => ({ ...f, password: v }))}
-                      onFocus={() => setFocusedField('password')}
-                      onBlur={() => setFocusedField(null)}
                     />
                     <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.showPasswordBtn}>
                       {showPassword ? <EyeOff size={18} color="#9CA3AF" /> : <Eye size={18} color="#9CA3AF" />}
@@ -310,7 +319,7 @@ export default function RegisterScreen({ navigation }) {
                             key={i} 
                             style={[
                               styles.strengthBar, 
-                              { backgroundColor: i <= strength.bars ? strength.color : (isDarkMode ? '#281B4B' : '#E2E8F0') }
+                              { backgroundColor: i <= strength.bars ? strength.color : (isDark ? '#281B4B' : '#E2E8F0') }
                             ]} 
                           />
                         ))}
@@ -324,45 +333,47 @@ export default function RegisterScreen({ navigation }) {
 
                 {/* Confirm Password */}
                 <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, { color: isDarkMode ? '#CBD5E1' : '#374151' }]}>
+                  <Text style={[styles.inputLabel, { color: isDark ? '#E2E8F0' : '#374151' }]}>
                     Confirm Password
                   </Text>
                   <View style={[
                     styles.inputWrapper,
-                    { backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF', borderColor: focusedField === 'confirm_password' ? '#A855F7' : (isDarkMode ? '#281B4B' : '#E2E8F0') }
+                    { backgroundColor: isDark ? '#140F24' : '#FFFFFF', borderColor: isDark ? 'rgba(168, 85, 247, 0.45)' : '#CBD5E1' }
                   ]}>
-                    <Lock size={19} color={focusedField === 'confirm_password' ? '#A855F7' : (isDarkMode ? '#64748B' : '#94A3B8')} style={styles.inputIcon} />
+                    <Lock size={19} color={isDark ? '#A855F7' : '#7C3AED'} style={styles.inputIcon} />
                     <TextInput
-                      style={[styles.inputField, { color: isDarkMode ? '#F8FAFC' : '#111827' }]}
+                      style={[styles.inputField, { color: isDark ? '#FFFFFF' : '#111827' }]}
                       placeholder="Re-enter password"
-                      placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
+                      placeholderTextColor={isDark ? '#64748B' : '#9CA3AF'}
                       secureTextEntry={!showPassword}
+                      underlineColorAndroid="transparent"
+                      cursorColor={isDark ? '#C084FC' : '#7C3AED'}
+                      selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                       value={form.confirm_password}
                       onChangeText={(v) => setForm(f => ({ ...f, confirm_password: v }))}
-                      onFocus={() => setFocusedField('confirm_password')}
-                      onBlur={() => setFocusedField(null)}
                     />
                   </View>
                 </View>
 
                 {/* Business Address & Area */}
                 <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, { color: isDarkMode ? '#CBD5E1' : '#374151' }]}>
+                  <Text style={[styles.inputLabel, { color: isDark ? '#E2E8F0' : '#374151' }]}>
                     Business Area / Headquarters
                   </Text>
                   <View style={[
                     styles.inputWrapper,
-                    { backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF', borderColor: focusedField === 'area' ? '#A855F7' : (isDarkMode ? '#281B4B' : '#E2E8F0') }
+                    { backgroundColor: isDark ? '#140F24' : '#FFFFFF', borderColor: isDark ? 'rgba(168, 85, 247, 0.45)' : '#CBD5E1' }
                   ]}>
-                    <MapPin size={19} color={focusedField === 'area' ? '#A855F7' : (isDarkMode ? '#64748B' : '#94A3B8')} style={styles.inputIcon} />
+                    <MapPin size={19} color={isDark ? '#A855F7' : '#7C3AED'} style={styles.inputIcon} />
                     <TextInput
-                      style={[styles.inputField, { color: isDarkMode ? '#F8FAFC' : '#111827' }]}
+                      style={[styles.inputField, { color: isDark ? '#FFFFFF' : '#111827' }]}
                       placeholder="e.g. Navrangpura, SG Highway, Bopal"
-                      placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
+                      placeholderTextColor={isDark ? '#64748B' : '#9CA3AF'}
+                      underlineColorAndroid="transparent"
+                      cursorColor={isDark ? '#C084FC' : '#7C3AED'}
+                      selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                       value={form.area}
                       onChangeText={(v) => setForm(f => ({ ...f, area: v }))}
-                      onFocus={() => setFocusedField('area')}
-                      onBlur={() => setFocusedField(null)}
                     />
                   </View>
                 </View>
@@ -375,12 +386,12 @@ export default function RegisterScreen({ navigation }) {
                 >
                   <View style={[
                     styles.checkbox,
-                    termsAccepted ? styles.checkboxActive : (isDarkMode ? styles.checkboxInactiveDark : styles.checkboxInactiveLight)
+                    termsAccepted ? styles.checkboxActive : (isDark ? styles.checkboxInactiveDark : styles.checkboxInactiveLight)
                   ]}>
                     {termsAccepted && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
                   </View>
-                  <Text style={[styles.termsText, { color: isDarkMode ? '#94A3B8' : '#4B5563' }]}>
-                    I accept the <Text style={{ color: isDarkMode ? '#C084FC' : '#7C3AED', fontWeight: '700' }}>Terms of Service</Text> and <Text style={{ color: isDarkMode ? '#C084FC' : '#7C3AED', fontWeight: '700' }}>Advertiser Code of Conduct</Text>.
+                  <Text style={[styles.termsText, { color: isDark ? '#94A3B8' : '#4B5563' }]}>
+                    I accept the <Text style={{ color: isDark ? '#C084FC' : '#7C3AED', fontWeight: 'bold' }}>Terms of Service</Text> and <Text style={{ color: isDark ? '#C084FC' : '#7C3AED', fontWeight: 'bold' }}>Advertiser Code of Conduct</Text>.
                   </Text>
                 </TouchableOpacity>
 
@@ -395,7 +406,7 @@ export default function RegisterScreen({ navigation }) {
                     colors={['#7C3AED', '#9333EA', '#A855F7']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
-                    style={[styles.ctaGradient, isDarkMode ? styles.ctaGlowDark : styles.ctaGlowLight]}
+                    style={[styles.ctaGradient, isDark ? styles.ctaGlowDark : styles.ctaGlowLight]}
                   >
                     {loading ? (
                       <ActivityIndicator size="small" color="#FFFFFF" />
@@ -410,11 +421,11 @@ export default function RegisterScreen({ navigation }) {
 
             {/* ── Footer ─────────────────────────────────────────────────── */}
             <View style={styles.footerSection}>
-              <Text style={[styles.footerText, { color: isDarkMode ? '#94A3B8' : '#6B7280' }]}>
+              <Text style={[styles.footerText, { color: isDark ? '#94A3B8' : '#6B7280' }]}>
                 Already have an account?{' '}
               </Text>
               <TouchableOpacity onPress={() => navigation.navigate('Login')} activeOpacity={0.7}>
-                <Text style={[styles.signUpText, { color: isDarkMode ? '#C084FC' : '#7C3AED' }]}>
+                <Text style={[styles.signUpText, { color: isDark ? '#C084FC' : '#7C3AED' }]}>
                   Sign In
                 </Text>
               </TouchableOpacity>
@@ -437,8 +448,8 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 12,
-    paddingBottom: 28,
+    paddingTop: 16,
+    paddingBottom: 40,
   },
   container: {
     maxWidth: 420,
@@ -475,7 +486,7 @@ const styles = StyleSheet.create({
   },
   mainTitle: {
     fontSize: 24,
-    fontWeight: '800',
+    fontWeight: 'bold',
     letterSpacing: -0.5,
     marginBottom: 6,
   },
@@ -503,16 +514,17 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.2,
     marginBottom: 6,
     marginLeft: 2,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1.2,
+    borderWidth: 1.5,
     borderRadius: 16,
-    height: 52,
+    height: 54,
     paddingHorizontal: 14,
   },
   inputIcon: {
@@ -520,9 +532,9 @@ const styles = StyleSheet.create({
   },
   inputField: {
     flex: 1,
-    height: '100%',
     fontSize: 15,
     fontWeight: '500',
+    paddingVertical: 8,
   },
   showPasswordBtn: {
     padding: 6,
@@ -556,9 +568,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   checkbox: {
-    width: 18,
-    height: 18,
-    borderRadius: 5,
+    width: 19,
+    height: 19,
+    borderRadius: 6,
     borderWidth: 1.5,
     justifyContent: 'center',
     alignItems: 'center',
@@ -570,7 +582,7 @@ const styles = StyleSheet.create({
     borderColor: '#9333EA',
   },
   checkboxInactiveDark: {
-    borderColor: '#4C3B78',
+    borderColor: '#3B2A68',
     backgroundColor: '#140F24',
   },
   checkboxInactiveLight: {
@@ -588,7 +600,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   ctaGradient: {
-    height: 52,
+    height: 54,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
@@ -609,9 +621,10 @@ const styles = StyleSheet.create({
   },
   ctaButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: -0.2,
+    fontSize: 15,
+    fontWeight: 'bold',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   footerSection: {
     flexDirection: 'row',
@@ -625,6 +638,7 @@ const styles = StyleSheet.create({
   },
   signUpText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: 'bold',
+    letterSpacing: 0.2,
   },
 });
