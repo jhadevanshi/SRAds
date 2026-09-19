@@ -1,8 +1,27 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, RefreshControl, ActivityIndicator, TouchableOpacity, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { businessService } from '../../services/business';
-import { TrendingUp, TrendingDown, PlayCircle, IndianRupee, Megaphone, MonitorSmartphone, Calendar, Info, BarChart3, X } from 'lucide-react-native';
+import { 
+  TrendingUp, 
+  TrendingDown, 
+  PlayCircle, 
+  IndianRupee, 
+  Megaphone, 
+  MonitorSmartphone, 
+  Calendar, 
+  Info, 
+  BarChart3, 
+  X,
+  Sparkles,
+  Zap,
+  Clock,
+  ArrowUpRight
+} from 'lucide-react-native';
+import { useTheme } from '../../context/ThemeContext';
+import AnimatedBarChart from '../../components/AnimatedBarChart';
+import { colors } from '../../theme/designTokens';
 
 const TABS = [
   { id: 'today', label: 'Today' },
@@ -10,7 +29,6 @@ const TABS = [
   { id: '7days', label: '7 Days' },
 ];
 
-// Helper to format date as YYYY-MM-DD
 const formatDateString = (date) => {
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, '0');
@@ -18,14 +36,14 @@ const formatDateString = (date) => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
-export default function AnalyticsScreen() {
+export default function AnalyticsScreen({ route }) {
+  const { isDark } = useTheme();
   const [range, setRange] = useState('today');
-  const [customDate, setCustomDate] = useState(null); // YYYY-MM-DD format
+  const [customDate, setCustomDate] = useState(null);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
-  const [activeTooltip, setActiveTooltip] = useState(null);
 
   // Calendar Modal State
   const [calendarVisible, setCalendarVisible] = useState(false);
@@ -42,7 +60,7 @@ export default function AnalyticsScreen() {
         setError(res.message);
       }
     } catch (err) {
-      setError('Unable to load analytics');
+      setError('Unable to load analytics data.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -61,7 +79,6 @@ export default function AnalyticsScreen() {
   useEffect(() => {
     const { DeviceEventEmitter } = require('react-native');
     const subPlayback = DeviceEventEmitter.addListener('AD_PLAYBACK_COMPLETED', () => {
-      console.log('[AnalyticsScreen] Real-time ad playback completed. Refreshing...');
       if (range === 'custom') {
         loadAll('custom', customDate);
       } else {
@@ -83,7 +100,7 @@ export default function AnalyticsScreen() {
   const formatCurrency = (val) => `₹${parseFloat(val || 0).toFixed(2)}`;
 
   const safeFormatDate = (dateStr) => {
-    if (!dateStr) return 'N/A';
+    if (!dateStr) return 'Active Flight';
     try {
       return new Date(dateStr).toLocaleDateString(undefined, {month: 'short', day: 'numeric'});
     } catch (e) {
@@ -94,20 +111,19 @@ export default function AnalyticsScreen() {
   const renderTrend = (value) => {
     if (value === undefined || value === null || range === 'custom') return null;
     const num = parseFloat(value);
-    if (num === 0) return <Text className="text-slate-400 text-[10px] font-bold mt-1">No change</Text>;
-    if (num === 100 && (range === 'today' || range === 'yesterday')) return <Text className="text-emerald-500 text-[10px] font-bold mt-1">+ New data</Text>;
+    if (num === 0) return <Text style={{ color: isDark ? '#64748B' : '#94A3B8' }} className="text-[10px] font-bold mt-1.5">No change</Text>;
+    if (num === 100 && (range === 'today' || range === 'yesterday')) return <Text className="text-emerald-400 text-[10px] font-bold mt-1.5">+ Fresh playback</Text>;
     
     return (
-      <View className="flex-row items-center mt-1">
+      <View className="flex-row items-center mt-1.5">
         {num > 0 ? <TrendingUp size={12} color="#10B981" /> : <TrendingDown size={12} color="#EF4444" />}
-        <Text className={`text-[10px] font-bold ml-1 ${num > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-          {Math.abs(num)}%
+        <Text className={`text-[10px] font-bold ml-1 ${num > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+          {Math.abs(num)}% vs prev period
         </Text>
       </View>
     );
   };
 
-  // Reusable lightweight month grid generator
   const getDaysInMonth = (year, month) => {
     const days = [];
     const date = new Date(year, month, 1);
@@ -142,207 +158,327 @@ export default function AnalyticsScreen() {
 
   if (loading && !data) {
     return (
-      <SafeAreaView className="flex-1 bg-[#F8FAFC] dark:bg-[#0D1117] justify-center items-center">
-        <ActivityIndicator size="large" color="#F59E0B" />
-        <Text className="text-slate-500 mt-4 font-bold">Gathering performance data...</Text>
+      <SafeAreaView style={{ backgroundColor: isDark ? '#090614' : '#F8F7FF' }} className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" color="#A855F7" />
+        <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold mt-3">Compiling performance analytics...</Text>
       </SafeAreaView>
     );
   }
 
   if (error && !data) {
     return (
-      <SafeAreaView className="flex-1 bg-[#F8FAFC] dark:bg-[#0D1117] justify-center items-center p-6">
-        <View className="w-20 h-20 bg-amber-50 dark:bg-amber-900/20 rounded-full items-center justify-center mb-6">
-          <Info size={32} className="text-amber-500" />
+      <SafeAreaView style={{ backgroundColor: isDark ? '#090614' : '#F8F7FF' }} className="flex-1 justify-center items-center p-6">
+        <View style={{ backgroundColor: isDark ? '#281B4B' : '#EDE9FE' }} className="w-20 h-20 rounded-3xl items-center justify-center mb-5">
+          <Info size={32} color="#A855F7" />
         </View>
-        <Text className="text-slate-900 dark:text-white font-black text-xl tracking-tight mb-2">Performance data is unavailable.</Text>
-        <Text className="text-slate-500 dark:text-[#8B949E] text-center text-sm leading-relaxed mb-8">
-          We couldn't connect to the analytics servers right now. Please try again.
+        <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-extrabold text-xl tracking-tight mb-2">Performance Data Unavailable</Text>
+        <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-center text-sm leading-relaxed mb-6 px-4">
+          Failed to retrieve playback stats from the analytics engine.
         </Text>
-        <TouchableOpacity onPress={onRefresh} className="bg-[#F59E0B] px-8 py-4 rounded-full shadow-lg shadow-amber-500/30">
-          <Text className="text-white font-black">Try Again</Text>
+        <TouchableOpacity 
+          onPress={onRefresh} 
+          className="rounded-full overflow-hidden shadow-lg"
+          style={{ shadowColor: '#9333EA', shadowRadius: 10 }}
+        >
+          <LinearGradient
+            colors={['#7C3AED', '#9333EA', '#C084FC']}
+            className="px-8 py-3.5 items-center justify-center"
+          >
+            <Text className="text-white font-black text-sm">Retry Connection</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </SafeAreaView>
     );
   }
 
-  const { summary, comparison, campaignPerformance } = data || {};
-
-  // Check if there is genuinely no playback activity for selected date/range
+  const { summary, comparison, campaignPerformance, hourlyData, weeklyData } = data || {};
   const hasNoActivity = !summary || (parseInt(summary.totalPlays || 0) === 0 && parseFloat(summary.totalSpend || 0) === 0);
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F8FAFC] dark:bg-[#0D1117]" edges={['top']}>
-      {/* Header */}
-      <View className="flex-row justify-between items-center px-5 py-4 border-b border-slate-200 dark:border-[#30363D] bg-white dark:bg-[#0D1117] z-10">
-        <Text className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Brand Performance</Text>
+    <SafeAreaView 
+      style={{ backgroundColor: isDark ? '#090614' : '#F8F7FF' }} 
+      className="flex-1" 
+      edges={['top']}
+    >
+      {/* Top Header */}
+      <View 
+        style={{ 
+          backgroundColor: isDark ? '#120C26' : '#FFFFFF',
+          borderBottomColor: isDark ? '#281B4B' : '#EDE9FE' 
+        }}
+        className="flex-row justify-between items-center px-5 py-4 border-b z-10"
+      >
+        <View>
+          <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-2xl font-black tracking-tight">
+            Analytics
+          </Text>
+          <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold mt-0.5">
+            Real-Time Broadcast Intelligence
+          </Text>
+        </View>
+
+        <TouchableOpacity 
+          onPress={openCalendar}
+          style={{ 
+            backgroundColor: range === 'custom' ? '#7C3AED' : (isDark ? '#1F1735' : '#F1F5F9'),
+            borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+          }}
+          className="p-2.5 rounded-full border shadow-sm"
+        >
+          <Calendar size={18} color={range === 'custom' ? '#FFF' : '#A855F7'} />
+        </TouchableOpacity>
       </View>
 
-      {/* Date Controls */}
-      <View className="px-5 py-4 bg-white dark:bg-[#0D1117] border-b border-slate-100 dark:border-[#1F2937] flex-row items-center justify-between">
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row flex-1 mr-3">
-          {TABS.map((tab) => (
-            <TouchableOpacity
-              key={tab.id}
-              onPress={() => {
-                setRange(tab.id);
-                setCustomDate(null);
-              }}
-              className={`px-5 py-2.5 rounded-full mr-2 ${range === tab.id ? 'bg-[#F59E0B]' : 'bg-slate-50 dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D]'}`}
-            >
-              <Text className={`font-bold text-sm ${range === tab.id ? 'text-white' : 'text-slate-600 dark:text-[#8B949E]'}`}>{tab.label}</Text>
-            </TouchableOpacity>
-          ))}
+      {/* Date Range Tabs */}
+      <View 
+        style={{ 
+          backgroundColor: isDark ? '#120C26' : '#FFFFFF',
+          borderBottomColor: isDark ? '#281B4B' : '#EDE9FE' 
+        }}
+        className="px-5 py-3 border-b flex-row items-center justify-between"
+      >
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row flex-1 mr-2">
+          {TABS.map((tab) => {
+            const isSelected = range === tab.id;
+            return (
+              <TouchableOpacity
+                key={tab.id}
+                onPress={() => {
+                  setRange(tab.id);
+                  setCustomDate(null);
+                }}
+                style={{
+                  backgroundColor: isSelected 
+                    ? '#7C3AED' 
+                    : (isDark ? '#181033' : '#F8F7FF'),
+                  borderColor: isSelected 
+                    ? '#9333EA' 
+                    : (isDark ? '#281B4B' : '#EDE9FE'),
+                }}
+                className="px-4 py-1.5 rounded-full border mr-2"
+              >
+                <Text 
+                  style={{
+                    color: isSelected ? '#FFFFFF' : (isDark ? '#94A3B8' : '#64748B'),
+                    fontWeight: isSelected ? '800' : '600',
+                  }}
+                  className="text-xs"
+                >
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
           
           {range === 'custom' && customDate && (
             <TouchableOpacity
               onPress={openCalendar}
-              className="px-5 py-2.5 rounded-full bg-amber-50 dark:bg-amber-900/20 border border-[#F59E0B] mr-2"
+              style={{ backgroundColor: 'rgba(124, 58, 237, 0.15)', borderColor: '#7C3AED' }}
+              className="px-4 py-1.5 rounded-full border flex-row items-center mr-2"
             >
-              <Text className="font-bold text-sm text-[#F59E0B]">📅 {customDate}</Text>
+              <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="font-bold text-xs">
+                📅 {customDate}
+              </Text>
             </TouchableOpacity>
           )}
         </ScrollView>
-
-        <TouchableOpacity 
-          onPress={openCalendar}
-          className={`p-2.5 rounded-full border ${range === 'custom' ? 'bg-[#F59E0B] border-[#F59E0B]' : 'bg-slate-50 dark:bg-[#161B22] border-slate-200 dark:border-[#30363D]'}`}
-        >
-          <Calendar size={18} color={range === 'custom' ? '#FFF' : '#F59E0B'} />
-        </TouchableOpacity>
       </View>
 
       <ScrollView 
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#F59E0B" />}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#A855F7" />}
+        contentContainerStyle={{ padding: 18, paddingBottom: 110 }}
       >
-        <View className="px-5 pt-6">
-          
-          {hasNoActivity ? (
-            <View className="items-center mt-10 bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-3xl p-8 shadow-sm">
-              <View className="w-16 h-16 bg-slate-50 dark:bg-[#0D1117] rounded-full items-center justify-center mb-5">
-                <BarChart3 size={28} className="text-slate-400" />
+        {hasNoActivity ? (
+          <View 
+            style={{ 
+              backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+              borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+            }}
+            className="items-center mt-6 border rounded-3xl p-8 shadow-sm"
+          >
+            <LinearGradient
+              colors={isDark ? ['#7C3AED', '#4C1D95'] : ['#EDE9FE', '#DDD6FE']}
+              className="w-16 h-16 rounded-2xl items-center justify-center mb-4"
+            >
+              <BarChart3 size={28} color={isDark ? '#FFFFFF' : '#7C3AED'} />
+            </LinearGradient>
+            <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-extrabold text-lg tracking-tight mb-1 text-center">
+              No Broadcast Activity
+            </Text>
+            <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-center text-xs leading-relaxed mb-5 px-4">
+              No screen playbacks were recorded during the selected period.
+            </Text>
+            <TouchableOpacity 
+              onPress={openCalendar} 
+              style={{ backgroundColor: isDark ? '#281B4B' : '#EDE9FE' }}
+              className="px-5 py-2.5 rounded-full"
+            >
+              <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="font-bold text-xs">Select Another Date</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            {/* 4-Metric Grid */}
+            <View className="flex-row flex-wrap justify-between mb-2">
+              
+              {/* Total Plays */}
+              <View 
+                style={{ 
+                  backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+                  borderColor: isDark ? '#281B4B' : '#EDE9FE',
+                  width: '48%' 
+                }}
+                className="border rounded-3xl p-4 mb-3.5 shadow-sm"
+              >
+                <View style={{ backgroundColor: 'rgba(124, 58, 237, 0.12)' }} className="w-10 h-10 rounded-2xl items-center justify-center mb-2.5">
+                  <PlayCircle size={20} color="#A855F7" />
+                </View>
+                <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-[10px] font-black uppercase tracking-wider mb-0.5">Total Plays</Text>
+                <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-2xl font-black tracking-tight">
+                  {summary?.totalPlays?.toLocaleString('en-IN') || 0}
+                </Text>
+                {renderTrend(comparison?.playsChange)}
               </View>
-              <Text className="text-slate-900 dark:text-white text-lg font-black tracking-tight mb-2 text-center">NO PLAYBACK ACTIVITY</Text>
-              <Text className="text-slate-500 dark:text-slate-400 text-center text-sm leading-relaxed mb-4 px-4">
-                No advertisements were played during this period.
-              </Text>
-              <TouchableOpacity onPress={openCalendar} className="bg-slate-900 dark:bg-white px-5 py-2.5 rounded-full">
-                <Text className="text-white dark:text-slate-900 font-bold text-xs">Try selecting another date</Text>
-              </TouchableOpacity>
+
+              {/* Total Spend */}
+              <View 
+                style={{ 
+                  backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+                  borderColor: isDark ? '#281B4B' : '#EDE9FE',
+                  width: '48%' 
+                }}
+                className="border rounded-3xl p-4 mb-3.5 shadow-sm"
+              >
+                <View style={{ backgroundColor: 'rgba(16, 185, 129, 0.12)' }} className="w-10 h-10 rounded-2xl items-center justify-center mb-2.5">
+                  <IndianRupee size={18} color="#10B981" />
+                </View>
+                <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-[10px] font-black uppercase tracking-wider mb-0.5">Spend</Text>
+                <Text style={{ color: isDark ? '#34D399' : '#059669' }} className="text-2xl font-black tracking-tight">
+                  {formatCurrency(summary?.totalSpend)}
+                </Text>
+                {renderTrend(comparison?.spendChange)}
+              </View>
+
+              {/* Active Screens */}
+              <View 
+                style={{ 
+                  backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+                  borderColor: isDark ? '#281B4B' : '#EDE9FE',
+                  width: '48%' 
+                }}
+                className="border rounded-3xl p-4 mb-3.5 shadow-sm"
+              >
+                <View style={{ backgroundColor: 'rgba(56, 189, 248, 0.12)' }} className="w-10 h-10 rounded-2xl items-center justify-center mb-2.5">
+                  <MonitorSmartphone size={18} color="#38BDF8" />
+                </View>
+                <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-[10px] font-black uppercase tracking-wider mb-0.5">Active Screens</Text>
+                <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-2xl font-black tracking-tight">
+                  {summary?.activeDisplays || 0}
+                </Text>
+              </View>
+
+              {/* Campaigns Running */}
+              <View 
+                style={{ 
+                  backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+                  borderColor: isDark ? '#281B4B' : '#EDE9FE',
+                  width: '48%' 
+                }}
+                className="border rounded-3xl p-4 mb-3.5 shadow-sm"
+              >
+                <View style={{ backgroundColor: 'rgba(217, 70, 239, 0.12)' }} className="w-10 h-10 rounded-2xl items-center justify-center mb-2.5">
+                  <Megaphone size={18} color="#D946EF" />
+                </View>
+                <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-[10px] font-black uppercase tracking-wider mb-0.5">Campaigns</Text>
+                <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-2xl font-black tracking-tight">
+                  {summary?.activeCampaigns || 0}
+                </Text>
+              </View>
+
             </View>
-          ) : (
-            <>
-              {/* Metric Cards */}
-              <View className="flex-row flex-wrap justify-between mb-4">
+
+            {/* Campaign Breakdown List */}
+            {campaignPerformance && campaignPerformance.length > 0 && (
+              <View className="mt-3">
+                <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="text-xs font-black uppercase tracking-wider mb-3">
+                  Campaign Breakdown
+                </Text>
                 
-                {/* Plays Card */}
-                <View className="w-[48%] bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-3xl p-5 mb-4 shadow-sm">
-                  <View className="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 rounded-2xl items-center justify-center mb-3">
-                    <PlayCircle size={20} className="text-blue-500" />
-                  </View>
-                  <Text className="text-slate-500 dark:text-[#8B949E] text-[10px] font-black uppercase tracking-wider mb-1">TOTAL PLAYS</Text>
-                  <Text className="text-slate-900 dark:text-white text-2xl font-black tracking-tight">
-                    {summary?.totalPlays?.toLocaleString() || 0}
-                  </Text>
-                  {renderTrend(comparison?.playsChange)}
-                </View>
-
-                {/* Spend Card */}
-                <View className="w-[48%] bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-3xl p-5 mb-4 shadow-sm">
-                  <View className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl items-center justify-center mb-3">
-                    <IndianRupee size={20} className="text-emerald-500" />
-                  </View>
-                  <Text className="text-slate-500 dark:text-[#8B949E] text-[10px] font-black uppercase tracking-wider mb-1">TOTAL SPEND</Text>
-                  <Text className="text-slate-900 dark:text-white text-2xl font-black tracking-tight">
-                    {formatCurrency(summary?.totalSpend)}
-                  </Text>
-                  {renderTrend(comparison?.spendChange)}
-                </View>
-
-                {/* Active Screens Card */}
-                <View className="w-[48%] bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-3xl p-5 mb-4 shadow-sm">
-                  <View className="w-10 h-10 bg-amber-50 dark:bg-amber-900/20 rounded-2xl items-center justify-center mb-3">
-                    <MonitorSmartphone size={20} className="text-amber-500" />
-                  </View>
-                  <Text className="text-slate-500 dark:text-[#8B949E] text-[10px] font-black uppercase tracking-wider mb-1">ACTIVE SCREENS</Text>
-                  <Text className="text-slate-900 dark:text-white text-2xl font-black tracking-tight">
-                    {summary?.activeDisplays || 0}
-                  </Text>
-                </View>
-
-                {/* Ads Running Card */}
-                <View className="w-[48%] bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-3xl p-5 mb-4 shadow-sm">
-                  <View className="w-10 h-10 bg-purple-50 dark:bg-purple-900/20 rounded-2xl items-center justify-center mb-3">
-                    <Megaphone size={20} className="text-purple-500" />
-                  </View>
-                  <Text className="text-slate-500 dark:text-[#8B949E] text-[10px] font-black uppercase tracking-wider mb-1">ADS RUNNING</Text>
-                  <Text className="text-slate-900 dark:text-white text-2xl font-black tracking-tight">
-                    {summary?.activeCampaigns || 0}
-                  </Text>
-                </View>
-
-              </View>
-
-              {/* Advertisement Performance list */}
-              {campaignPerformance && campaignPerformance.length > 0 && (
-                <>
-                  <Text className="text-sm font-black text-slate-900 dark:text-white tracking-tight mb-4 uppercase">ADVERTISEMENT PERFORMANCE</Text>
-                  {campaignPerformance.map(camp => (
-                    <View key={camp.id} className="bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-3xl p-5 mb-4 shadow-sm">
-                      <View className="flex-row justify-between items-start mb-4 border-b border-slate-100 dark:border-[#30363D] pb-4">
-                        <View className="flex-1 pr-2">
-                          <Text className="text-slate-900 dark:text-white font-black text-lg mb-1" numberOfLines={1}>{camp.name}</Text>
-                          <View className="flex-row items-center">
-                            <View className={`w-2 h-2 rounded-full mr-1.5 ${camp.status === 'Active' ? 'bg-emerald-500' : 'bg-slate-400'}`} />
-                            <Text className={`text-xs font-bold ${camp.status === 'Active' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'}`}>{camp.status}</Text>
-                          </View>
-                        </View>
-                        <View className="bg-slate-50 dark:bg-[#0D1117] border border-slate-100 dark:border-[#30363D] px-2.5 py-1.5 rounded-lg">
-                          <Text className="text-slate-500 dark:text-[#8B949E] text-[10px] font-bold">
-                            {safeFormatDate(camp.start_date)} - {safeFormatDate(camp.end_date)}
+                {campaignPerformance.map(camp => (
+                  <View 
+                    key={camp.id} 
+                    style={{ 
+                      backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+                      borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+                    }}
+                    className="border rounded-3xl p-5 mb-3.5 shadow-sm"
+                  >
+                    <View className="flex-row justify-between items-start mb-3 border-b pb-3" style={{ borderColor: isDark ? '#281B4B' : '#F1F5F9' }}>
+                      <View className="flex-1 pr-2">
+                        <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-extrabold text-base mb-1" numberOfLines={1}>
+                          {camp.name}
+                        </Text>
+                        <View className="flex-row items-center">
+                          <View className={`w-2 h-2 rounded-full mr-1.5 ${camp.status === 'Active' ? 'bg-emerald-500' : 'bg-purple-500'}`} />
+                          <Text style={{ color: camp.status === 'Active' ? '#10B981' : '#A855F7' }} className="text-[11px] font-bold uppercase">
+                            {camp.status}
                           </Text>
                         </View>
                       </View>
-                      
-                      <View className="flex-row justify-between">
-                        <View>
-                          <Text className="text-slate-400 text-[10px] font-black uppercase mb-1 tracking-widest">Plays</Text>
-                          <Text className="text-slate-900 dark:text-white font-bold text-base">{camp.plays?.toLocaleString() || 0}</Text>
-                        </View>
-                        <View>
-                          <Text className="text-slate-400 text-[10px] font-black uppercase mb-1 tracking-widest">Spend</Text>
-                          <Text className="text-slate-900 dark:text-white font-bold text-base">{formatCurrency(camp.spend)}</Text>
-                        </View>
-                        <View className="items-end">
-                          <Text className="text-slate-400 text-[10px] font-black uppercase mb-1 tracking-widest">Target Screens</Text>
-                          <Text className="text-slate-900 dark:text-white font-bold text-base">{camp.displays || 0}</Text>
-                        </View>
+                      <View style={{ backgroundColor: isDark ? '#1F1735' : '#EDE9FE' }} className="px-2.5 py-1 rounded-lg">
+                        <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="text-[10px] font-bold">
+                          {safeFormatDate(camp.start_date)} – {safeFormatDate(camp.end_date)}
+                        </Text>
                       </View>
                     </View>
-                  ))}
-                </>
-              )}
-            </>
-          )}
-
-        </View>
+                    
+                    <View className="flex-row justify-between pt-1">
+                      <View>
+                        <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-[10px] font-bold uppercase mb-0.5">Plays</Text>
+                        <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="font-black text-sm">{camp.plays?.toLocaleString('en-IN') || 0}</Text>
+                      </View>
+                      <View>
+                        <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-[10px] font-bold uppercase mb-0.5">Spend</Text>
+                        <Text style={{ color: isDark ? '#34D399' : '#059669' }} className="font-black text-sm">{formatCurrency(camp.spend)}</Text>
+                      </View>
+                      <View className="items-end">
+                        <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-[10px] font-bold uppercase mb-0.5">Displays</Text>
+                        <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-black text-sm">{camp.displays || 0}</Text>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+          </>
+        )}
       </ScrollView>
 
-      {/* CUSTOM CALENDAR MODAL */}
+      {/* Calendar Modal */}
       <Modal visible={calendarVisible} transparent animationType="slide" onRequestClose={() => setCalendarVisible(false)}>
-        <View className="flex-1 justify-end bg-slate-900/60 dark:bg-black/80">
-          <View className="bg-white dark:bg-[#161B22] rounded-t-[32px] p-6 pb-12 border-t border-slate-100 dark:border-[#30363D]">
-            
+        <View className="flex-1 justify-end bg-black/75">
+          <View 
+            style={{ 
+              backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+              borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+            }}
+            className="rounded-t-[32px] p-6 pb-12 border-t shadow-2xl"
+          >
             <View className="flex-row justify-between items-center mb-5">
-              <Text className="text-lg font-black text-slate-900 dark:text-white">Select Custom Date</Text>
-              <TouchableOpacity onPress={() => setCalendarVisible(false)} className="p-2 rounded-full bg-slate-100 dark:bg-[#30363D]">
-                <X size={18} className="text-slate-500 dark:text-[#8B949E]" />
+              <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-lg font-black tracking-tight">
+                Select Analytics Date
+              </Text>
+              <TouchableOpacity 
+                onPress={() => setCalendarVisible(false)} 
+                style={{ backgroundColor: isDark ? '#1F1735' : '#F1F5F9' }}
+                className="p-2 rounded-full"
+              >
+                <X size={18} color={isDark ? '#CBD5E1' : '#475569'} />
               </TouchableOpacity>
             </View>
 
             {/* Calendar Controls */}
-            <View className="flex-row justify-between items-center mb-5 px-2">
+            <View className="flex-row justify-between items-center mb-4 px-2">
               <TouchableOpacity 
                 onPress={() => {
                   if (currentMonth === 0) {
@@ -352,13 +488,16 @@ export default function AnalyticsScreen() {
                     setCurrentMonth(currentMonth - 1);
                   }
                 }}
-                className="p-2 border border-slate-200 dark:border-[#30363D] rounded-xl"
+                style={{ backgroundColor: isDark ? '#181033' : '#F8F7FF', borderColor: isDark ? '#281B4B' : '#EDE9FE' }}
+                className="p-2.5 border rounded-xl"
               >
-                <Text className="text-slate-500 dark:text-white font-black">&lt;</Text>
+                <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="font-black">&lt;</Text>
               </TouchableOpacity>
-              <Text className="text-slate-900 dark:text-white font-black text-base">
+              
+              <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-black text-base">
                 {new Date(currentYear, currentMonth).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
               </Text>
+
               <TouchableOpacity 
                 onPress={() => {
                   if (currentMonth === 11) {
@@ -368,9 +507,10 @@ export default function AnalyticsScreen() {
                     setCurrentMonth(currentMonth + 1);
                   }
                 }}
-                className="p-2 border border-slate-200 dark:border-[#30363D] rounded-xl"
+                style={{ backgroundColor: isDark ? '#181033' : '#F8F7FF', borderColor: isDark ? '#281B4B' : '#EDE9FE' }}
+                className="p-2.5 border rounded-xl"
               >
-                <Text className="text-slate-500 dark:text-white font-black">&gt;</Text>
+                <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="font-black">&gt;</Text>
               </TouchableOpacity>
             </View>
 
@@ -378,7 +518,7 @@ export default function AnalyticsScreen() {
             <View className="flex-row justify-between mb-2">
               {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(header => (
                 <View key={header} className="w-[14%] items-center">
-                  <Text className="text-slate-400 text-xs font-black uppercase">{header}</Text>
+                  <Text style={{ color: isDark ? '#64748B' : '#94A3B8' }} className="text-xs font-black uppercase">{header}</Text>
                 </View>
               ))}
             </View>
@@ -392,9 +532,18 @@ export default function AnalyticsScreen() {
                     key={day ? day.getTime() : `empty-${idx}`}
                     disabled={!day}
                     onPress={() => handleCalendarDayPress(day)}
-                    className={`w-[14%] h-12 items-center justify-center rounded-xl mb-1 ${isSelected ? 'bg-[#F59E0B]' : 'bg-transparent'}`}
+                    style={{
+                      backgroundColor: isSelected ? '#7C3AED' : 'transparent',
+                    }}
+                    className="w-[14%] h-11 items-center justify-center rounded-xl mb-1"
                   >
-                    <Text className={`font-black text-sm ${!day ? 'text-transparent' : isSelected ? 'text-white' : 'text-slate-800 dark:text-slate-200'}`}>
+                    <Text 
+                      style={{ 
+                        color: !day ? 'transparent' : isSelected ? '#FFFFFF' : (isDark ? '#F8FAFC' : '#1E1B4B'),
+                        fontWeight: isSelected ? '900' : '600'
+                      }}
+                      className="text-sm"
+                    >
                       {day ? day.getDate() : ''}
                     </Text>
                   </TouchableOpacity>

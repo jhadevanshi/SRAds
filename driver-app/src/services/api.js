@@ -3,11 +3,11 @@ import { getStorageItem, deleteStorageItem } from '../utils/storage';
 import { DeviceEventEmitter } from 'react-native';
 
 // Base API URL
-let API_URL = process.env.EXPO_PUBLIC_API_URL;
-if (!API_URL) {
-  throw new Error('EXPO_PUBLIC_API_URL is not set. Please configure EXPO_PUBLIC_API_URL=http://<YOUR_LAN_IP>:5000/api');
-}
+let API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://coxcred.com/srads/api';
 API_URL = API_URL.trim();
+if (API_URL.includes('192.168.') || API_URL.includes('10.0.') || API_URL.includes('172.16.')) {
+  API_URL = 'https://coxcred.com/srads/api';
+}
 if (API_URL.endsWith('/api')) {
   API_URL = API_URL.substring(0, API_URL.length - 4);
 }

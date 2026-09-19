@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../context/ThemeContext';
 
 export default function AnimatedBarChart({ 
   data = [], 
@@ -7,60 +9,83 @@ export default function AnimatedBarChart({
   maxValue = 1, 
   title = '', 
   formatValue = (v) => v, 
-  barColor = 'bg-blue-200', 
-  activeBarColor = 'bg-blue-500',
   onDetailsPress = () => {}
 }) {
+  const { isDark } = useTheme();
   const [activeIndex, setActiveIndex] = useState(null);
 
   const renderTooltip = (item, index) => {
     if (activeIndex !== index) return null;
     const value = formatValue(Number(item[dataKey]) || 0);
     return (
-      <View className="absolute -top-10 bg-[#0F172A] dark:bg-white rounded-lg px-3 py-1.5 shadow-md z-10 items-center">
-        <Text className="text-white dark:text-[#0F172A] text-xs font-bold whitespace-nowrap">{value}</Text>
-        <View className="w-2 h-2 bg-[#0F172A] dark:bg-white absolute -bottom-1 rotate-45" />
+      <View 
+        style={{ 
+          backgroundColor: isDark ? '#7C3AED' : '#1E1B4B',
+          shadowColor: '#9333EA',
+          shadowOpacity: 0.4,
+          shadowRadius: 6,
+          elevation: 6
+        }}
+        className="absolute -top-10 rounded-xl px-3 py-1.5 z-20 items-center shadow-lg"
+      >
+        <Text className="text-white text-xs font-black">{value}</Text>
+        <View 
+          style={{ backgroundColor: isDark ? '#7C3AED' : '#1E1B4B' }}
+          className="w-2 h-2 absolute -bottom-1 rotate-45" 
+        />
       </View>
     );
   };
 
   const todayStr = new Date().toISOString().split('T')[0];
-
-  // Create Y-axis labels
   const yAxisLabels = [maxValue, maxValue * 0.5, 0];
 
   return (
-    <View className="bg-white dark:bg-[#161B22] p-5 rounded-3xl shadow-sm border border-slate-100 dark:border-[#30363D] mb-5">
+    <View 
+      style={{ 
+        backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+        borderColor: isDark ? '#281B4B' : '#EDE9FE',
+        shadowColor: isDark ? '#7C3AED' : '#9333EA',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: isDark ? 0.2 : 0.08,
+        shadowRadius: 8,
+        elevation: 3
+      }}
+      className="p-5 rounded-3xl border mb-5 shadow-sm"
+    >
       <View className="flex-row justify-between items-center mb-6">
-        <Text className="font-bold text-slate-900 dark:text-white text-lg">{title}</Text>
+        <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-extrabold text-base tracking-tight">{title}</Text>
         <TouchableOpacity onPress={onDetailsPress}>
-          <Text className="text-sm font-bold text-blue-600">View Details</Text>
+          <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="text-xs font-bold uppercase tracking-wider">Details</Text>
         </TouchableOpacity>
       </View>
       
       {data.length === 0 ? (
-        <Text className="text-sm text-slate-400 text-center py-8">No data available</Text>
+        <Text style={{ color: isDark ? '#64748B' : '#94A3B8' }} className="text-xs font-medium text-center py-8">No broadcast activity recorded</Text>
       ) : (
         <View className="flex-row h-48 pt-2">
           {/* Y Axis */}
-          <View className="justify-between items-end pr-3 pb-6 border-r border-slate-100">
+          <View 
+            style={{ borderRightColor: isDark ? '#281B4B' : '#EDE9FE' }}
+            className="justify-between items-end pr-3 pb-6 border-r"
+          >
             {yAxisLabels.map((val, i) => (
-              <Text key={i} className="text-[10px] font-bold text-slate-400">
+              <Text key={i} style={{ color: isDark ? '#64748B' : '#94A3B8' }} className="text-[10px] font-bold">
                 {formatValue(val)}
               </Text>
             ))}
           </View>
 
-          {/* Chart Area */}
+          {/* Chart Bars */}
           <View className="flex-1 flex-row items-end justify-between pl-2">
-            {/* Background Grid Lines */}
-            <View className="absolute inset-0 border-b border-slate-100 dark:border-[#30363D] top-0" />
-            <View className="absolute inset-0 border-b border-slate-100 dark:border-[#30363D] top-1/2" />
-            <View className="absolute inset-0 border-b border-slate-100 dark:border-[#30363D] bottom-6" />
+            {/* Grid Lines */}
+            <View style={{ borderBottomColor: isDark ? '#281B4B' : '#F1F5F9' }} className="absolute inset-0 border-b top-0" />
+            <View style={{ borderBottomColor: isDark ? '#281B4B' : '#F1F5F9' }} className="absolute inset-0 border-b top-1/2" />
+            <View style={{ borderBottomColor: isDark ? '#281B4B' : '#F1F5F9' }} className="absolute inset-0 border-b bottom-6" />
 
             {data.map((d, i) => {
               const val = Number(d[dataKey]) || 0;
-              const heightPct = Math.max((val / (maxValue || 1)) * 100, 2); 
+              const heightPct = Math.max((val / (maxValue || 1)) * 100, 4); 
               
               let isToday = false;
               let displayLabel = d.label || '';
@@ -72,9 +97,7 @@ export default function AnimatedBarChart({
                   if (!displayLabel) {
                     displayLabel = new Date(d.date).toLocaleDateString('en-US', { weekday: 'narrow' });
                   }
-                } catch (e) {
-                  // Fallback if date is invalid
-                }
+                } catch (e) {}
               }
 
               return (
@@ -85,14 +108,22 @@ export default function AnimatedBarChart({
                     onPress={() => setActiveIndex(activeIndex === i ? null : i)}
                     className="w-full h-full items-center justify-end pb-6 z-10"
                   >
-                    <View className="w-full max-w-[24px] h-full justify-end rounded-t-lg">
-                      <View 
-                        className={`w-full rounded-t-lg ${isToday ? activeBarColor : barColor} ${activeIndex === i ? 'opacity-100' : 'opacity-80'}`} 
+                    <View className="w-full max-w-[20px] h-full justify-end rounded-t-lg overflow-hidden">
+                      <LinearGradient
+                        colors={isToday ? ['#C084FC', '#7C3AED'] : (isDark ? ['#6D28D9', '#3B0764'] : ['#C4B5FD', '#8B5CF6'])}
                         style={{ height: `${heightPct}%` }}
+                        className={`w-full rounded-t-lg ${activeIndex === i ? 'opacity-100' : 'opacity-85'}`}
                       />
                     </View>
                   </TouchableOpacity>
-                  <Text className={`absolute bottom-0 text-[9px] ${isToday ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-400 font-bold'}`} numberOfLines={1}>
+                  <Text 
+                    style={{ 
+                      color: isToday ? (isDark ? '#C084FC' : '#7C3AED') : (isDark ? '#64748B' : '#94A3B8'),
+                      fontWeight: isToday ? '800' : '600'
+                    }} 
+                    className="absolute bottom-0 text-[10px]" 
+                    numberOfLines={1}
+                  >
                     {displayLabel}
                   </Text>
                 </View>

@@ -2,11 +2,12 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Base API URL
-let API_URL = process.env.EXPO_PUBLIC_API_URL;
-if (!API_URL) {
-  throw new Error('EXPO_PUBLIC_API_URL is not set. Please create a .env file with EXPO_PUBLIC_API_URL=http://<YOUR_LAN_IP>:5000/api');
-}
+let API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://coxcred.com/srads/api';
 API_URL = API_URL.trim();
+// Automatically override stale local LAN IPs
+if (API_URL.includes('192.168.') || API_URL.includes('10.0.') || API_URL.includes('172.16.') || API_URL.includes('172.20.')) {
+  API_URL = 'https://coxcred.com/srads/api';
+}
 if (!API_URL.endsWith('/api')) {
   API_URL = `${API_URL}/api`;
 }

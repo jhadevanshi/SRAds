@@ -1,13 +1,36 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, Image, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, Image, Modal, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Video, Image as ImageIcon, MapPin, Check, Plus, Calendar, MonitorSmartphone, CheckCircle2, UploadCloud, Trash2, X } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { 
+  ArrowLeft, 
+  Video, 
+  Image as ImageIcon, 
+  MapPin, 
+  Check, 
+  Plus, 
+  Calendar, 
+  MonitorSmartphone, 
+  CheckCircle2, 
+  UploadCloud, 
+  Trash2, 
+  X,
+  Clock,
+  Sparkles,
+  Zap,
+  Layers,
+  ChevronRight,
+  ShieldCheck
+} from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Clock } from 'lucide-react-native';
 import { businessService } from '../../services/business';
 import VideoTrimmer from '../../components/VideoTrimmer';
 import AddFundsBottomSheet from '../../components/AddFundsBottomSheet';
+import { useTheme } from '../../context/ThemeContext';
+import { colors } from '../../theme/designTokens';
+
+const { width } = Dimensions.get('window');
 
 const ROUTES = [
   { id: '1', name: 'Bopal Area', brts: 10, screens: 20, area: 'Bopal' },
@@ -18,7 +41,6 @@ const ROUTES = [
   { id: '6', name: 'Navrangpura Area', brts: 14, screens: 28, area: 'Navrangpura' },
 ];
 
-// Helper to format date as YYYY-MM-DD
 const formatDateString = (date) => {
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, '0');
@@ -27,6 +49,7 @@ const formatDateString = (date) => {
 };
 
 export default function CreateCampaignScreen({ route, navigation }) {
+  const { isDark } = useTheme();
 
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
@@ -84,7 +107,7 @@ export default function CreateCampaignScreen({ route, navigation }) {
   const [walletBalance, setWalletBalance] = useState(0);
 
   // New Ad Upload State (Step 1 Inline Upload)
-  const [uploadMode, setUploadMode] = useState(false); // true when user is uploading inline
+  const [uploadMode, setUploadMode] = useState(false);
   const [newAdTitle, setNewAdTitle] = useState('');
   const [newAdMedia, setNewAdMedia] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -94,18 +117,9 @@ export default function CreateCampaignScreen({ route, navigation }) {
   // Where selector mode
   const [whereMode, setWhereMode] = useState('everywhere'); // 'everywhere' | 'specific'
 
-  // Calendar Modal State
-  const [calendarVisible, setCalendarVisible] = useState(false);
-  const [calendarTarget, setCalendarTarget] = useState('start'); // 'start' | 'end'
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
-
-
-
   const [form, setForm] = useState({
     ad: null, 
     routes: [], 
-
     trimStart: '0',
     trimEnd: '0',
   });
@@ -131,7 +145,6 @@ export default function CreateCampaignScreen({ route, navigation }) {
         setWalletBalance(parseFloat(walletRes.wallet_balance || 0));
       }
 
-      // Handle preselected Ad
       if (route.params?.preselectedAdId) {
         const preAd = fetchedAds.find(a => a.id === route.params.preselectedAdId);
         if (preAd) {
@@ -145,14 +158,11 @@ export default function CreateCampaignScreen({ route, navigation }) {
           setAds([mockAd, ...fetchedAds]);
         }
       } else if (fetchedAds.length > 0) {
-        // Auto-select first ad if available
         setForm(prev => ({ ...prev, ad: fetchedAds[0] }));
       } else {
-        // No ads: open upload mode automatically
         setUploadMode(true);
       }
 
-      // Default Everywhere
       setForm(prev => ({ ...prev, routes: [ROUTES.find(r => r.id === '4')] }));
 
     } catch (err) {
@@ -162,12 +172,12 @@ export default function CreateCampaignScreen({ route, navigation }) {
     }
   };
 
-  const getBaseUrl = () => process.env.EXPO_PUBLIC_API_URL || 'http://192.168.147.25:5000';
+  const getBaseUrl = () => process.env.EXPO_PUBLIC_API_URL || 'https://coxcred.com/srads/api';
 
   const pickMedia = async (mediaType) => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: mediaType === 'video' ? ['videos'] : ['images'],
-      allowsEditing: false, // Turn off native trimmer so we use our custom visual trimmer
+      allowsEditing: false,
       quality: 1,
     });
 
@@ -177,7 +187,6 @@ export default function CreateCampaignScreen({ route, navigation }) {
         const durationSec = Math.floor((asset.duration || 0) / 1000);
         setForm(prev => ({ ...prev, trimStart: '0', trimEnd: String(Math.floor(durationSec)) }));
         setNewAdMedia(asset);
-        // Open custom visual trimmer
         setVideoTrimmerVisible(true);
       } else {
         setNewAdMedia(asset);
@@ -187,7 +196,7 @@ export default function CreateCampaignScreen({ route, navigation }) {
 
   const handleInlineUpload = async () => {
     if (!newAdTitle || !newAdMedia) {
-      Alert.alert('Incomplete', 'Please provide an ad name and media.');
+      Alert.alert('Incomplete', 'Please provide an ad title and select media.');
       return;
     }
 
@@ -196,7 +205,7 @@ export default function CreateCampaignScreen({ route, navigation }) {
       const formData = new FormData();
       formData.append('title', newAdTitle);
       formData.append('budget', '0');
-      formData.append('cost_per_play', '0'); // Unused
+      formData.append('cost_per_play', '0');
       
       const duration = newAdMedia.type === 'image' ? 30 : (parseInt(form.trimEnd) - parseInt(form.trimStart));
       formData.append('play_duration', String(duration));
@@ -210,7 +219,6 @@ export default function CreateCampaignScreen({ route, navigation }) {
 
       const res = await businessService.uploadAd(formData);
       if (res.success) {
-        // Reload ads library to pick the new ad
         const adsRes = await businessService.getAds();
         let updatedAds = ads;
         if (adsRes.success) {
@@ -218,7 +226,6 @@ export default function CreateCampaignScreen({ route, navigation }) {
           setAds(updatedAds);
         }
         
-        // Find newly uploaded ad or construct mock
         const newAd = updatedAds.find(a => a.title === newAdTitle) || {
           id: res.ad?.id || Date.now(),
           title: newAdTitle,
@@ -230,7 +237,7 @@ export default function CreateCampaignScreen({ route, navigation }) {
         setUploadMode(false);
         setNewAdTitle('');
         setNewAdMedia(null);
-        Alert.alert('Success', 'Advertisement uploaded and selected.');
+        Alert.alert('Success', 'Creative uploaded and selected.');
       } else {
         Alert.alert('Error', res.message);
       }
@@ -243,7 +250,6 @@ export default function CreateCampaignScreen({ route, navigation }) {
 
   const toggleRoute = (routeItem) => {
     if (form.routes.find(r => r.id === routeItem.id)) {
-      // Don't allow empty routes selection
       if (form.routes.length === 1) return;
       setForm({ ...form, routes: form.routes.filter(r => r.id !== routeItem.id) });
     } else {
@@ -254,77 +260,14 @@ export default function CreateCampaignScreen({ route, navigation }) {
   const handleWhereModeChange = (mode) => {
     setWhereMode(mode);
     if (mode === 'everywhere') {
-      // Select All Ahmedabad Routes
       setForm(prev => ({ ...prev, routes: [ROUTES.find(r => r.id === '4')] }));
     } else {
-      // Select Navrangpura as default specific
       setForm(prev => ({ ...prev, routes: [ROUTES.find(r => r.id === '1')] }));
     }
   };
 
-
-  const totalSelectedBrts = form.routes.reduce((acc, r) => acc + r.brts, 0);
-  const totalSelectedScreens = form.routes.reduce((acc, r) => acc + r.screens, 0);
-
-  const handleNext = () => {
-    if (step === 1 && !form.ad) return Alert.alert('Required', 'Please select or upload an advertisement.');
-    if (step === 2 && form.routes.length === 0) return Alert.alert('Required', 'Please select at least one route.');
-    if (step === 3) {
-      if (!startDate || !endDate || !startTime || !endTime) return Alert.alert('Required', 'Please select both date and time ranges.');
-      
-      const sd = new Date(startDate);
-      const ed = new Date(endDate);
-      sd.setHours(0, 0, 0, 0);
-      ed.setHours(0, 0, 0, 0);
-      
-      if (ed < sd) return Alert.alert('Invalid Date', 'End date cannot be before start date.');
-      
-      const startSeconds = startTime.getHours() * 3600 + startTime.getMinutes() * 60;
-      const endSeconds = endTime.getHours() * 3600 + endTime.getMinutes() * 60;
-      if (endSeconds <= startSeconds) return Alert.alert('Invalid Time', 'End time must be after start time.');
-    }
-    if (step === 4) {
-      if (safeCost > safeWalletBalance) {
-        return Alert.alert('Insufficient Balance', 'Your estimated cost exceeds your available wallet balance. Please add funds first.');
-      }
-      handleLaunch();
-      return;
-    }
-    setStep(step + 1);
-  };
-
-  const handleLaunch = async () => {
-    setCreating(true);
-    try {
-      // everywhere uses 'all' targeting, specific uses custom string aggregated
-      const selectedAreas = whereMode === 'everywhere' ? 'all' : form.routes.map(r => r.area).join(', ');
-      
-      const payload = {
-        campaign_name: `${form.ad.title} Campaign`,
-        start_date: startDate ? formatDateString(startDate) : null,
-        end_date: endDate ? formatDateString(endDate) : null,
-        start_time: startTime ? `${String(startTime.getHours()).padStart(2, '0')}:${String(startTime.getMinutes()).padStart(2, '0')}` : null,
-        end_time: endTime ? `${String(endTime.getHours()).padStart(2, '0')}:${String(endTime.getMinutes()).padStart(2, '0')}` : null,
-        budget: safeCost,
-        daily_budget: 0,
-        area: selectedAreas,
-        ad_ids: [form.ad.id]
-      };
-      
-      const res = await businessService.createCampaign(payload);
-      if (res.success) {
-        setStep(6); // Success step
-      } else {
-        Alert.alert('Error', res.message);
-      }
-    } catch (err) {
-      Alert.alert('Failed', err.response?.data?.message || 'Failed to launch advertisement');
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  // Reusable lightweight month grid generator
+  const totalSelectedBrts = form.routes.reduce((acc, r) => acc + (r?.brts || 0), 0);
+  const totalSelectedScreens = form.routes.reduce((acc, r) => acc + (r?.screens || 0), 0);
 
   const adDurationSeconds = useMemo(() => {
     if (!form.ad) return 0;
@@ -337,7 +280,6 @@ export default function CreateCampaignScreen({ route, navigation }) {
     return 30;
   }, [form.ad, form.trimStart, form.trimEnd]);
 
-  
   const scheduledDays = useMemo(() => {
     if (!startDate || !endDate) return 0;
     const start = new Date(startDate);
@@ -348,8 +290,6 @@ export default function CreateCampaignScreen({ route, navigation }) {
     return diff >= 0 ? diff + 1 : 0;
   }, [startDate, endDate]);
 
-
-  
   const dailySlotSeconds = useMemo(() => {
     if (!startTime || !endTime) return 0;
     const startSeconds = startTime.getHours() * 3600 + startTime.getMinutes() * 60;
@@ -357,7 +297,6 @@ export default function CreateCampaignScreen({ route, navigation }) {
     if (endSeconds <= startSeconds) return 0;
     return endSeconds - startSeconds;
   }, [startTime, endTime]);
-
 
   const playsPerDay = useMemo(() => {
     if (!adDurationSeconds || !dailySlotSeconds) return 0;
@@ -385,184 +324,205 @@ export default function CreateCampaignScreen({ route, navigation }) {
   const safeTotalPlays = Number(totalPlays) || 0;
   const safeScheduledDays = Number(scheduledDays) || 0;
 
-
-
-  const openCalendar = (target) => {
-    setCalendarTarget(target);
-    if (!isNaN(initialDate.getTime())) {
-      setCurrentYear(initialDate.getFullYear());
-      setCurrentMonth(initialDate.getMonth());
+  const handleNext = () => {
+    if (step === 1 && !form.ad) return Alert.alert('Required', 'Please select or upload a creative.');
+    if (step === 2 && form.routes.length === 0) return Alert.alert('Required', 'Please select at least one transit route.');
+    if (step === 3) {
+      if (!startDate || !endDate || !startTime || !endTime) return Alert.alert('Required', 'Please configure your dates and daily hours.');
+      
+      const sd = new Date(startDate);
+      const ed = new Date(endDate);
+      sd.setHours(0, 0, 0, 0);
+      ed.setHours(0, 0, 0, 0);
+      
+      if (ed < sd) return Alert.alert('Invalid Date', 'End date cannot be earlier than start date.');
+      
+      const startSeconds = startTime.getHours() * 3600 + startTime.getMinutes() * 60;
+      const endSeconds = endTime.getHours() * 3600 + endTime.getMinutes() * 60;
+      if (endSeconds <= startSeconds) return Alert.alert('Invalid Time', 'End time must be later than start time.');
     }
-    setCalendarVisible(true);
+    if (step === 4) {
+      if (safeCost > safeWalletBalance) {
+        return Alert.alert('Insufficient Balance', 'Your estimated campaign budget exceeds available wallet funds. Please recharge to launch.');
+      }
+      handleLaunch();
+      return;
+    }
+    setStep(step + 1);
+  };
+
+  const handleLaunch = async () => {
+    setCreating(true);
+    try {
+      const selectedAreas = whereMode === 'everywhere' ? 'all' : form.routes.map(r => r.area).join(', ');
+      
+      const payload = {
+        campaign_name: `${form.ad.title} Transit Campaign`,
+        start_date: startDate ? formatDateString(startDate) : null,
+        end_date: endDate ? formatDateString(endDate) : null,
+        start_time: startTime ? `${String(startTime.getHours()).padStart(2, '0')}:${String(startTime.getMinutes()).padStart(2, '0')}` : null,
+        end_time: endTime ? `${String(endTime.getHours()).padStart(2, '0')}:${String(endTime.getMinutes()).padStart(2, '0')}` : null,
+        budget: safeCost,
+        daily_budget: 0,
+        area: selectedAreas,
+        ad_ids: [form.ad.id]
+      };
+      
+      const res = await businessService.createCampaign(payload);
+      if (res.success) {
+        setStep(6);
+      } else {
+        Alert.alert('Error', res.message);
+      }
+    } catch (err) {
+      Alert.alert('Failed', err.response?.data?.message || 'Failed to launch advertisement');
+    } finally {
+      setCreating(false);
+    }
   };
 
   // SUCCESS STEP (Step 6)
   if (step === 6) {
-    // Dynamic status support for reusability (currently defaults to pending post-submission)
-    const adStatus = 'pending'; // could be 'approved', 'rejected', 'pending'
-    const locationsText = whereMode === 'everywhere' ? 'Everywhere' : `${form.routes.length} location${form.routes.length > 1 ? 's' : ''}`;
+    const locationsText = whereMode === 'everywhere' ? 'Citywide Fleet' : `${form.routes.length} Corridor${form.routes.length > 1 ? 's' : ''}`;
     
     return (
-      <SafeAreaView className="flex-1 bg-[#F8FAFC] dark:bg-[#0D1117]">
-        <ScrollView className="flex-1 px-6 pt-10 pb-20">
+      <SafeAreaView style={{ backgroundColor: isDark ? '#090614' : '#F8F7FF' }} className="flex-1">
+        <ScrollView className="flex-1 px-6 pt-8 pb-20">
           
-          {/* HERO SECTION */}
-          <View className="items-center mb-10">
-            {adStatus === 'rejected' ? (
-              <View className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full items-center justify-center mb-4 shadow-sm">
-                <Text className="text-red-500 text-3xl">⚠️</Text>
-              </View>
-            ) : adStatus === 'approved' ? (
-              <View className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full items-center justify-center mb-4 shadow-sm shadow-emerald-500/20 border border-emerald-200 dark:border-emerald-800/50">
-                <Text className="text-emerald-500 text-3xl">🎉</Text>
-              </View>
-            ) : (
-              <View className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full items-center justify-center mb-4 shadow-sm shadow-emerald-500/20 border border-emerald-200 dark:border-emerald-800/50">
-                <CheckCircle2 size={32} className="text-emerald-600 dark:text-emerald-400" strokeWidth={3} />
-              </View>
-            )}
+          {/* Hero Section */}
+          <View className="items-center mb-8">
+            <LinearGradient
+              colors={['#7C3AED', '#9333EA', '#C084FC']}
+              className="w-20 h-20 rounded-3xl items-center justify-center mb-4 shadow-lg"
+              style={{ shadowColor: '#9333EA', shadowRadius: 15, shadowOpacity: 0.4 }}
+            >
+              <CheckCircle2 size={40} color="#FFFFFF" strokeWidth={2.5} />
+            </LinearGradient>
 
-            <Text className="text-2xl font-black text-slate-900 dark:text-white text-center mb-2 tracking-tight">
-              {adStatus === 'rejected' ? 'Ad needs changes' : 
-               adStatus === 'approved' ? 'Your ad is approved' : 
-               'Your ad is submitted'}
+            <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-2xl font-black text-center mb-2 tracking-tight">
+              Campaign Submitted!
             </Text>
             
-            <Text className="text-slate-500 dark:text-slate-400 text-center font-medium leading-relaxed px-4">
-              {adStatus === 'rejected' ? `"${form.ad?.title}" could not be approved based on our guidelines. Please edit and resubmit.` : 
-               adStatus === 'approved' ? `"${form.ad?.title}" is approved and ready to play on your scheduled dates.` : 
-               `"${form.ad?.title}" has been submitted successfully and is waiting for admin approval.`}
+            <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-center text-sm font-medium leading-relaxed px-4">
+              "{form.ad?.title}" is scheduled and submitted for automated transit screen compliance verification.
             </Text>
           </View>
 
-          {/* STATUS CARD */}
-          <View className="bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-3xl p-5 mb-6 shadow-sm">
+          {/* Status Timeline Card */}
+          <View 
+            style={{ 
+              backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+              borderColor: isDark ? '#281B4B' : '#EDE9FE',
+              shadowColor: isDark ? '#7C3AED' : '#9333EA',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.15,
+              shadowRadius: 10,
+              elevation: 4,
+            }}
+            className="border rounded-3xl p-5 mb-5"
+          >
             <View className="flex-row items-center mb-4">
-              <Text className={`text-lg mr-2 ${adStatus === 'rejected' ? 'text-red-500' : adStatus === 'approved' ? 'text-emerald-500' : 'text-[#F59E0B]'}`}>●</Text>
-              <Text className="text-slate-900 dark:text-white font-black tracking-tight uppercase text-sm">
-                {adStatus === 'rejected' ? 'Action Required' : 
-                 adStatus === 'approved' ? 'Ready to Play' : 
-                 'Pending Approval'}
+              <View className="w-2.5 h-2.5 rounded-full bg-amber-400 mr-2.5 shadow-sm" />
+              <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-extrabold uppercase text-xs tracking-wider">
+                Status: Pending Approval
               </Text>
             </View>
             
-            <Text className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-6">
-              {adStatus === 'rejected' ? 'Your advertisement requires edits before it can be played.' : 
-               adStatus === 'approved' ? 'Your advertisement will automatically play according to schedule.' : 
-               'Your advertisement is being reviewed by our administrator.'}
-            </Text>
-
             {/* Timeline */}
-            <View className="ml-2">
+            <View className="ml-1 my-2">
               <View className="flex-row items-center mb-4">
-                <View className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 items-center justify-center z-10 border border-emerald-200 dark:border-emerald-800">
-                  <CheckCircle2 size={12} className="text-emerald-600 dark:text-emerald-400" strokeWidth={3} />
+                <View className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/40 items-center justify-center z-10">
+                  <Check size={12} color="#10B981" strokeWidth={3} />
                 </View>
-                <Text className="ml-3 text-slate-700 dark:text-slate-300 font-bold text-sm">Submitted</Text>
+                <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="ml-3 font-bold text-xs">Campaign Configured & Submitted</Text>
               </View>
               
-              <View className="absolute left-[9px] top-4 w-[2px] h-10 bg-slate-200 dark:bg-slate-700" />
+              <View className="absolute left-[11px] top-4 w-[2px] h-10 bg-purple-500/30" />
               
               <View className="flex-row items-center mb-4">
-                <View className={`w-5 h-5 rounded-full items-center justify-center z-10 border ${
-                  adStatus === 'rejected' ? 'bg-red-100 dark:bg-red-900/30 border-red-200 dark:border-red-800' : 
-                  adStatus === 'approved' ? 'bg-emerald-100 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800' : 
-                  'bg-amber-100 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800'
-                }`}>
-                  {adStatus === 'approved' ? (
-                    <CheckCircle2 size={12} className="text-emerald-600 dark:text-emerald-400" strokeWidth={3} />
-                  ) : adStatus === 'rejected' ? (
-                    <Text className="text-red-500 font-black text-[10px]">!</Text>
-                  ) : (
-                    <View className="w-2 h-2 rounded-full bg-amber-500" />
-                  )}
+                <View className="w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/40 items-center justify-center z-10">
+                  <Clock size={12} color="#F59E0B" />
                 </View>
-                <Text className={`ml-3 font-bold text-sm ${adStatus === 'pending' ? 'text-[#F59E0B]' : 'text-slate-700 dark:text-slate-300'}`}>
-                  {adStatus === 'rejected' ? 'Review Failed' : 
-                   adStatus === 'approved' ? 'Approved' : 'Under Review'}
-                </Text>
+                <Text className="ml-3 font-bold text-xs text-amber-500">Security & Display QA in Progress</Text>
               </View>
               
-              <View className="absolute left-[9px] top-[52px] w-[2px] h-10 bg-slate-200 dark:bg-slate-700" />
+              <View className="absolute left-[11px] top-[52px] w-[2px] h-10 bg-purple-500/20" />
               
               <View className="flex-row items-center">
-                <View className={`w-5 h-5 rounded-full items-center justify-center z-10 border ${adStatus === 'approved' ? 'bg-emerald-100 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800' : 'bg-white dark:bg-[#0D1117] border-slate-300 dark:border-slate-600'}`}>
-                  {adStatus === 'approved' && <View className="w-2 h-2 rounded-full bg-emerald-500" />}
+                <View 
+                  style={{ backgroundColor: isDark ? '#1F1735' : '#F1F5F9', borderColor: isDark ? '#3B2A68' : '#CBD5E1' }}
+                  className="w-6 h-6 rounded-full border items-center justify-center z-10"
+                >
+                  <Sparkles size={11} color={isDark ? '#64748B' : '#94A3B8'} />
                 </View>
-                <Text className={`ml-3 font-bold text-sm ${adStatus === 'approved' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-600'}`}>Ready to Play</Text>
+                <Text style={{ color: isDark ? '#64748B' : '#94A3B8' }} className="ml-3 font-bold text-xs">Live Broadcast on City Screens</Text>
               </View>
             </View>
           </View>
 
-          {/* AD DETAILS CARD */}
-          <Text className="text-slate-400 dark:text-slate-500 text-[11px] font-black uppercase tracking-widest mb-3 ml-1">Advertisement Details</Text>
-          <View className="bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-3xl p-5 mb-8 shadow-sm">
-            <View className="flex-row justify-between mb-4 items-center">
-              <Text className="text-slate-500 dark:text-slate-400 font-bold text-[13px]">Advertisement</Text>
-              <Text className="text-slate-900 dark:text-white font-black text-[14px]">{form.ad?.title}</Text>
+          {/* Details Card */}
+          <View 
+            style={{ 
+              backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+              borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+            }}
+            className="border rounded-3xl p-5 mb-6"
+          >
+            <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="text-[11px] font-black uppercase tracking-widest mb-4">
+              Flight Summary
+            </Text>
+
+            <View className="flex-row justify-between mb-3 items-center">
+              <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold">Creative</Text>
+              <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-xs font-bold">{form.ad?.title}</Text>
+            </View>
+            
+            <View className="flex-row justify-between mb-3 items-center">
+              <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold">Target Network</Text>
+              <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-xs font-bold">{locationsText}</Text>
             </View>
             
             <View className="flex-row justify-between mb-4 items-center">
-              <Text className="text-slate-500 dark:text-slate-400 font-bold text-[13px]">Locations</Text>
-              <Text className="text-slate-900 dark:text-white font-black text-[14px]">{locationsText}</Text>
+              <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold">Scheduled Flight</Text>
+              <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-xs font-bold">{formatDate(startDate)} → {formatDate(endDate)}</Text>
             </View>
             
-            <View className="flex-row justify-between mb-5">
-              <Text className="text-slate-500 dark:text-slate-400 font-bold text-[13px]">Schedule</Text>
-              <View className="items-end">
-                <Text className="text-slate-900 dark:text-white font-black text-[14px]">{formatDate(startDate)} →</Text>
-                <Text className="text-slate-900 dark:text-white font-black text-[14px]">{formatDate(endDate)}</Text>
-              </View>
-            </View>
-            
-            <View className="h-px bg-slate-100 dark:bg-[#30363D] w-full mb-5" />
+            <View style={{ backgroundColor: isDark ? '#281B4B' : '#EDE9FE' }} className="h-px w-full mb-4" />
             
             <View className="flex-row justify-between items-center">
-              <Text className="text-slate-600 dark:text-slate-300 font-black text-[13px]">Estimated ad cost</Text>
-              <Text className="text-slate-900 dark:text-white font-black text-lg">₹{safeCost.toFixed(2)}</Text>
+              <Text style={{ color: isDark ? '#CBD5E1' : '#475569' }} className="text-xs font-bold">Estimated Cost</Text>
+              <Text style={{ color: isDark ? '#34D399' : '#059669' }} className="font-black text-lg">₹{safeCost.toFixed(2)}</Text>
             </View>
           </View>
 
-          {/* WHAT HAPPENS NEXT */}
-          {adStatus === 'pending' && (
-            <View className="mb-10 px-1">
-              <Text className="text-slate-400 dark:text-slate-500 text-[11px] font-black uppercase tracking-widest mb-4">What happens next?</Text>
-              
-              <View className="flex-row items-start mb-3">
-                <CheckCircle2 size={16} className="text-emerald-500 mr-3 mt-0.5" />
-                <Text className="text-slate-600 dark:text-slate-300 font-semibold text-sm flex-1">Your ad has been submitted</Text>
-              </View>
-              
-              <View className="flex-row items-start mb-3">
-                <Text className="text-amber-500 mr-3 text-sm mt-0.5">●</Text>
-                <Text className="text-slate-600 dark:text-slate-300 font-semibold text-sm flex-1">Our administrator reviews it</Text>
-              </View>
-              
-              <View className="flex-row items-start">
-                <View className="w-4 h-4 rounded-full border-2 border-slate-300 dark:border-slate-600 mr-3 mt-0.5" />
-                <Text className="text-slate-600 dark:text-slate-300 font-semibold text-sm flex-1">Once approved, it starts playing automatically</Text>
-              </View>
-            </View>
-          )}
-
-          {/* BUTTONS */}
+          {/* Action Buttons */}
           <View className="gap-3 pb-8">
             <TouchableOpacity 
               onPress={() => navigation.navigate('MainTabs', { screen: 'My Ads' })}
-              className="w-full bg-[#F59E0B] py-4 rounded-2xl flex-row justify-center items-center shadow-lg shadow-amber-500/20"
+              className="rounded-2xl overflow-hidden shadow-lg"
+              style={{ shadowColor: '#9333EA', shadowRadius: 10, shadowOpacity: 0.35 }}
               activeOpacity={0.8}
             >
-              <Text className="text-white font-black text-base tracking-tight">
-                {adStatus === 'rejected' ? 'Edit Ad Details →' : 'View Ad Details →'}
-              </Text>
+              <LinearGradient
+                colors={['#7C3AED', '#9333EA', '#C084FC']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                className="py-4 items-center justify-center flex-row"
+              >
+                <Text className="text-white font-extrabold text-sm tracking-wide">View In Campaigns →</Text>
+              </LinearGradient>
             </TouchableOpacity>
 
             <TouchableOpacity 
               onPress={() => navigation.navigate('MainTabs', { screen: 'Home' })}
-              className="w-full bg-white dark:bg-[#161B22] py-4 rounded-2xl items-center border border-slate-200 dark:border-[#30363D]"
+              style={{ 
+                backgroundColor: isDark ? '#181033' : '#FFFFFF',
+                borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+              }}
+              className="py-4 rounded-2xl items-center border"
               activeOpacity={0.8}
             >
-              <Text className="text-slate-600 dark:text-slate-300 font-bold text-sm tracking-tight">Go to Home</Text>
+              <Text style={{ color: isDark ? '#CBD5E1' : '#475569' }} className="font-bold text-sm">Return to Dashboard</Text>
             </TouchableOpacity>
           </View>
           
@@ -571,148 +531,294 @@ export default function CreateCampaignScreen({ route, navigation }) {
     );
   }
 
+  const stepsList = [
+    { num: 1, label: 'Creative' },
+    { num: 2, label: 'Network' },
+    { num: 3, label: 'Schedule' },
+    { num: 4, label: 'Review' },
+  ];
+
   return (
-    <SafeAreaView className="flex-1 bg-[#F8FAFC] dark:bg-[#0D1117]" edges={['top']}>
-      {/* Header */}
-      <View className="px-5 py-4 border-b border-slate-100 dark:border-[#1F2937] bg-white dark:bg-[#0D1117] z-10 flex-row items-center justify-between">
+    <SafeAreaView style={{ backgroundColor: isDark ? '#090614' : '#F8F7FF' }} className="flex-1" edges={['top']}>
+      {/* Top Header */}
+      <View 
+        style={{ 
+          backgroundColor: isDark ? '#120C26' : '#FFFFFF',
+          borderBottomColor: isDark ? '#281B4B' : '#EDE9FE'
+        }}
+        className="px-5 py-4 border-b z-10 flex-row items-center justify-between"
+      >
         <View className="flex-row items-center">
           <TouchableOpacity 
             onPress={() => step > 1 ? setStep(step - 1) : navigation.goBack()} 
-            className="bg-slate-50 dark:bg-[#161B22] p-2 rounded-full border border-slate-200 dark:border-[#30363D] mr-3"
+            style={{ 
+              backgroundColor: isDark ? '#1F1735' : '#F8F7FF',
+              borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+            }}
+            className="p-2.5 rounded-full border mr-3"
           >
-            <ArrowLeft size={20} className="text-slate-900 dark:text-white" />
+            <ArrowLeft size={18} color={isDark ? '#F8FAFC' : '#1E1B4B'} />
           </TouchableOpacity>
-          <Text className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Launch Your Ad</Text>
+          <View>
+            <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-xl font-black tracking-tight">
+              Create Campaign
+            </Text>
+            <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-[11px] font-semibold">
+              Step {step} of 4: {stepsList[step - 1]?.label}
+            </Text>
+          </View>
+        </View>
+
+        <View 
+          style={{ backgroundColor: isDark ? '#1F1735' : '#EDE9FE' }}
+          className="px-3 py-1.5 rounded-full flex-row items-center"
+        >
+          <Zap size={13} color="#A855F7" />
+          <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="text-xs font-black ml-1">
+            ₹{safeWalletBalance.toFixed(0)}
+          </Text>
         </View>
       </View>
 
-      {/* Modern Segmented Stepper */}
-      <View className="px-4 py-4 bg-white dark:bg-[#0D1117] border-b border-slate-100 dark:border-[#1F2937]">
-        <View className="flex-row justify-between">
-          {['Ad', 'Where', 'Schedule', 'Review'].map((label, idx) => (
-            <View key={label} className="flex-1 px-1">
-              <View className={`h-1 rounded-full w-full mb-2 ${step >= idx + 1 ? 'bg-[#F59E0B]' : 'bg-slate-100 dark:bg-[#30363D]'}`} />
-              <Text className={`text-[10px] font-black uppercase text-center ${step >= idx + 1 ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-[#8B949E]'}`}>{label}</Text>
-            </View>
-          ))}
-        </View>
+      {/* Modern Stepper Indicator */}
+      <View 
+        style={{ 
+          backgroundColor: isDark ? '#120C26' : '#FFFFFF',
+          borderBottomColor: isDark ? '#281B4B' : '#EDE9FE'
+        }}
+        className="px-6 py-3 border-b flex-row justify-between items-center"
+      >
+        {stepsList.map((item, idx) => {
+          const isDone = step > item.num;
+          const isCurrent = step === item.num;
+          return (
+            <React.Fragment key={item.num}>
+              <View className="items-center">
+                {isCurrent ? (
+                  <LinearGradient
+                    colors={['#7C3AED', '#9333EA', '#C084FC']}
+                    className="w-7 h-7 rounded-full items-center justify-center shadow-sm"
+                  >
+                    <Text className="text-white text-xs font-black">{item.num}</Text>
+                  </LinearGradient>
+                ) : isDone ? (
+                  <View style={{ backgroundColor: '#10B981' }} className="w-7 h-7 rounded-full items-center justify-center">
+                    <Check size={14} color="#FFFFFF" strokeWidth={3} />
+                  </View>
+                ) : (
+                  <View 
+                    style={{ 
+                      backgroundColor: isDark ? '#181033' : '#F1F5F9',
+                      borderColor: isDark ? '#281B4B' : '#E2E8F0' 
+                    }} 
+                    className="w-7 h-7 rounded-full items-center justify-center border"
+                  >
+                    <Text style={{ color: isDark ? '#64748B' : '#94A3B8' }} className="text-xs font-bold">{item.num}</Text>
+                  </View>
+                )}
+                <Text 
+                  style={{ 
+                    color: isCurrent ? (isDark ? '#C084FC' : '#7C3AED') : isDone ? '#10B981' : (isDark ? '#64748B' : '#94A3B8'),
+                    fontWeight: isCurrent ? '800' : '600'
+                  }} 
+                  className="text-[10px] mt-1 tracking-wider uppercase"
+                >
+                  {item.label}
+                </Text>
+              </View>
+
+              {idx < stepsList.length - 1 && (
+                <View 
+                  style={{ 
+                    backgroundColor: isDone ? '#10B981' : (isDark ? '#281B4B' : '#E2E8F0') 
+                  }} 
+                  className="flex-1 h-[2px] mx-2 -mt-4" 
+                />
+              )}
+            </React.Fragment>
+          );
+        })}
       </View>
 
-      <ScrollView className="flex-1" contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
+      <ScrollView className="flex-1" contentContainerStyle={{ padding: 18, paddingBottom: 110 }}>
         
-        {/* STEP 1: ADVERTISEMENT */}
+        {/* STEP 1: AD CREATIVE */}
         {step === 1 && (
           <View>
-            <Text className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Choose your advertisement</Text>
-            <Text className="text-slate-500 dark:text-[#8B949E] mb-6">Select the image or video you want to display on BRT screens.</Text>
+            <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-2xl font-black tracking-tight mb-1.5">
+              Select Creative
+            </Text>
+            <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-medium mb-5 leading-relaxed">
+              Choose an approved graphic or video from your media library or upload a new asset.
+            </Text>
 
             {uploadMode ? (
-              // Inline Upload Form
-              <View className="bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-3xl p-5 shadow-sm mb-6">
-                <View className="flex-row justify-between items-center mb-5">
-                  <Text className="text-slate-900 dark:text-white font-black text-base">Upload New Creative</Text>
-                  <TouchableOpacity onPress={() => setUploadMode(false)} className="p-1 rounded-full bg-slate-100 dark:bg-[#30363D]">
-                    <X size={16} className="text-slate-500" />
+              // Inline Upload Box
+              <View 
+                style={{ 
+                  backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+                  borderColor: isDark ? '#7C3AED' : '#C084FC' 
+                }}
+                className="border-2 rounded-3xl p-5 mb-6 shadow-sm"
+              >
+                <View className="flex-row justify-between items-center mb-4">
+                  <View className="flex-row items-center">
+                    <Sparkles size={16} color="#A855F7" style={{ marginRight: 6 }} />
+                    <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-black text-sm">Upload Creative</Text>
+                  </View>
+                  <TouchableOpacity 
+                    onPress={() => setUploadMode(false)} 
+                    style={{ backgroundColor: isDark ? '#1F1735' : '#F1F5F9' }}
+                    className="p-1.5 rounded-full"
+                  >
+                    <X size={14} color={isDark ? '#CBD5E1' : '#64748B'} />
                   </TouchableOpacity>
                 </View>
 
                 {!newAdMedia ? (
-                  <View className="flex-row space-x-3 mb-5">
+                  <View className="flex-row gap-3 mb-4">
                     <TouchableOpacity 
                       onPress={() => pickMedia('image')}
-                      className="flex-1 bg-slate-50 dark:bg-[#0D1117] py-6 rounded-2xl items-center border border-slate-200 dark:border-[#30363D]"
+                      style={{ 
+                        backgroundColor: isDark ? '#181033' : '#F8F7FF',
+                        borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+                      }}
+                      className="flex-1 py-6 rounded-2xl items-center border"
                     >
-                      <ImageIcon size={24} className="text-amber-500 mb-2" />
-                      <Text className="text-slate-800 dark:text-slate-200 font-bold text-xs">Image</Text>
+                      <View style={{ backgroundColor: 'rgba(124, 58, 237, 0.12)' }} className="w-12 h-12 rounded-2xl items-center justify-center mb-2">
+                        <ImageIcon size={24} color="#A855F7" />
+                      </View>
+                      <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-extrabold text-xs">Upload Image</Text>
+                      <Text style={{ color: isDark ? '#64748B' : '#94A3B8' }} className="text-[10px] mt-0.5">PNG, JPG up to 10MB</Text>
                     </TouchableOpacity>
+
                     <TouchableOpacity 
                       onPress={() => pickMedia('video')}
-                      className="flex-1 bg-slate-50 dark:bg-[#0D1117] py-6 rounded-2xl items-center border border-slate-200 dark:border-[#30363D]"
+                      style={{ 
+                        backgroundColor: isDark ? '#181033' : '#F8F7FF',
+                        borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+                      }}
+                      className="flex-1 py-6 rounded-2xl items-center border"
                     >
-                      <Video size={24} className="text-sky-500 mb-2" />
-                      <Text className="text-slate-800 dark:text-slate-200 font-bold text-xs">Video</Text>
+                      <View style={{ backgroundColor: 'rgba(56, 189, 248, 0.12)' }} className="w-12 h-12 rounded-2xl items-center justify-center mb-2">
+                        <Video size={24} color="#38BDF8" />
+                      </View>
+                      <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-extrabold text-xs">Upload Video</Text>
+                      <Text style={{ color: isDark ? '#64748B' : '#94A3B8' }} className="text-[10px] mt-0.5">MP4 with custom trimmer</Text>
                     </TouchableOpacity>
                   </View>
                 ) : (
-                  <View className="mb-5">
-                    <View className="relative h-44 rounded-2xl overflow-hidden border border-slate-200 dark:border-[#30363D] mb-3">
+                  <View className="mb-4">
+                    <View 
+                      style={{ borderColor: isDark ? '#281B4B' : '#EDE9FE' }}
+                      className="relative h-44 rounded-2xl overflow-hidden border mb-3"
+                    >
                       {newAdMedia.type === 'video' ? (
-                        <View className="w-full h-full bg-slate-950 items-center justify-center">
-                          <Video size={36} className="text-sky-500 mb-2" />
-                          <Text className="text-slate-400 text-xs font-bold">{newAdMedia.fileName || 'Video selected'}</Text>
+                        <View style={{ backgroundColor: '#090614' }} className="w-full h-full items-center justify-center">
+                          <Video size={36} color="#38BDF8" className="mb-2" />
+                          <Text className="text-slate-300 text-xs font-bold">{newAdMedia.fileName || 'Video selected'}</Text>
                         </View>
                       ) : (
                         <Image source={{ uri: newAdMedia.uri }} className="w-full h-full" resizeMode="cover" />
                       )}
-                      <TouchableOpacity onPress={() => setNewAdMedia(null)} className="absolute top-2 right-2 bg-black/50 p-2 rounded-full">
-                        <Trash2 size={16} color="#FFF" />
+                      <TouchableOpacity 
+                        onPress={() => setNewAdMedia(null)} 
+                        className="absolute top-2.5 right-2.5 bg-black/60 p-2 rounded-full"
+                      >
+                        <Trash2 size={14} color="#FFF" />
                       </TouchableOpacity>
                     </View>
                     
                     {newAdMedia.type === 'video' && (
-                      <View className="bg-slate-50 dark:bg-[#0D1117] p-4 rounded-xl border border-slate-200 dark:border-[#30363D] flex-row justify-between items-center">
+                      <View 
+                        style={{ backgroundColor: isDark ? '#181033' : '#F8F7FF', borderColor: isDark ? '#281B4B' : '#EDE9FE' }}
+                        className="p-3.5 rounded-xl border flex-row justify-between items-center"
+                      >
                         <View className="flex-row items-center flex-1">
-                          <View className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-full items-center justify-center mr-3">
-                            <Check size={20} className="text-emerald-500" />
-                          </View>
-                          <View>
-                            <Text className="text-slate-900 dark:text-white font-black text-sm">Video Ready</Text>
-                            <Text className="text-slate-500 font-bold text-xs mt-0.5">Duration: {parseInt(form.trimEnd) - parseInt(form.trimStart) || 0} sec</Text>
+                          <CheckCircle2 size={18} color="#10B981" />
+                          <View className="ml-2.5">
+                            <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-extrabold text-xs">Video Selected</Text>
+                            <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-[11px]">Duration: {parseInt(form.trimEnd) - parseInt(form.trimStart) || 0}s</Text>
                           </View>
                         </View>
                         <TouchableOpacity 
                           onPress={() => setVideoTrimmerVisible(true)}
-                          className="bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] px-4 py-2 rounded-lg shadow-sm"
+                          style={{ backgroundColor: isDark ? '#281B4B' : '#EDE9FE' }}
+                          className="px-3 py-1.5 rounded-lg"
                         >
-                          <Text className="text-slate-700 dark:text-slate-300 font-bold text-xs">Edit Trim</Text>
+                          <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="font-bold text-xs">Edit Trim</Text>
                         </TouchableOpacity>
                       </View>
                     )}
                   </View>
                 )}
 
-                <Text className="text-slate-500 dark:text-[#8B949E] text-xs font-bold uppercase tracking-widest mb-2">Creative Name</Text>
+                <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-[11px] font-bold uppercase tracking-wider mb-2">
+                  Creative Name
+                </Text>
                 <TextInput
                   value={newAdTitle}
                   onChangeText={setNewAdTitle}
-                  placeholder="e.g. Summer Promo 2026"
-                  placeholderTextColor="#94A3B8"
-                  className="bg-slate-50 dark:bg-[#0D1117] border border-slate-200 dark:border-[#30363D] rounded-xl px-4 py-3 text-slate-900 dark:text-white font-bold mb-5"
+                  placeholder="e.g. Diwali Weekend Special Promo"
+                  placeholderTextColor={isDark ? '#64748B' : '#94A3B8'}
+                  style={{ 
+                    backgroundColor: isDark ? '#181033' : '#F8F7FF',
+                    borderColor: isDark ? '#281B4B' : '#EDE9FE',
+                    color: isDark ? '#F8FAFC' : '#1E1B4B' 
+                  }}
+                  className="border rounded-xl px-4 py-3 font-semibold mb-4 text-sm"
                 />
 
                 <TouchableOpacity 
                   onPress={handleInlineUpload}
                   disabled={uploading || !newAdTitle || !newAdMedia}
-                  className={`py-3.5 rounded-full items-center flex-row justify-center ${uploading || !newAdTitle || !newAdMedia ? 'bg-slate-200 dark:bg-[#30363D]' : 'bg-[#F59E0B] shadow-md shadow-amber-500/20'}`}
+                  className="rounded-xl overflow-hidden shadow-md"
+                  style={{ shadowColor: '#9333EA', shadowRadius: 8, opacity: (uploading || !newAdTitle || !newAdMedia) ? 0.6 : 1 }}
                 >
-                  {uploading ? (
-                    <ActivityIndicator color="#FFF" />
-                  ) : (
-                    <>
-                      <UploadCloud size={16} color="#FFF" />
-                      <Text className="text-white font-black ml-2">Upload & Select</Text>
-                    </>
-                  )}
+                  <LinearGradient
+                    colors={['#7C3AED', '#9333EA', '#C084FC']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    className="py-3.5 items-center justify-center flex-row"
+                  >
+                    {uploading ? (
+                      <ActivityIndicator color="#FFF" size="small" />
+                    ) : (
+                      <>
+                        <UploadCloud size={16} color="#FFF" />
+                        <Text className="text-white font-extrabold ml-2 text-xs tracking-wide uppercase">Save & Select</Text>
+                      </>
+                    )}
+                  </LinearGradient>
                 </TouchableOpacity>
               </View>
             ) : (
-              <View className="mb-6">
-                <TouchableOpacity 
-                  onPress={() => setUploadMode(true)}
-                  className="bg-amber-50 dark:bg-amber-900/20 border-2 border-dashed border-amber-300 dark:border-amber-700/50 rounded-3xl p-6 items-center justify-center mb-6"
+              <TouchableOpacity 
+                onPress={() => setUploadMode(true)}
+                style={{ 
+                  backgroundColor: isDark ? 'rgba(124, 58, 237, 0.08)' : '#F8F7FF',
+                  borderColor: isDark ? '#7C3AED' : '#C084FC',
+                  borderStyle: 'dashed'
+                }}
+                className="border-2 rounded-3xl p-6 items-center justify-center mb-5"
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={isDark ? ['#7C3AED', '#4C1D95'] : ['#EDE9FE', '#DDD6FE']}
+                  className="w-12 h-12 rounded-2xl items-center justify-center mb-2.5 shadow-sm"
                 >
-                  <View className="w-12 h-12 bg-white dark:bg-[#161B22] rounded-full items-center justify-center shadow-sm mb-3">
-                    <Plus size={24} className="text-amber-500" />
-                  </View>
-                  <Text className="text-amber-700 dark:text-amber-400 font-bold mb-1">Upload New Ad</Text>
-                  <Text className="text-amber-600/70 dark:text-amber-500/70 text-xs">Supported: JPG, PNG, MP4 (Any length)</Text>
-                </TouchableOpacity>
-              </View>
+                  <Plus size={22} color={isDark ? '#FFFFFF' : '#7C3AED'} />
+                </LinearGradient>
+                <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-extrabold text-sm mb-0.5">Upload New Creative</Text>
+                <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-medium">Supports MP4 Video & High-Res JPG/PNG</Text>
+              </TouchableOpacity>
             )}
 
             {ads.length > 0 && !uploadMode && (
               <View>
-                <Text className="text-xs font-black text-slate-400 dark:text-[#8B949E] uppercase tracking-widest mb-4">Or choose from your library</Text>
+                <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-black uppercase tracking-wider mb-3">
+                  Or select from media library
+                </Text>
                 <View className="flex-row flex-wrap justify-between">
                   {ads.map(ad => {
                     const isSelected = form.ad?.id === ad.id;
@@ -721,23 +827,39 @@ export default function CreateCampaignScreen({ route, navigation }) {
                       <TouchableOpacity 
                         key={ad.id} 
                         onPress={() => setForm({ ...form, ad })}
-                        className={`w-[48%] h-48 rounded-2xl mb-4 overflow-hidden border-2 ${isSelected ? 'border-amber-500 shadow-lg shadow-amber-500/20' : 'border-slate-200 dark:border-[#30363D]'}`}
+                        style={{ 
+                          width: (width - 48) / 2,
+                          borderColor: isSelected ? '#A855F7' : (isDark ? '#281B4B' : '#EDE9FE'),
+                          backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+                          shadowColor: isSelected ? '#A855F7' : 'transparent',
+                          shadowRadius: isSelected ? 8 : 0,
+                          shadowOpacity: isSelected ? 0.3 : 0,
+                        }}
+                        className="h-44 rounded-2xl mb-4 overflow-hidden border-2 relative"
+                        activeOpacity={0.8}
                       >
                         {ad.file_url ? (
-                          <Image source={{ uri: `${getBaseUrl().replace('/api', '')}${ad.file_url}` }} className="w-full h-full opacity-90" resizeMode="cover" />
+                          <Image 
+                            source={{ uri: `${getBaseUrl().replace('/api', '')}${ad.file_url}` }} 
+                            className="w-full h-full" 
+                            resizeMode="cover" 
+                          />
                         ) : (
-                          <View className="w-full h-full bg-slate-100 dark:bg-[#161B22] items-center justify-center">
-                            {isVideo ? <Video size={32} color="#94A3B8" /> : <ImageIcon size={32} color="#94A3B8" />}
+                          <View style={{ backgroundColor: isDark ? '#181033' : '#F1F5F9' }} className="w-full h-full items-center justify-center">
+                            {isVideo ? <Video size={32} color="#A855F7" /> : <ImageIcon size={32} color="#A855F7" />}
                           </View>
                         )}
-                        <View className="absolute inset-0 bg-black/20" />
                         
-                        <View className="absolute bottom-2 left-2 bg-black/60 px-2 py-1 rounded-md max-w-[85%]">
-                          <Text className="text-white text-[10px] font-bold" numberOfLines={1}>{ad.title}</Text>
-                        </View>
+                        <LinearGradient
+                          colors={['transparent', 'rgba(9, 6, 20, 0.85)']}
+                          className="absolute inset-0 justify-end p-2.5"
+                        >
+                          <Text className="text-white text-xs font-black" numberOfLines={1}>{ad.title}</Text>
+                          <Text className="text-purple-300 text-[10px] font-semibold">{isVideo ? 'Video' : 'Static Image'}</Text>
+                        </LinearGradient>
                         
                         {isSelected && (
-                          <View className="absolute top-2 right-2 bg-amber-500 w-6 h-6 rounded-full items-center justify-center">
+                          <View className="absolute top-2 right-2 bg-[#7C3AED] w-6 h-6 rounded-full items-center justify-center shadow-md">
                             <Check size={14} color="#FFF" strokeWidth={3} />
                           </View>
                         )}
@@ -753,57 +875,101 @@ export default function CreateCampaignScreen({ route, navigation }) {
         {/* STEP 2: WHERE */}
         {step === 2 && (
           <View>
-            <Text className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Where should your ad play?</Text>
-            <Text className="text-slate-500 dark:text-[#8B949E] mb-6">Choose whether to stream wide or target select routes.</Text>
+            <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-2xl font-black tracking-tight mb-1.5">
+              Target Corridors
+            </Text>
+            <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-medium mb-5 leading-relaxed">
+              Broadcast across the entire city transit grid or target specific commuter routes.
+            </Text>
 
-            {/* Anywhere vs Specific Selector */}
-            <View className="flex-row space-x-3 mb-6">
+            {/* Everywhere vs Specific Buttons */}
+            <View className="flex-row gap-3 mb-5">
               <TouchableOpacity 
                 onPress={() => handleWhereModeChange('everywhere')}
-                className={`flex-1 p-5 rounded-3xl border-2 bg-white dark:bg-[#161B22] ${whereMode === 'everywhere' ? 'border-[#F59E0B]' : 'border-slate-200 dark:border-[#30363D]'}`}
+                style={{ 
+                  backgroundColor: whereMode === 'everywhere' 
+                    ? (isDark ? '#201642' : '#EDE9FE') 
+                    : (isDark ? '#140F24' : '#FFFFFF'),
+                  borderColor: whereMode === 'everywhere' ? '#7C3AED' : (isDark ? '#281B4B' : '#EDE9FE')
+                }}
+                className="flex-1 p-4 rounded-3xl border-2"
+                activeOpacity={0.8}
               >
-                <Text className="text-slate-900 dark:text-white font-black text-base mb-1">Everywhere</Text>
-                <Text className="text-slate-500 dark:text-slate-400 text-xs leading-relaxed">Play your advertisement across the available display network.</Text>
+                <View className="flex-row items-center justify-between mb-1.5">
+                  <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-black text-sm">Citywide Grid</Text>
+                  {whereMode === 'everywhere' && <CheckCircle2 size={16} color="#A855F7" />}
+                </View>
+                <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-[11px] leading-relaxed">Maximum impressions across all city transit vehicles.</Text>
               </TouchableOpacity>
+
               <TouchableOpacity 
                 onPress={() => handleWhereModeChange('specific')}
-                className={`flex-1 p-5 rounded-3xl border-2 bg-white dark:bg-[#161B22] ${whereMode === 'specific' ? 'border-[#F59E0B]' : 'border-slate-200 dark:border-[#30363D]'}`}
+                style={{ 
+                  backgroundColor: whereMode === 'specific' 
+                    ? (isDark ? '#201642' : '#EDE9FE') 
+                    : (isDark ? '#140F24' : '#FFFFFF'),
+                  borderColor: whereMode === 'specific' ? '#7C3AED' : (isDark ? '#281B4B' : '#EDE9FE')
+                }}
+                className="flex-1 p-4 rounded-3xl border-2"
+                activeOpacity={0.8}
               >
-                <Text className="text-slate-900 dark:text-white font-black text-base mb-1">Specific Location</Text>
-                <Text className="text-slate-500 dark:text-slate-400 text-xs leading-relaxed">Choose specific routes where you want your ad to appear.</Text>
+                <View className="flex-row items-center justify-between mb-1.5">
+                  <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-black text-sm">Target Routes</Text>
+                  {whereMode === 'specific' && <CheckCircle2 size={16} color="#A855F7" />}
+                </View>
+                <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-[11px] leading-relaxed">Pinpoint high-density shopping and business corridors.</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Reach Summary */}
-            <View className="bg-slate-900 rounded-2xl p-4 mb-6 flex-row justify-between items-center shadow-md">
+            {/* Reach Summary Card */}
+            <LinearGradient
+              colors={['#7C3AED', '#5B21B6']}
+              className="rounded-2xl p-4 mb-5 flex-row justify-between items-center shadow-lg"
+              style={{ shadowColor: '#7C3AED', shadowRadius: 10, shadowOpacity: 0.3 }}
+            >
               <View>
-          <Text className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Target Audience Reach</Text>
-                <View className="flex-row items-center">
-                  <Text className="text-white font-black text-xl">{totalSelectedScreens} Screens</Text>
-                  <Text className="text-slate-400 font-bold ml-2">across {totalSelectedBrts} BRTs</Text>
-                </View>
+                <Text className="text-purple-200 text-[10px] font-black uppercase tracking-widest mb-0.5">Estimated Fleet Reach</Text>
+                <Text className="text-white font-black text-lg">{totalSelectedScreens} Active Displays</Text>
+                <Text className="text-purple-200 text-xs font-semibold">Broadcasting on {totalSelectedBrts} Transit Vehicles</Text>
               </View>
+              <View className="w-10 h-10 bg-white/15 rounded-2xl items-center justify-center">
+                <MonitorSmartphone size={22} color="#FFFFFF" />
+              </View>
+            </LinearGradient>
 
-            </View>
             {whereMode === 'specific' && ROUTES.map(routeItem => {
               const isSelected = form.routes.find(r => r.id === routeItem.id);
               return (
                 <TouchableOpacity 
                   key={routeItem.id}
                   onPress={() => toggleRoute(routeItem)}
-                  className={`bg-white dark:bg-[#161B22] border-2 rounded-2xl p-4 mb-3 flex-row justify-between items-center ${isSelected ? 'border-amber-500 bg-amber-50/30 dark:bg-amber-900/10' : 'border-slate-200 dark:border-[#30363D]'}`}
+                  style={{ 
+                    backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+                    borderColor: isSelected ? '#A855F7' : (isDark ? '#281B4B' : '#EDE9FE')
+                  }}
+                  className="border-2 rounded-2xl p-4 mb-3 flex-row justify-between items-center shadow-sm"
+                  activeOpacity={0.7}
                 >
                   <View className="flex-row items-center flex-1">
-                    <View className={`w-12 h-12 rounded-xl items-center justify-center mr-4 ${isSelected ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-slate-100 dark:bg-[#30363D]'}`}>
-                      <MapPin size={24} className={isSelected ? 'text-amber-500' : 'text-slate-400'} />
+                    <View 
+                      style={{ backgroundColor: isSelected ? 'rgba(168, 85, 247, 0.15)' : (isDark ? '#181033' : '#F1F5F9') }}
+                      className="w-11 h-11 rounded-xl items-center justify-center mr-3.5"
+                    >
+                      <MapPin size={20} color={isSelected ? '#A855F7' : (isDark ? '#64748B' : '#94A3B8')} />
                     </View>
                     <View className="flex-1">
-                      <Text className="text-slate-900 dark:text-white font-black text-lg tracking-tight mb-0.5">{routeItem.name}</Text>
-                      <Text className="text-slate-500 dark:text-[#8B949E] text-xs font-bold">{routeItem.brts} BRTs • {routeItem.screens} Screens</Text>
+                      <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-extrabold text-sm tracking-tight mb-0.5">{routeItem.name}</Text>
+                      <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-medium">{routeItem.brts} Transit Buses • {routeItem.screens} Displays</Text>
                     </View>
                   </View>
-                  <View className={`w-6 h-6 rounded-full border-2 items-center justify-center ${isSelected ? 'border-amber-500 bg-amber-500' : 'border-slate-300 dark:border-slate-600'}`}>
-                    {isSelected && <Check size={14} color="#FFF" strokeWidth={3} />}
+                  <View 
+                    style={{ 
+                      borderColor: isSelected ? '#A855F7' : (isDark ? '#3B2A68' : '#CBD5E1'),
+                      backgroundColor: isSelected ? '#7C3AED' : 'transparent' 
+                    }}
+                    className="w-6 h-6 rounded-full border-2 items-center justify-center"
+                  >
+                    {isSelected && <Check size={13} color="#FFF" strokeWidth={3} />}
                   </View>
                 </TouchableOpacity>
               );
@@ -814,83 +980,114 @@ export default function CreateCampaignScreen({ route, navigation }) {
         {/* STEP 3: SCHEDULE */}
         {step === 3 && (
           <View>
-            <Text className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">WHEN SHOULD YOUR AD PLAY?</Text>
-            <Text className="text-slate-500 dark:text-[#8B949E] mb-6">Select the scheduling range for displaying your advertisement.</Text>
+            <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-2xl font-black tracking-tight mb-1.5">
+              Flight Schedule
+            </Text>
+            <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-medium mb-5 leading-relaxed">
+              Set your broadcast date range and daily active hours for live playback.
+            </Text>
 
-            <View className="flex-row justify-between mb-2 px-1">
-              <Text className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex-1">Start Date</Text>
-              <Text className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex-1 ml-4">End Date</Text>
-            </View>
-            
-            <View className="flex-row justify-between mb-6">
+            {/* Date Pickers */}
+            <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-black uppercase tracking-wider mb-2">
+              Broadcast Dates
+            </Text>
+            <View className="flex-row gap-3 mb-5">
               <TouchableOpacity 
                 onPress={() => openPicker('startDate')}
-                className="flex-row items-center bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-xl p-3 flex-1 shadow-sm"
+                style={{ 
+                  backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+                  borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+                }}
+                className="flex-row items-center border rounded-2xl p-3.5 flex-1 shadow-sm"
               >
-                <Calendar size={18} className="text-slate-400 mr-2" />
-                <Text className="text-slate-900 dark:text-white font-bold">{formatDate(startDate)}</Text>
+                <Calendar size={18} color="#A855F7" style={{ marginRight: 10 }} />
+                <View>
+                  <Text style={{ color: isDark ? '#64748B' : '#94A3B8' }} className="text-[10px] font-bold uppercase">Start Date</Text>
+                  <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-bold text-xs mt-0.5">{formatDate(startDate)}</Text>
+                </View>
               </TouchableOpacity>
-              
-              <View className="w-4" />
               
               <TouchableOpacity 
                 onPress={() => openPicker('endDate')}
-                className="flex-row items-center bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-xl p-3 flex-1 shadow-sm"
+                style={{ 
+                  backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+                  borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+                }}
+                className="flex-row items-center border rounded-2xl p-3.5 flex-1 shadow-sm"
               >
-                <Calendar size={18} className="text-slate-400 mr-2" />
-                <Text className="text-slate-900 dark:text-white font-bold">{formatDate(endDate)}</Text>
+                <Calendar size={18} color="#A855F7" style={{ marginRight: 10 }} />
+                <View>
+                  <Text style={{ color: isDark ? '#64748B' : '#94A3B8' }} className="text-[10px] font-bold uppercase">End Date</Text>
+                  <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-bold text-xs mt-0.5">{formatDate(endDate)}</Text>
+                </View>
               </TouchableOpacity>
             </View>
 
-            <Text className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 px-1">Daily Time Slot</Text>
-            <View className="flex-row justify-between items-center mb-6">
+            {/* Time Slot Pickers */}
+            <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-black uppercase tracking-wider mb-2">
+              Daily Broadcasting Hours
+            </Text>
+            <View className="flex-row items-center gap-3 mb-5">
               <TouchableOpacity 
                 onPress={() => openPicker('startTime')}
-                className="flex-row items-center bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-xl p-3 flex-1 shadow-sm"
+                style={{ 
+                  backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+                  borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+                }}
+                className="flex-row items-center border rounded-2xl p-3.5 flex-1 shadow-sm"
               >
-                <Clock size={18} className="text-slate-400 mr-2" />
-                <Text className="text-slate-900 dark:text-white font-bold">{formatTime(startTime)}</Text>
+                <Clock size={18} color="#A855F7" style={{ marginRight: 10 }} />
+                <View>
+                  <Text style={{ color: isDark ? '#64748B' : '#94A3B8' }} className="text-[10px] font-bold uppercase">Start Time</Text>
+                  <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-bold text-xs mt-0.5">{formatTime(startTime)}</Text>
+                </View>
               </TouchableOpacity>
-              
-              <Text className="text-slate-400 mx-3 font-bold">→</Text>
               
               <TouchableOpacity 
                 onPress={() => openPicker('endTime')}
-                className="flex-row items-center bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-xl p-3 flex-1 shadow-sm"
+                style={{ 
+                  backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+                  borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+                }}
+                className="flex-row items-center border rounded-2xl p-3.5 flex-1 shadow-sm"
               >
-                <Clock size={18} className="text-slate-400 mr-2" />
-                <Text className="text-slate-900 dark:text-white font-bold">{formatTime(endTime)}</Text>
+                <Clock size={18} color="#A855F7" style={{ marginRight: 10 }} />
+                <View>
+                  <Text style={{ color: isDark ? '#64748B' : '#94A3B8' }} className="text-[10px] font-bold uppercase">End Time</Text>
+                  <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-bold text-xs mt-0.5">{formatTime(endTime)}</Text>
+                </View>
               </TouchableOpacity>
             </View>
 
             {(startDate && endDate && startTime && endTime) && (
-              <View className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-2xl p-5 mb-4">
-                <Text className="text-xs font-black text-amber-600 dark:text-amber-500 uppercase tracking-widest mb-4">Your Ad Schedule</Text>
+              <View 
+                style={{ 
+                  backgroundColor: isDark ? 'rgba(124, 58, 237, 0.1)' : '#F8F7FF',
+                  borderColor: isDark ? '#7C3AED' : '#DDD6FE' 
+                }}
+                className="border rounded-2xl p-4 mb-4"
+              >
+                <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="text-xs font-black uppercase tracking-wider mb-3">
+                  Flight Parameters
+                </Text>
                 
-                <View className="flex-row items-center mb-3">
-                  <Calendar size={16} className="text-amber-500 mr-3" />
-                  <Text className="text-amber-800 dark:text-amber-100 font-bold">
-                    {formatDate(startDate)} → {formatDate(endDate)}
-                  </Text>
-                </View>
-                
-                <View className="flex-row items-center mb-3">
-                  <Clock size={16} className="text-amber-500 mr-3" />
-                  <Text className="text-amber-800 dark:text-amber-100 font-bold">
-                    Every day, {formatTime(startTime)} → {formatTime(endTime)}
+                <View className="flex-row items-center mb-2">
+                  <CheckCircle2 size={15} color="#10B981" style={{ marginRight: 8 }} />
+                  <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-semibold text-xs">
+                    {safeScheduledDays} Total Days Scheduled
                   </Text>
                 </View>
                 
                 <View className="flex-row items-center">
-                  <CheckCircle2 size={16} className="text-amber-500 mr-3" />
-                  <Text className="text-amber-800 dark:text-amber-100 font-bold">
-                    {safeScheduledDays} days · {Math.floor(dailySlotSeconds / 3600)} hr {Math.floor((dailySlotSeconds % 3600) / 60)} min/day
+                  <CheckCircle2 size={15} color="#10B981" style={{ marginRight: 8 }} />
+                  <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-semibold text-xs">
+                    {Math.floor(dailySlotSeconds / 3600)}h {Math.floor((dailySlotSeconds % 3600) / 60)}m Daily Broadcast Window
                   </Text>
                 </View>
               </View>
             )}
 
-            {/* Render Native Pickers */}
+            {/* Native Pickers */}
             {showPicker.startDate && (
               <DateTimePicker
                 value={startDate || new Date()}
@@ -952,94 +1149,102 @@ export default function CreateCampaignScreen({ route, navigation }) {
           </View>
         )}
 
-                {/* STEP 4: REVIEW & ESTIMATED COST */}
+        {/* STEP 4: REVIEW & BUDGET */}
         {step === 4 && (
           <View>
-            <Text className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2">Review & Launch</Text>
-            <Text className="text-slate-500 dark:text-[#8B949E] mb-6">Review your schedule and estimated maximum cost.</Text>
+            <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-2xl font-black tracking-tight mb-1.5">
+              Review & Launch
+            </Text>
+            <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-medium mb-5 leading-relaxed">
+              Verify your flight specifications, audience scope, and estimated budget.
+            </Text>
 
-            {/* CARD 1: SUMMARY */}
-            <View className="bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-2xl p-5 mb-4 shadow-sm">
-              <Text className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">Ad Summary</Text>
+            {/* SUMMARY CARD */}
+            <View 
+              style={{ 
+                backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+                borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+              }}
+              className="border rounded-2xl p-5 mb-4 shadow-sm"
+            >
+              <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="text-[11px] font-black uppercase tracking-widest mb-4">
+                Campaign Summary
+              </Text>
               
               <View className="flex-row justify-between mb-3 items-center">
-                <Text className="text-[13px] text-slate-500 font-bold">Creative</Text>
-                <Text className="text-[15px] text-slate-900 dark:text-white font-black text-right flex-1 ml-4" numberOfLines={1}>{form.ad?.title}</Text>
+                <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold">Creative</Text>
+                <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-xs font-extrabold flex-1 text-right ml-4" numberOfLines={1}>{form.ad?.title}</Text>
               </View>
               
-              <View className="flex-row justify-between mb-4 items-center">
-                <Text className="text-[13px] text-slate-500 font-bold">Type & Duration</Text>
-                <Text className="text-[15px] text-slate-900 dark:text-white font-black text-right flex-1 ml-4">{form.ad?.media_type === 'video' ? 'Video Ad' : 'Image Ad'} • {safeDuration}s</Text>
+              <View className="flex-row justify-between mb-3 items-center">
+                <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold">Duration</Text>
+                <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-xs font-extrabold">{safeDuration} seconds</Text>
               </View>
 
-              <View className="h-px bg-slate-100 dark:bg-[#30363D] w-full mb-4" />
-
-              <View className="flex-row justify-between mb-4 items-center">
-                <Text className="text-[13px] text-slate-500 font-bold">Target Location</Text>
-                <Text className="text-[15px] text-slate-900 dark:text-white font-black text-right flex-1 ml-4">{whereMode === 'everywhere' ? 'Everywhere' : `${form.routes.length} Selected Routes`}</Text>
-              </View>
-
-              <View className="h-px bg-slate-100 dark:bg-[#30363D] w-full mb-4" />
+              <View style={{ backgroundColor: isDark ? '#281B4B' : '#EDE9FE' }} className="h-px w-full my-2.5" />
 
               <View className="flex-row justify-between mb-3 items-center">
-                <Text className="text-[13px] text-slate-500 font-bold">Date Range</Text>
-                <Text className="text-[15px] text-slate-900 dark:text-white font-black text-right flex-1 ml-4">{formatDate(startDate)} → {formatDate(endDate)}</Text>
+                <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold">Target Grid</Text>
+                <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-xs font-extrabold">{whereMode === 'everywhere' ? 'Citywide Fleet' : `${form.routes.length} Corridors`}</Text>
               </View>
-              
+
               <View className="flex-row justify-between items-center">
-                <Text className="text-[13px] text-slate-500 font-bold">Daily Time Slot</Text>
-                <Text className="text-[15px] text-slate-900 dark:text-white font-black text-right flex-1 ml-4">{formatTime(startTime)} → {formatTime(endTime)}</Text>
+                <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold">Daily Flight</Text>
+                <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-xs font-extrabold">{formatTime(startTime)} – {formatTime(endTime)}</Text>
               </View>
             </View>
 
-            {/* CARD 2: COST & BALANCE BREAKDOWN */}
-            <View className="bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-2xl p-5 mb-5 shadow-sm">
-              <Text className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">Cost Breakdown</Text>
+            {/* COST & WALLET BREAKDOWN */}
+            <View 
+              style={{ 
+                backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+                borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+              }}
+              className="border rounded-2xl p-5 mb-5 shadow-sm"
+            >
+              <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="text-[11px] font-black uppercase tracking-widest mb-4">
+                Budget Breakdown
+              </Text>
               
-              <View className="flex-row justify-between mb-3">
-                <Text className="text-[13px] text-slate-500 font-bold">Active Days</Text>
-                <Text className="text-[15px] text-slate-900 dark:text-white font-black">{safeScheduledDays}</Text>
+              <View className="flex-row justify-between mb-2">
+                <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold">Active Days</Text>
+                <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-xs font-extrabold">{safeScheduledDays}</Text>
               </View>
-              <View className="flex-row justify-between mb-3">
-                <Text className="text-[13px] text-slate-500 font-bold">Plays per Day</Text>
-                <Text className="text-[15px] text-slate-900 dark:text-white font-black">{safePlaysPerDay}</Text>
+              <View className="flex-row justify-between mb-2">
+                <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold">Est. Plays Per Day</Text>
+                <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-xs font-extrabold">{safePlaysPerDay}</Text>
               </View>
               <View className="flex-row justify-between mb-4">
-                <Text className="text-[13px] text-slate-500 font-bold">Total Est. Plays</Text>
-                <Text className="text-[15px] text-slate-900 dark:text-white font-black">{safeTotalPlays}</Text>
+                <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold">Total Projected Plays</Text>
+                <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="text-xs font-black">{safeTotalPlays}</Text>
               </View>
 
-              <View className="bg-[#F8FAFC] dark:bg-[#0D1117] border border-slate-100 dark:border-[#1F2937] rounded-xl p-4 flex-row justify-between items-center mb-5 shadow-sm">
-                <Text className="text-[13px] text-slate-600 dark:text-slate-400 font-black uppercase tracking-wide">Max Est. Cost</Text>
-                <Text className="text-[20px] text-[#F59E0B] font-black">₹{safeCost.toFixed(2)}</Text>
-              </View>
-              
-              {/* Disclaimer Callout */}
-              <View className="bg-blue-50/80 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30 rounded-xl p-3 flex-row mb-5 items-start shadow-sm">
-                <Text className="text-blue-500 mr-2 mt-0.5 text-sm">ℹ️</Text>
-                <Text className="flex-1 text-[12px] text-blue-700 dark:text-blue-300 font-semibold leading-relaxed">
-                  Actual deductions occur incrementally based on verified playbacks. This is the maximum expected cost.
-                </Text>
-              </View>
+              <LinearGradient
+                colors={isDark ? ['#1F1735', '#140F24'] : ['#EDE9FE', '#F8F7FF']}
+                className="border border-purple-500/20 rounded-xl p-4 flex-row justify-between items-center mb-4"
+              >
+                <Text style={{ color: isDark ? '#CBD5E1' : '#475569' }} className="text-xs font-extrabold uppercase tracking-wide">Max Estimated Budget</Text>
+                <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="text-xl font-black">₹{safeCost.toFixed(2)}</Text>
+              </LinearGradient>
 
-              <View className="h-px bg-slate-100 dark:bg-[#30363D] w-full mb-5" />
+              <View style={{ backgroundColor: isDark ? '#281B4B' : '#EDE9FE' }} className="h-px w-full mb-4" />
 
-              <View className="flex-row justify-between items-center mb-3">
-                <Text className="text-[13px] text-slate-500 font-bold">Current Wallet Balance</Text>
-                <Text className="text-[15px] text-slate-900 dark:text-white font-black">₹{safeWalletBalance.toFixed(2)}</Text>
+              <View className="flex-row justify-between items-center mb-2">
+                <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold">Available Wallet Balance</Text>
+                <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-xs font-bold">₹{safeWalletBalance.toFixed(2)}</Text>
               </View>
               
               {safeCost > safeWalletBalance ? (
                 <View className="flex-row justify-between items-center">
-                  <Text className="text-[13px] text-red-500 font-black">Additional Funds Required</Text>
-                  <Text className="text-[16px] font-black text-red-500">
+                  <Text className="text-xs text-rose-500 font-extrabold">Top-Up Needed</Text>
+                  <Text className="text-sm font-black text-rose-500">
                     ₹{(safeCost - safeWalletBalance).toFixed(2)}
                   </Text>
                 </View>
               ) : (
                 <View className="flex-row justify-between items-center">
-                  <Text className="text-[13px] text-slate-900 dark:text-white font-black">Balance After Launch</Text>
-                  <Text className="text-[16px] font-black text-emerald-500">
+                  <Text style={{ color: isDark ? '#CBD5E1' : '#475569' }} className="text-xs font-semibold">Balance Post-Flight</Text>
+                  <Text className="text-sm font-black text-emerald-500">
                     ₹{(safeWalletBalance - safeCost).toFixed(2)}
                   </Text>
                 </View>
@@ -1047,41 +1252,43 @@ export default function CreateCampaignScreen({ route, navigation }) {
             </View>
             
             {safeCost > safeWalletBalance ? (
-              <View className="mt-2 bg-white dark:bg-[#161B22] border-2 border-red-100 dark:border-red-900/30 rounded-2xl p-5 mb-5 shadow-sm">
-                <View className="flex-row items-center mb-4">
-                  <Text className="text-red-500 mr-2 text-lg">⚠️</Text>
-                  <Text className="text-slate-900 dark:text-white font-black text-base">Additional funds required</Text>
+              <View 
+                style={{ 
+                  backgroundColor: isDark ? '#1E121E' : '#FFF1F2',
+                  borderColor: isDark ? '#4C1D2A' : '#FECDD3' 
+                }}
+                className="border rounded-2xl p-4 mb-4"
+              >
+                <View className="flex-row items-center mb-3">
+                  <Text className="text-base mr-2">⚠️</Text>
+                  <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-extrabold text-xs">Wallet Recharge Required</Text>
                 </View>
                 
-                <View className="flex-row justify-between mb-2">
-                  <Text className="text-[13px] text-slate-500 font-bold">Estimated Cost</Text>
-                  <Text className="text-[14px] text-slate-900 dark:text-white font-black">₹{safeCost.toFixed(2)}</Text>
-                </View>
-                <View className="flex-row justify-between mb-4">
-                  <Text className="text-[13px] text-slate-500 font-bold">Wallet Balance</Text>
-                  <Text className="text-[14px] text-slate-900 dark:text-white font-black">₹{safeWalletBalance.toFixed(2)}</Text>
-                </View>
-                
-                <View className="h-px bg-slate-100 dark:bg-[#30363D] w-full mb-4" />
-                
-                <View className="flex-row justify-between items-center mb-6">
-                  <Text className="text-[13px] text-red-500 font-black">Required</Text>
-                  <Text className="text-[16px] text-red-500 font-black">₹{(safeCost - safeWalletBalance).toFixed(2)}</Text>
-                </View>
-
                 <TouchableOpacity 
                   onPress={() => setAddFundsVisible(true)}
-                  className="bg-[#F59E0B] py-3.5 rounded-xl w-full flex-row justify-center items-center shadow-md shadow-amber-500/20"
+                  className="rounded-xl overflow-hidden shadow-md"
+                  style={{ shadowColor: '#9333EA', shadowRadius: 6 }}
                   activeOpacity={0.8}
                 >
-                  <Text className="text-white font-black text-sm tracking-tight">+ Add Funds</Text>
+                  <LinearGradient
+                    colors={['#7C3AED', '#9333EA', '#C084FC']}
+                    className="py-3 items-center justify-center"
+                  >
+                    <Text className="text-white font-extrabold text-xs tracking-wider uppercase">+ Top Up ₹{Math.ceil(safeCost - safeWalletBalance)}</Text>
+                  </LinearGradient>
                 </TouchableOpacity>
               </View>
             ) : (
-              <View className="mt-2 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/20 rounded-2xl p-4 mb-5 flex-row items-center">
-                <CheckCircle2 size={20} className="text-emerald-500 mr-3" />
-                <Text className="text-emerald-700 dark:text-emerald-400 font-black text-sm flex-1">
-                  ✓ Wallet balance is sufficient
+              <View 
+                style={{ 
+                  backgroundColor: isDark ? 'rgba(16, 185, 129, 0.08)' : 'rgba(16, 185, 129, 0.08)',
+                  borderColor: isDark ? 'rgba(16, 185, 129, 0.25)' : 'rgba(16, 185, 129, 0.25)' 
+                }}
+                className="border rounded-2xl p-4 mb-4 flex-row items-center"
+              >
+                <ShieldCheck size={20} color="#10B981" style={{ marginRight: 10 }} />
+                <Text className="text-emerald-500 font-bold text-xs flex-1">
+                  Sufficient wallet funds available. Broadcast will initialize immediately after approval.
                 </Text>
               </View>
             )}
@@ -1090,31 +1297,61 @@ export default function CreateCampaignScreen({ route, navigation }) {
 
       </ScrollView>
 
-      {/* Bottom Action Bar */}
-      <View className="px-5 pt-4 pb-8 border-t border-slate-100 dark:border-[#1F2937] bg-white dark:bg-[#0D1117] flex-row">
+      {/* Sticky Bottom Action Bar */}
+      <View 
+        style={{ 
+          backgroundColor: isDark ? '#120C26' : '#FFFFFF',
+          borderTopColor: isDark ? '#281B4B' : '#EDE9FE' 
+        }}
+        className="px-5 pt-3.5 pb-8 border-t"
+      >
         {step === 4 ? (
           <TouchableOpacity 
             onPress={handleLaunch} 
             disabled={creating || safeCost > safeWalletBalance}
-            className={`flex-1 ${creating || safeCost > safeWalletBalance ? 'bg-slate-200 dark:bg-slate-700' : 'bg-[#0F172A] dark:bg-slate-800'} py-4 rounded-full flex-row items-center justify-center shadow-md`}
+            className="rounded-2xl overflow-hidden shadow-lg"
+            style={{ 
+              shadowColor: '#9333EA', 
+              shadowRadius: 10, 
+              shadowOpacity: 0.35,
+              opacity: (creating || safeCost > safeWalletBalance) ? 0.5 : 1 
+            }}
+            activeOpacity={0.8}
           >
-            {creating ? <ActivityIndicator color="#FFFFFF" className="mr-2" /> : null}
-            <Text className={`font-black text-lg tracking-tight ${creating || safeCost > safeWalletBalance ? 'text-slate-400' : 'text-white'}`}>
-              {creating ? 'Launching...' : (safeCost > safeWalletBalance ? 'Confirm & Launch Ad' : '🚀 Confirm & Launch Ad')}
-            </Text>
+            <LinearGradient
+              colors={['#7C3AED', '#9333EA', '#C084FC']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              className="py-4 items-center justify-center flex-row"
+            >
+              {creating ? <ActivityIndicator color="#FFFFFF" className="mr-2" size="small" /> : null}
+              <Text className="text-white font-black text-base tracking-wide uppercase">
+                {creating ? 'Launching Flight...' : '🚀 Confirm & Launch Campaign'}
+              </Text>
+            </LinearGradient>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity 
             onPress={handleNext} 
             disabled={uploadMode && uploading}
-            className="flex-1 bg-[#F59E0B] py-4 rounded-full items-center shadow-md shadow-amber-500/30"
+            className="rounded-2xl overflow-hidden shadow-lg"
+            style={{ shadowColor: '#9333EA', shadowRadius: 10, shadowOpacity: 0.35 }}
+            activeOpacity={0.8}
           >
-            <Text className="text-white font-black text-lg tracking-tight">Next Step</Text>
+            <LinearGradient
+              colors={['#7C3AED', '#9333EA', '#C084FC']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              className="py-4 items-center justify-center flex-row"
+            >
+              <Text className="text-white font-black text-base tracking-wide uppercase mr-1.5">Next Step</Text>
+              <ChevronRight size={18} color="#FFFFFF" strokeWidth={3} />
+            </LinearGradient>
           </TouchableOpacity>
         )}
       </View>
 
-    
+      {/* Video Trimmer Modal */}
       <Modal visible={videoTrimmerVisible} animationType="slide" onRequestClose={() => setVideoTrimmerVisible(false)}>
         {newAdMedia && newAdMedia.type === 'video' && (
           <VideoTrimmer 
@@ -1137,7 +1374,7 @@ export default function CreateCampaignScreen({ route, navigation }) {
         )}
       </Modal>
 
-    
+      {/* Add Funds Bottom Sheet */}
       <AddFundsBottomSheet
         visible={addFundsVisible}
         requiredAmount={Math.max(safeCost - safeWalletBalance, 0)}
@@ -1145,7 +1382,6 @@ export default function CreateCampaignScreen({ route, navigation }) {
         onClose={() => setAddFundsVisible(false)}
         onSuccess={async () => {
           setAddFundsVisible(false);
-          // Refresh the wallet balance so the Launch button unlocks instantly
           const walletRes = await businessService.getWallet().catch(() => ({ success: false }));
           if (walletRes.success) {
             setWalletBalance(parseFloat(walletRes.wallet_balance || 0));

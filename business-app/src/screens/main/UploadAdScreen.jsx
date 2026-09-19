@@ -1,16 +1,30 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, ActivityIndicator, Alert, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { businessService } from '../../services/business';
-import { ArrowLeft, UploadCloud, FileVideo, Image as ImageIcon, CheckCircle2, Megaphone, Trash2 } from 'lucide-react-native';
+import { 
+  ArrowLeft, 
+  UploadCloud, 
+  Video, 
+  Image as ImageIcon, 
+  CheckCircle2, 
+  Megaphone, 
+  Trash2,
+  Sparkles,
+  Scissors
+} from 'lucide-react-native';
 import VideoTrimmer from '../../components/VideoTrimmer';
+import { useTheme } from '../../context/ThemeContext';
+import { colors } from '../../theme/designTokens';
 
 export default function UploadAdScreen({ navigation }) {
+  const { isDark } = useTheme();
   const [form, setForm] = useState({ title: '' });
   const [media, setMedia] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [uploadedAd, setUploadedAd] = useState(null); // stores the result from backend on success
+  const [uploadedAd, setUploadedAd] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showTrimmer, setShowTrimmer] = useState(false);
   const [trimData, setTrimData] = useState(null);
@@ -18,28 +32,26 @@ export default function UploadAdScreen({ navigation }) {
   const pickMedia = async (type) => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: type === 'video' ? ['videos'] : ['images'],
-      allowsEditing: true,
+      allowsEditing: false,
       quality: 1,
     });
 
     if (!result.canceled) {
       const asset = result.assets[0];
       
-      // Validate Video duration
       if (asset.type === 'video') {
         const durationSec = (asset.duration || 0) / 1000;
-        if (durationSec > 60) {
-          Alert.alert('Invalid Video', 'Video duration must be 60 seconds or less.');
-          return;
-        }
+        setMedia(asset);
+        setShowTrimmer(true);
+      } else {
+        setMedia(asset);
       }
-      setMedia(asset);
     }
   };
 
   const handleUpload = async () => {
     if (!form.title || !media) {
-      Alert.alert('Incomplete', 'Please provide a title and select media.');
+      Alert.alert('Incomplete', 'Please provide a title and select a media file.');
       return;
     }
 
@@ -47,11 +59,17 @@ export default function UploadAdScreen({ navigation }) {
     try {
       const formData = new FormData();
       formData.append('title', form.title);
-      // Passing 0 since budget is handled at the campaign level in the new UX
       formData.append('budget', '0'); 
       formData.append('cost_per_play', media.type === 'video' ? '2' : '1');
       
-      // Append file
+      if (trimData) {
+        formData.append('video_trim_start', String(Math.floor(trimData.start)));
+        formData.append('video_trim_end', String(Math.ceil(trimData.end)));
+        formData.append('play_duration', String(Math.ceil(trimData.end - trimData.start)));
+      } else if (media.type === 'image') {
+        formData.append('play_duration', '30');
+      }
+
       formData.append('media', {
         uri: media.uri,
         name: media.fileName || `upload.${media.uri.split('.').pop()}`,
@@ -60,10 +78,8 @@ export default function UploadAdScreen({ navigation }) {
 
       const res = await businessService.uploadAd(formData);
       if (res.success) {
-        // Assume backend returns ad details or we mock it for the flow
-        // The current backend doesn't return the full ad object cleanly in the response as per our last check, but we can pass the title/media forward.
         setUploadedAd({
-          id: res.ad?.id || null, // Best effort based on what the API returns
+          id: res.ad?.id || null,
           title: form.title,
           type: media.type,
           uri: media.uri
@@ -90,7 +106,6 @@ export default function UploadAdScreen({ navigation }) {
         }}
         onCancel={() => {
           setShowTrimmer(false);
-          setMedia(null);
         }}
       />
     );
@@ -98,30 +113,53 @@ export default function UploadAdScreen({ navigation }) {
 
   if (showSuccess) {
     return (
-      <SafeAreaView className="flex-1 bg-[#F8FAFC] dark:bg-[#0D1117]">
+      <SafeAreaView style={{ backgroundColor: isDark ? '#090614' : '#F8F7FF' }} className="flex-1">
         <View className="flex-1 items-center justify-center p-6">
           
-          <View className="w-24 h-24 bg-emerald-100 dark:bg-emerald-900/30 rounded-full items-center justify-center mb-8">
-            <CheckCircle2 size={48} className="text-emerald-500" />
-          </View>
+          <LinearGradient
+            colors={['#7C3AED', '#9333EA', '#C084FC']}
+            className="w-24 h-24 rounded-3xl items-center justify-center mb-6 shadow-lg"
+            style={{ shadowColor: '#9333EA', shadowRadius: 15, shadowOpacity: 0.4 }}
+          >
+            <CheckCircle2 size={48} color="#FFFFFF" strokeWidth={2.5} />
+          </LinearGradient>
           
-          <Text className="text-3xl font-black text-slate-900 dark:text-white tracking-tight text-center mb-3">Your ad is ready 🎉</Text>
-          <Text className="text-slate-500 dark:text-[#8B949E] text-center text-base mb-10 px-4">
-            Your advertisement "{uploadedAd?.title}" has been uploaded successfully.
+          <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-2xl font-black tracking-tight text-center mb-2">
+            Creative Uploaded!
+          </Text>
+          <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-center text-sm font-medium mb-8 px-4 leading-relaxed">
+            "{uploadedAd?.title}" is stored in your library and ready to deploy into a live transit campaign.
           </Text>
 
-          <View className="w-full bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-3xl p-6 mb-10 shadow-sm">
-            <Text className="text-slate-900 dark:text-white font-black text-lg text-center mb-4">Ready to put your ad on BRT screens?</Text>
+          <View 
+            style={{ 
+              backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+              borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+            }}
+            className="w-full border rounded-3xl p-5 mb-8 shadow-sm"
+          >
+            <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-extrabold text-base text-center mb-4">
+              Launch into Flight?
+            </Text>
             
             <TouchableOpacity 
               onPress={() => {
                 setShowSuccess(false);
                 navigation.replace('CreateCampaign', { preselectedAdId: uploadedAd?.id, preselectedAdTitle: uploadedAd?.title });
               }}
-              className="bg-[#F59E0B] py-4 rounded-full flex-row items-center justify-center shadow-md shadow-amber-500/20 mb-4"
+              className="rounded-2xl overflow-hidden shadow-lg mb-3"
+              style={{ shadowColor: '#9333EA', shadowRadius: 10, shadowOpacity: 0.35 }}
+              activeOpacity={0.8}
             >
-              <Megaphone size={20} color="#FFF" />
-              <Text className="text-white font-black text-base ml-2">Launch Ad</Text>
+              <LinearGradient
+                colors={['#7C3AED', '#9333EA', '#C084FC']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                className="py-4 flex-row items-center justify-center"
+              >
+                <Megaphone size={18} color="#FFF" style={{ marginRight: 8 }} />
+                <Text className="text-white font-black text-sm uppercase tracking-wide">Configure Campaign</Text>
+              </LinearGradient>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -129,9 +167,16 @@ export default function UploadAdScreen({ navigation }) {
                 setShowSuccess(false);
                 navigation.goBack();
               }}
-              className="bg-slate-100 dark:bg-[#30363D] py-4 rounded-full flex-row items-center justify-center"
+              style={{ 
+                backgroundColor: isDark ? '#181033' : '#F8F7FF',
+                borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+              }}
+              className="py-3.5 rounded-2xl items-center border"
+              activeOpacity={0.8}
             >
-              <Text className="text-slate-700 dark:text-white font-bold text-base">Save for Later</Text>
+              <Text style={{ color: isDark ? '#CBD5E1' : '#475569' }} className="font-bold text-xs uppercase tracking-wider">
+                Save & Back to Library
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -140,99 +185,183 @@ export default function UploadAdScreen({ navigation }) {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F8FAFC] dark:bg-[#0D1117]" edges={['top']}>
-      {/* Header */}
-      <View className="flex-row items-center px-5 py-4 border-b border-slate-200 dark:border-[#1F2937] bg-white dark:bg-[#0D1117] z-10">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="mr-4 p-2 -ml-2 rounded-full">
-          <ArrowLeft size={24} className="text-slate-900 dark:text-white" />
+    <SafeAreaView style={{ backgroundColor: isDark ? '#090614' : '#F8F7FF' }} className="flex-1" edges={['top']}>
+      {/* Top Header */}
+      <View 
+        style={{ 
+          backgroundColor: isDark ? '#120C26' : '#FFFFFF',
+          borderBottomColor: isDark ? '#281B4B' : '#EDE9FE' 
+        }}
+        className="flex-row items-center px-5 py-4 border-b z-10"
+      >
+        <TouchableOpacity 
+          onPress={() => navigation.goBack()} 
+          style={{ 
+            backgroundColor: isDark ? '#1F1735' : '#F8F7FF',
+            borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+          }}
+          className="p-2.5 rounded-full border mr-3"
+        >
+          <ArrowLeft size={18} color={isDark ? '#F8FAFC' : '#1E1B4B'} />
         </TouchableOpacity>
         <View>
-          <Text className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Upload Advertisement</Text>
-          <Text className="text-sm font-medium text-slate-500 dark:text-slate-400">Add creative for BRT screens</Text>
+          <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-xl font-black tracking-tight">
+            Upload Creative
+          </Text>
+          <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold">
+            Add Assets for Transit Network
+          </Text>
         </View>
       </View>
 
-      <ScrollView className="flex-1 px-5 pt-8 pb-10">
+      <ScrollView className="flex-1 px-5 pt-6 pb-10">
         
-        {/* Step 1: Media */}
-        <View className="mb-8">
-          <Text className="text-slate-900 dark:text-white font-black text-lg mb-4">1. Choose your creative</Text>
+        {/* Step 1: Media Format Selection */}
+        <View className="mb-6">
+          <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-black text-base mb-3">
+            1. Select Format & Media
+          </Text>
           
           {!media ? (
-            <View className="flex-row space-x-4">
+            <View className="flex-row gap-3">
               <TouchableOpacity 
-                className="flex-1 bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-3xl p-6 items-center shadow-sm"
+                style={{ 
+                  backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+                  borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+                }}
+                className="flex-1 border rounded-3xl p-6 items-center shadow-sm"
                 onPress={() => pickMedia('image')}
+                activeOpacity={0.8}
               >
-                <View className="w-14 h-14 bg-amber-50 dark:bg-amber-900/20 rounded-full items-center justify-center mb-3">
-                  <ImageIcon size={28} className="text-amber-500" />
-                </View>
-                <Text className="text-slate-900 dark:text-white font-bold mb-1">Image Ad</Text>
-                <Text className="text-slate-500 dark:text-[#8B949E] text-[10px] uppercase tracking-widest font-black">JPEG, PNG</Text>
+                <LinearGradient
+                  colors={isDark ? ['#7C3AED', '#4C1D95'] : ['#EDE9FE', '#DDD6FE']}
+                  className="w-14 h-14 rounded-2xl items-center justify-center mb-3"
+                >
+                  <ImageIcon size={28} color={isDark ? '#FFFFFF' : '#7C3AED'} />
+                </LinearGradient>
+                <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-extrabold text-sm mb-0.5">Image Asset</Text>
+                <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-[10px] uppercase tracking-wider font-bold">JPG, PNG up to 10MB</Text>
               </TouchableOpacity>
 
               <TouchableOpacity 
-                className="flex-1 bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-3xl p-6 items-center shadow-sm"
+                style={{ 
+                  backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+                  borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+                }}
+                className="flex-1 border rounded-3xl p-6 items-center shadow-sm"
                 onPress={() => pickMedia('video')}
+                activeOpacity={0.8}
               >
-                <View className="w-14 h-14 bg-sky-50 dark:bg-sky-900/20 rounded-full items-center justify-center mb-3">
-                  <FileVideo size={28} className="text-sky-500" />
-                </View>
-                <Text className="text-slate-900 dark:text-white font-bold mb-1">Video Ad</Text>
-                <Text className="text-slate-500 dark:text-[#8B949E] text-[10px] uppercase tracking-widest font-black">Max 60 Seconds</Text>
+                <LinearGradient
+                  colors={isDark ? ['#38BDF8', '#0284C7'] : ['#E0F2FE', '#BAE6FD']}
+                  className="w-14 h-14 rounded-2xl items-center justify-center mb-3"
+                >
+                  <Video size={28} color={isDark ? '#FFFFFF' : '#0284C7'} />
+                </LinearGradient>
+                <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-extrabold text-sm mb-0.5">Video Commercial</Text>
+                <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-[10px] uppercase tracking-wider font-bold">MP4 with Trimmer</Text>
               </TouchableOpacity>
             </View>
           ) : (
-            <View className="bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-3xl overflow-hidden shadow-sm">
+            <View 
+              style={{ 
+                backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+                borderColor: isDark ? '#7C3AED' : '#C084FC' 
+              }}
+              className="border-2 rounded-3xl overflow-hidden shadow-sm"
+            >
               {media.type === 'video' ? (
-                <View className="bg-slate-900 h-56 justify-center items-center">
-                  <FileVideo size={48} className="text-sky-500 mb-3" />
-                  <Text className="text-white font-bold text-lg">Video Selected</Text>
-                  <Text className="text-slate-400 text-sm mt-1">{media.fileName || 'Creative.mp4'}</Text>
+                <View style={{ backgroundColor: '#090614' }} className="h-56 justify-center items-center">
+                  <Video size={48} color="#38BDF8" className="mb-2" />
+                  <Text className="text-white font-extrabold text-sm">{media.fileName || 'Video Creative.mp4'}</Text>
+                  {trimData && (
+                    <Text className="text-purple-300 text-xs font-semibold mt-1">
+                      Trim: {Math.floor(trimData.start)}s – {Math.ceil(trimData.end)}s ({Math.ceil(trimData.end - trimData.start)}s total)
+                    </Text>
+                  )}
+                  <TouchableOpacity 
+                    onPress={() => setShowTrimmer(true)}
+                    style={{ backgroundColor: isDark ? '#201642' : '#EDE9FE' }}
+                    className="mt-3 px-4 py-2 rounded-xl flex-row items-center"
+                  >
+                    <Scissors size={14} color="#A855F7" style={{ marginRight: 6 }} />
+                    <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="font-bold text-xs">Re-Trim Video</Text>
+                  </TouchableOpacity>
                 </View>
               ) : (
-                <Image source={{ uri: media.uri }} className="w-full h-56 resize-cover" />
+                <Image source={{ uri: media.uri }} className="w-full h-56" resizeMode="contain" />
               )}
+              
               <TouchableOpacity 
-                onPress={() => setMedia(null)}
-                className="absolute top-4 right-4 bg-black/60 p-2.5 rounded-full"
+                onPress={() => { setMedia(null); setTrimData(null); }}
+                className="absolute top-3.5 right-3.5 bg-black/60 p-2.5 rounded-full"
               >
-                <Trash2 size={20} color="#FFF" />
+                <Trash2 size={16} color="#FFF" />
               </TouchableOpacity>
             </View>
           )}
         </View>
 
         {/* Step 2: Details */}
-        <View className="mb-10">
-          <Text className="text-slate-900 dark:text-white font-black text-lg mb-4">2. Give it a name</Text>
-          <View className="bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-3xl p-5 shadow-sm">
-            <Text className="text-slate-500 dark:text-[#8B949E] text-xs font-bold uppercase tracking-widest mb-3">Advertisement Name</Text>
+        <View className="mb-8">
+          <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-black text-base mb-3">
+            2. Asset Name & Tags
+          </Text>
+          <View 
+            style={{ 
+              backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+              borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+            }}
+            className="border rounded-3xl p-5 shadow-sm"
+          >
+            <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-bold uppercase tracking-widest mb-2.5">
+              Creative Name
+            </Text>
             <TextInput
-              className="bg-slate-50 dark:bg-[#0D1117] text-slate-900 dark:text-white border border-slate-100 dark:border-[#30363D] rounded-2xl px-5 py-4 text-base font-semibold"
-              placeholder="e.g. Summer Sale 2026"
-              placeholderTextColor="#8B949E"
+              style={{ 
+                backgroundColor: isDark ? '#181033' : '#F8F7FF',
+                borderColor: isDark ? '#281B4B' : '#EDE9FE',
+                color: isDark ? '#F8FAFC' : '#1E1B4B' 
+              }}
+              className="border rounded-2xl px-4 py-3.5 text-sm font-semibold"
+              placeholder="e.g. Navratri Festival Mega Sale 2026"
+              placeholderTextColor={isDark ? '#64748B' : '#94A3B8'}
               value={form.title}
               onChangeText={(t) => setForm({...form, title: t})}
             />
           </View>
         </View>
 
+        {/* Upload Button */}
         <TouchableOpacity 
-          className={`rounded-full py-4 items-center flex-row justify-center mb-10 shadow-md ${(!form.title || !media || loading) ? 'bg-slate-300 dark:bg-[#30363D] shadow-none' : 'bg-[#F59E0B] shadow-amber-500/30'}`}
           onPress={handleUpload}
           disabled={!form.title || !media || loading}
+          className="rounded-2xl overflow-hidden shadow-lg mb-10"
+          style={{ 
+            shadowColor: '#9333EA', 
+            shadowRadius: 10, 
+            shadowOpacity: 0.35,
+            opacity: (!form.title || !media || loading) ? 0.5 : 1 
+          }}
+          activeOpacity={0.8}
         >
-          {loading ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <>
-              <UploadCloud size={20} color={(!form.title || !media) ? '#94A3B8' : '#FFFFFF'} strokeWidth={3} />
-              <Text className={`font-black text-base ml-2 ${(!form.title || !media) ? 'text-slate-500' : 'text-white'}`}>
-                Upload Advertisement
-              </Text>
-            </>
-          )}
+          <LinearGradient
+            colors={['#7C3AED', '#9333EA', '#C084FC']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            className="py-4 items-center justify-center flex-row"
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <>
+                <UploadCloud size={18} color="#FFFFFF" strokeWidth={2.5} style={{ marginRight: 8 }} />
+                <Text className="text-white font-black text-sm uppercase tracking-wide">
+                  Save to Media Library
+                </Text>
+              </>
+            )}
+          </LinearGradient>
         </TouchableOpacity>
 
       </ScrollView>

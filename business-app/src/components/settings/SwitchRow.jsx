@@ -1,8 +1,11 @@
 import React from 'react';
 import { Switch } from 'react-native';
 import SettingsRow from './SettingsRow';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function SwitchRow({ icon, title, subtitle, value, onValueChange, hideBorder, disabled }) {
+  const { isDark } = useTheme();
+
   return (
     <SettingsRow 
       icon={icon}
@@ -14,7 +17,7 @@ export default function SwitchRow({ icon, title, subtitle, value, onValueChange,
         <Switch 
           value={value} 
           onValueChange={onValueChange} 
-          trackColor={{ false: '#E2E8F0', true: '#F59E0B' }}
+          trackColor={{ false: isDark ? '#281B4B' : '#E2E8F0', true: '#7C3AED' }}
           thumbColor="#FFFFFF"
           disabled={disabled}
         />

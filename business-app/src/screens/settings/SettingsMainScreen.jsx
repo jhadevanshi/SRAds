@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, Appearance } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
   ChevronRight, Moon, Sun, Globe, MonitorSmartphone, 
-  CreditCard, RefreshCcw, FileText, Bell, Lock, HelpCircle, LogOut 
+  CreditCard, RefreshCcw, FileText, Bell, Lock, HelpCircle, LogOut, ArrowLeft 
 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -11,10 +11,11 @@ import SettingsCard from '../../components/settings/SettingsCard';
 import SettingsRow from '../../components/settings/SettingsRow';
 import SwitchRow from '../../components/settings/SwitchRow';
 import ProfileCard from '../../components/settings/ProfileCard';
+import { colors } from '../../theme/designTokens';
 
 export default function SettingsMainScreen({ navigation }) {
   const { user, logout } = useAuth();
-  const { themePreference, isDarkMode, setThemePreference } = useTheme();
+  const { themePreference, isDark, setThemePreference } = useTheme();
 
   const [autoRecharge, setAutoRecharge] = useState(false);
   const [notifications, setNotifications] = useState(true);
@@ -27,15 +28,36 @@ export default function SettingsMainScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F8FAFC] dark:bg-[#0D1117]">
-      <View className="px-5 py-4 border-b border-slate-100 dark:border-[#30363D] bg-[#F8FAFC] dark:bg-[#0D1117] z-10 flex-row items-center">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 -ml-2 rounded-full bg-slate-100 dark:bg-[#161B22] mr-3">
-          <ChevronRight size={20} className="text-slate-900 dark:text-white rotate-180" />
+    <SafeAreaView style={{ backgroundColor: isDark ? '#090614' : '#F8F7FF' }} className="flex-1" edges={['top']}>
+      {/* Top Header */}
+      <View 
+        style={{ 
+          backgroundColor: isDark ? '#120C26' : '#FFFFFF',
+          borderBottomColor: isDark ? '#281B4B' : '#EDE9FE' 
+        }}
+        className="px-5 py-4 border-b z-10 flex-row items-center"
+      >
+        <TouchableOpacity 
+          onPress={() => navigation.goBack()} 
+          style={{ 
+            backgroundColor: isDark ? '#1F1735' : '#F8F7FF',
+            borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+          }}
+          className="p-2.5 rounded-full border mr-3"
+        >
+          <ArrowLeft size={18} color={isDark ? '#F8FAFC' : '#1E1B4B'} />
         </TouchableOpacity>
-        <Text className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Settings & Preferences</Text>
+        <View>
+          <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-xl font-black tracking-tight">
+            Settings & Account
+          </Text>
+          <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold">
+            Preferences & Business Profile
+          </Text>
+        </View>
       </View>
 
-      <ScrollView className="flex-1 px-5 pt-2" contentContainerStyle={{ paddingBottom: 60 }}>
+      <ScrollView className="flex-1 px-5 pt-4" contentContainerStyle={{ paddingBottom: 60 }}>
         
         <ProfileCard 
           name={user?.company_name || 'My Business'}
@@ -43,24 +65,39 @@ export default function SettingsMainScreen({ navigation }) {
           onPress={() => navigation.navigate('AccountDetails')}
         />
 
-        <SettingsCard title="Appearance">
-          <View className="p-4 border-b border-slate-100 dark:border-[#30363D]">
-            <View className="flex-row items-center mb-4">
-              <View className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-[#0D1117] items-center justify-center mr-4">
-                {isDarkMode ? <Moon size={20} color="#8B949E" /> : <Sun size={20} color="#64748B" />}
+        <SettingsCard title="Appearance & Display">
+          <View className="p-3.5 border-b" style={{ borderColor: isDark ? '#281B4B' : '#F1F5F9' }}>
+            <View className="flex-row items-center mb-3">
+              <View 
+                style={{ backgroundColor: isDark ? '#1F1735' : '#EDE9FE' }}
+                className="w-10 h-10 rounded-xl items-center justify-center mr-3.5"
+              >
+                {isDark ? <Moon size={18} color="#C084FC" /> : <Sun size={18} color="#7C3AED" />}
               </View>
-              <Text className="font-bold text-base text-slate-900 dark:text-white">Theme Mode</Text>
+              <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-extrabold text-sm">Theme Mode</Text>
             </View>
-            <View className="flex-row bg-slate-100 dark:bg-[#0D1117] p-1 rounded-full">
+            <View 
+              style={{ backgroundColor: isDark ? '#0D091A' : '#F1F5F9' }}
+              className="flex-row p-1 rounded-full"
+            >
               {['light', 'dark', 'system'].map(mode => (
                 <TouchableOpacity
                   key={mode}
                   activeOpacity={0.8}
                   onPress={() => setThemePreference(mode)}
-                  className={`flex-1 py-2.5 rounded-full items-center ${themePreference === mode ? 'bg-white dark:bg-[#30363D] shadow-sm' : ''}`}
+                  style={{
+                    backgroundColor: themePreference === mode ? '#7C3AED' : 'transparent',
+                  }}
+                  className="flex-1 py-2 rounded-full items-center"
                 >
-                  <Text className={`font-bold text-xs capitalize tracking-wide ${themePreference === mode ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-[#8B949E]'}`}>
-                    {mode === 'system' ? 'System Default' : mode}
+                  <Text 
+                    style={{
+                      color: themePreference === mode ? '#FFFFFF' : (isDark ? '#94A3B8' : '#64748B'),
+                      fontWeight: themePreference === mode ? '900' : '600'
+                    }}
+                    className="text-xs capitalize tracking-wide"
+                  >
+                    {mode === 'system' ? 'System' : mode}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -69,7 +106,7 @@ export default function SettingsMainScreen({ navigation }) {
           <SettingsRow 
             icon={Globe} 
             title="App Language" 
-            subtitle="Current: English" 
+            subtitle="Default: English (India)" 
             hideBorder 
           />
         </SettingsCard>
@@ -78,63 +115,66 @@ export default function SettingsMainScreen({ navigation }) {
           <SettingsRow 
             icon={CreditCard} 
             title="Payment Methods" 
-            subtitle="Show linked payment methods" 
+            subtitle="Manage saved UPI IDs & Bank Accounts" 
             onPress={() => navigation.navigate('PaymentMethods')} 
           />
           <SwitchRow 
             icon={RefreshCcw} 
             title="Auto-Recharge" 
-            subtitle="Add funds when below ₹100" 
+            subtitle="Top up wallet when balance is low" 
             value={autoRecharge}
             onValueChange={setAutoRecharge}
           />
           <SettingsRow 
             icon={FileText} 
-            title="Invoices" 
-            subtitle="Monthly downloadable invoices" 
+            title="GST Invoices" 
+            subtitle="Monthly downloadable GST receipts" 
             onPress={() => navigation.navigate('Invoices')} 
             hideBorder
           />
         </SettingsCard>
 
-        <SettingsCard title="Hardware">
+        <SettingsCard title="Hardware Fleet">
           <SettingsRow 
             icon={MonitorSmartphone} 
             title="Linked Display Devices" 
-            subtitle="View status and manage displays" 
+            subtitle="Telemetry, battery & screen status" 
             onPress={() => navigation.navigate('DevicesList')} 
             hideBorder
           />
         </SettingsCard>
 
-        <SettingsCard title="Preferences & Security">
+        <SettingsCard title="Security & Session">
           <SwitchRow 
             icon={Bell} 
-            title="Notifications" 
-            subtitle="Low Wallet, Ad Approvals" 
+            title="Push Notifications" 
+            subtitle="Live playback alerts & balance updates" 
             value={notifications}
             onValueChange={setNotifications}
           />
           <SettingsRow 
             icon={Lock} 
-            title="Security" 
-            subtitle="Change Password & PIN" 
+            title="Security & Password" 
+            subtitle="Update password & merchant PIN" 
           />
           <SettingsRow 
             icon={HelpCircle} 
-            title="Support" 
-            subtitle="Live Chat, WhatsApp, Terms" 
+            title="Help & Support" 
+            subtitle="24/7 WhatsApp & Live Merchant Support" 
           />
           <SettingsRow 
             icon={LogOut} 
-            title="Logout" 
+            title="Log Out" 
+            subtitle="Sign out of this business account"
             onPress={handleLogout} 
             isDestructive 
             hideBorder
           />
         </SettingsCard>
 
-        <Text className="text-center text-slate-400 dark:text-[#8B949E] text-xs font-bold mb-10">SRAds Business Portal v2.4.0</Text>
+        <Text style={{ color: isDark ? '#64748B' : '#94A3B8' }} className="text-center text-xs font-bold mb-10 mt-2">
+          SRAds Transit Business Portal v2.4.0
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );

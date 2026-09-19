@@ -1,16 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, RefreshControl, ActivityIndicator, TouchableOpacity, Image } from 'react-native';
+import { 
+  View, Text, ScrollView, RefreshControl, ActivityIndicator, 
+  TouchableOpacity, StyleSheet, Image, Platform 
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { businessService } from '../../services/business';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { 
   Wallet, PlayCircle, IndianRupee, Video, Image as ImageIcon, 
-  MapPin, Clock, Settings, Plus, Building2, Navigation, Megaphone, MonitorSmartphone,
-  ChevronRight, ArrowRight, BarChart3
+  MapPin, Clock, Settings, Plus, Building2, Navigation, Megaphone, 
+  MonitorSmartphone, ChevronRight, ArrowRight, BarChart3, Sparkles, 
+  Activity, Radio, ShieldCheck, Zap
 } from 'lucide-react-native';
 
 export default function DashboardScreen({ navigation }) {
   const { user } = useAuth();
+  const { isDarkMode } = useTheme();
+
   const [stats, setStats] = useState(null);
   const [liveFleet, setLiveFleet] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
@@ -23,13 +31,13 @@ export default function DashboardScreen({ navigation }) {
       setError(null);
       const [dashRes, fleetRes, campRes] = await Promise.all([
         businessService.getDashboard(),
-        businessService.getLiveFleet().catch(() => ({ success: false, fleet: [] })), // Graceful degradation
+        businessService.getLiveFleet().catch(() => ({ success: false, fleet: [] })),
         businessService.getCampaigns().catch(() => ({ success: false, campaigns: [] }))
       ]);
 
       if (dashRes.success) setStats(dashRes);
       if (fleetRes.success && fleetRes.fleet) setLiveFleet(fleetRes.fleet);
-      if (campRes.success && campRes.campaigns) setCampaigns(campRes.campaigns.slice(0, 3)); // Only show top 3 recent
+      if (campRes.success && campRes.campaigns) setCampaigns(campRes.campaigns.slice(0, 4));
     } catch (err) {
       console.error('Error fetching dashboard', err);
       setError('Unable to load some dashboard information.');
@@ -57,15 +65,12 @@ export default function DashboardScreen({ navigation }) {
   useEffect(() => {
     const { DeviceEventEmitter } = require('react-native');
     const subPlayback = DeviceEventEmitter.addListener('AD_PLAYBACK_COMPLETED', () => {
-      console.log('[DashboardScreen] Real-time ad playback completed. Refreshing...');
       fetchData();
     });
     const subStatus = DeviceEventEmitter.addListener('DEVICE_STATUS_UPDATED', () => {
-      console.log('[DashboardScreen] Real-time device status updated. Refreshing...');
       fetchData();
     });
     const subCampaign = DeviceEventEmitter.addListener('CAMPAIGN_UPDATED', () => {
-      console.log('[DashboardScreen] Real-time campaign status updated. Refreshing...');
       fetchData();
     });
 
@@ -80,8 +85,8 @@ export default function DashboardScreen({ navigation }) {
 
   if (loading && !stats) {
     return (
-      <SafeAreaView className="flex-1 bg-[#F8FAFC] dark:bg-[#0D1117] justify-center items-center">
-        <ActivityIndicator size="large" color="#F59E0B" />
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: isDarkMode ? '#090614' : '#F8F7FF', justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#A855F7" />
       </SafeAreaView>
     );
   }
@@ -89,177 +94,293 @@ export default function DashboardScreen({ navigation }) {
   const renderCampaignStatus = (campaign) => {
     if (campaign.approval_status === 'Pending' || (campaign.pending_ad_count && parseInt(campaign.pending_ad_count) > 0)) {
       return (
-        <View className="bg-amber-50 dark:bg-amber-500/10 px-2 py-1 rounded-md border border-amber-100 dark:border-amber-500/20">
-          <Text className="text-amber-600 dark:text-amber-400 text-[10px] font-black uppercase tracking-wider">Pending Approval</Text>
+        <View style={[styles.statusPill, { backgroundColor: 'rgba(245, 158, 11, 0.15)', borderColor: 'rgba(245, 158, 11, 0.3)' }]}>
+          <Text style={[styles.statusPillText, { color: '#F59E0B' }]}>Pending</Text>
         </View>
       );
     }
     if (campaign.approval_status === 'Rejected' || (campaign.rejected_ad_count && parseInt(campaign.rejected_ad_count) > 0)) {
       return (
-        <View className="bg-red-50 dark:bg-red-500/10 px-2 py-1 rounded-md border border-red-100 dark:border-red-500/20">
-          <Text className="text-red-600 dark:text-red-400 text-[10px] font-black uppercase tracking-wider">Rejected</Text>
+        <View style={[styles.statusPill, { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderColor: 'rgba(239, 68, 68, 0.3)' }]}>
+          <Text style={[styles.statusPillText, { color: '#EF4444' }]}>Rejected</Text>
         </View>
       );
     }
     if (campaign.status?.toLowerCase() === 'active') {
       return (
-        <View className="bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-100 dark:border-emerald-500/20">
-          <Text className="text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wider">Active</Text>
+        <View style={[styles.statusPill, { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderColor: 'rgba(16, 185, 129, 0.3)' }]}>
+          <View style={styles.greenPulse} />
+          <Text style={[styles.statusPillText, { color: '#10B981' }]}>Active</Text>
         </View>
       );
     }
     return (
-      <View className="bg-slate-100 dark:bg-[#30363D] px-2 py-1 rounded-md border border-slate-200 dark:border-[#4B5563]">
-        <Text className="text-slate-600 dark:text-slate-300 text-[10px] font-black uppercase tracking-wider">{campaign.status}</Text>
+      <View style={[styles.statusPill, { backgroundColor: isDarkMode ? '#1E153D' : '#F1F5F9', borderColor: isDarkMode ? '#3B2A68' : '#E2E8F0' }]}>
+        <Text style={[styles.statusPillText, { color: isDarkMode ? '#94A3B8' : '#64748B' }]}>{campaign.status || 'Paused'}</Text>
       </View>
     );
   };
 
-  const activeCampaigns = campaigns.filter(c => c.status === 'Active');
   const totalAds = stats?.stats?.total_ads || 0;
+  const balance = stats?.wallet_balance || user?.wallet_balance || 0;
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F8FAFC] dark:bg-[#0D1117]">
-      {/* Premium Header */}
-      <View className="px-5 py-4 flex-row items-center justify-between bg-[#F8FAFC] dark:bg-[#0D1117] z-10 border-b border-slate-100 dark:border-[#1F2937]">
-        <View className="flex-row items-center flex-1">
-          <View className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-xl items-center justify-center border border-amber-200 dark:border-amber-700/50 mr-3">
-            <Building2 size={22} className="text-amber-600 dark:text-amber-400" />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: isDarkMode ? '#090614' : '#F8F7FF' }]}>
+      
+      {/* ── Top App Bar ────────────────────────────────────────────── */}
+      <View style={[
+        styles.headerBar, 
+        { 
+          backgroundColor: isDarkMode ? '#090614' : '#F8F7FF',
+          borderBottomColor: isDarkMode ? '#1E153D' : '#EDE9FE' 
+        }
+      ]}>
+        <View style={styles.headerLeft}>
+          <View style={[styles.avatarBox, isDarkMode ? styles.neonGlowSmall : null]}>
+            <LinearGradient
+              colors={['#8B5CF6', '#7C3AED']}
+              style={styles.avatarGradient}
+            >
+              <Building2 size={20} color="#FFFFFF" />
+            </LinearGradient>
           </View>
-          <View className="flex-1">
-            <Text className="text-xs font-semibold text-slate-500 dark:text-[#8B949E] uppercase tracking-wider mb-0.5">Welcome back, 👋</Text>
-            <Text className="text-xl font-black text-slate-900 dark:text-white tracking-tight" numberOfLines={1}>{user?.company_name || 'Advertiser'}</Text>
+          <View>
+            <View style={styles.tagRow}>
+              <Text style={[styles.welcomeTag, { color: isDarkMode ? '#A78BFA' : '#7C3AED' }]}>
+                ADVERTISER PORTAL
+              </Text>
+              <View style={styles.onlineDot} />
+            </View>
+            <Text style={[styles.companyName, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]} numberOfLines={1}>
+              {user?.company_name || 'My Business'}
+            </Text>
           </View>
         </View>
-        
+
         <TouchableOpacity 
           onPress={() => navigation.navigate('Settings')}
-          className="w-10 h-10 rounded-full bg-white dark:bg-[#161B22] items-center justify-center shadow-sm border border-slate-200 dark:border-[#30363D]"
+          style={[
+            styles.settingsBtn,
+            { backgroundColor: isDarkMode ? '#181033' : '#FFFFFF', borderColor: isDarkMode ? '#281B4B' : '#E2E8F0' }
+          ]}
+          activeOpacity={0.7}
         >
-          <Settings size={20} className="text-slate-600 dark:text-[#8B949E]" />
+          <Settings size={19} color={isDarkMode ? '#C084FC' : '#6B7280'} />
         </TouchableOpacity>
       </View>
 
       <ScrollView 
-        className="flex-1"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#F59E0B" />}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        style={styles.flex1}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#A855F7" />}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        <View className="px-5 py-4">
+        <View style={styles.contentContainer}>
 
-          {/* Hero Section */}
-          <View className="bg-slate-900 dark:bg-[#161B22] rounded-3xl p-6 mb-6 shadow-xl shadow-slate-900/20 overflow-hidden relative">
-            {/* Decorative background elements */}
-            <View className="absolute -top-12 -right-12 w-32 h-32 bg-amber-500/20 rounded-full blur-3xl" />
-            <View className="absolute -bottom-10 -left-10 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl" />
-            
-            <Text className="text-white text-2xl font-black tracking-tight mb-2">Put your brand in front of BRT commuters 🚍</Text>
-            <Text className="text-slate-300 text-sm leading-relaxed mb-6 max-w-[90%]">
-              {totalAds === 0 
-                ? "Upload your advertisement and choose where and when it should appear."
-                : "Choose where and when your uploaded advertisements should appear."
-              }
-            </Text>
-            
-            <View className="flex-row items-center space-x-3">
-              {totalAds === 0 ? (
+          {/* ── Hero Wallet Card with Violet/Purple Gradient ──────────── */}
+          <View style={[styles.walletCardWrapper, isDarkMode ? styles.walletCardGlow : null]}>
+            <LinearGradient
+              colors={['#6D28D9', '#7C3AED', '#9333EA']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.walletCard}
+            >
+              {/* Background Ambient Circles */}
+              <View style={styles.ambientCircle1} />
+              <View style={styles.ambientCircle2} />
+
+              <View style={styles.walletTopRow}>
+                <View style={styles.walletLabelBox}>
+                  <Wallet size={16} color="#E9D5FF" />
+                  <Text style={styles.walletLabelText}>AVAILABLE CAMPAIGN BUDGET</Text>
+                </View>
+                <View style={styles.liveIndicatorPill}>
+                  <Activity size={12} color="#10B981" />
+                  <Text style={styles.liveIndicatorText}>Live Wallet</Text>
+                </View>
+              </View>
+
+              <Text style={styles.walletBalanceText}>
+                {formatCurrency(balance)}
+              </Text>
+
+              <View style={styles.walletDivider} />
+
+              <View style={styles.walletBottomRow}>
+                <View style={styles.walletStatItem}>
+                  <Text style={styles.walletStatLabel}>Today's Spend</Text>
+                  <Text style={styles.walletStatValue}>
+                    {formatCurrency(stats?.stats?.total_spent || 0)}
+                  </Text>
+                </View>
+
+                <View style={styles.walletStatItem}>
+                  <Text style={styles.walletStatLabel}>Plays Today</Text>
+                  <Text style={styles.walletStatValue}>
+                    {stats?.today_plays || 0}
+                  </Text>
+                </View>
+
                 <TouchableOpacity 
-                  onPress={() => navigation.navigate('CreateCampaign')} 
-                  className="bg-[#F59E0B] px-5 py-3 rounded-full flex-row items-center shadow-lg shadow-amber-500/30"
+                  onPress={() => navigation.navigate('AddMoney')}
+                  style={styles.addFundsBtn}
+                  activeOpacity={0.85}
                 >
-                  <Plus size={18} color="#FFFFFF" strokeWidth={3} />
-                  <Text className="text-white font-bold ml-1.5 text-sm">Launch Your Ad</Text>
+                  <Plus size={15} color="#6D28D9" strokeWidth={3} />
+                  <Text style={styles.addFundsBtnText}>Top Up</Text>
                 </TouchableOpacity>
-              ) : campaigns.length === 0 ? (
-                <TouchableOpacity 
-                  onPress={() => navigation.navigate('CreateCampaign')} 
-                  className="bg-[#F59E0B] px-5 py-3 rounded-full flex-row items-center shadow-lg shadow-amber-500/30"
-                >
-                  <Plus size={18} color="#FFFFFF" strokeWidth={3} />
-                  <Text className="text-white font-bold ml-1.5 text-sm">Launch Your Ad</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity 
-                  onPress={() => navigation.navigate('My Ads')} 
-                  className="bg-[#F59E0B] px-5 py-3 rounded-full flex-row items-center shadow-lg shadow-amber-500/30"
-                >
-                  <Text className="text-white font-bold text-sm px-2">View My Ads</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+              </View>
+            </LinearGradient>
           </View>
 
-          {/* Network Error State */}
-          {error && (
-            <View className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 rounded-2xl p-4 mb-6 flex-row items-center">
-              <View className="w-10 h-10 bg-red-100 dark:bg-red-900/40 rounded-full items-center justify-center mr-3">
-                <Settings size={20} className="text-red-600 dark:text-red-400" />
-              </View>
-              <View className="flex-1">
-                <Text className="text-red-800 dark:text-red-300 font-bold mb-0.5">Connection Issue</Text>
-                <Text className="text-red-600 dark:text-red-400 text-xs">{error}</Text>
-              </View>
-              <TouchableOpacity onPress={onRefresh} className="bg-red-100 dark:bg-red-900/40 px-3 py-1.5 rounded-full">
-                <Text className="text-red-700 dark:text-red-300 font-bold text-xs">Try Again</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          {/* ── Quick Action Tiles ─────────────────────────────────────── */}
+          <View style={styles.quickActionsGrid}>
+            <TouchableOpacity 
+              onPress={() => navigation.navigate('CreateCampaign')}
+              style={[
+                styles.actionTile,
+                { backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF', borderColor: isDarkMode ? '#281B4B' : '#EDE9FE' }
+              ]}
+              activeOpacity={0.8}
+            >
+              <LinearGradient colors={['#8B5CF6', '#6D28D9']} style={styles.actionIconBox}>
+                <Megaphone size={18} color="#FFFFFF" />
+              </LinearGradient>
+              <Text style={[styles.actionTileTitle, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]}>New Campaign</Text>
+              <Text style={[styles.actionTileDesc, { color: isDarkMode ? '#94A3B8' : '#6B7280' }]}>Target by area & route</Text>
+            </TouchableOpacity>
 
-          {/* Section A: Active Ads */}
-          <View className="flex-row items-center justify-between mb-4">
-            <Text className="text-sm font-black text-slate-800 dark:text-white tracking-tight uppercase">My Ads</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('My Ads')} className="flex-row items-center">
-              <Text className="text-amber-500 font-bold text-xs mr-1">View All</Text>
-              <ArrowRight size={14} color="#F59E0B" />
+            <TouchableOpacity 
+              onPress={() => navigation.navigate('UploadAd')}
+              style={[
+                styles.actionTile,
+                { backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF', borderColor: isDarkMode ? '#281B4B' : '#EDE9FE' }
+              ]}
+              activeOpacity={0.8}
+            >
+              <LinearGradient colors={['#EC4899', '#BE185D']} style={styles.actionIconBox}>
+                <Video size={18} color="#FFFFFF" />
+              </LinearGradient>
+              <Text style={[styles.actionTileTitle, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]}>Upload Media</Text>
+              <Text style={[styles.actionTileDesc, { color: isDarkMode ? '#94A3B8' : '#6B7280' }]}>Videos & creatives</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              onPress={() => navigation.navigate('LiveFleet')}
+              style={[
+                styles.actionTile,
+                { backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF', borderColor: isDarkMode ? '#281B4B' : '#EDE9FE' }
+              ]}
+              activeOpacity={0.8}
+            >
+              <LinearGradient colors={['#06B6D4', '#0E7490']} style={styles.actionIconBox}>
+                <Navigation size={18} color="#FFFFFF" />
+              </LinearGradient>
+              <Text style={[styles.actionTileTitle, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]}>Fleet Tracker</Text>
+              <Text style={[styles.actionTileDesc, { color: isDarkMode ? '#94A3B8' : '#6B7280' }]}>Live transit screens</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              onPress={() => navigation.navigate('Analytics')}
+              style={[
+                styles.actionTile,
+                { backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF', borderColor: isDarkMode ? '#281B4B' : '#EDE9FE' }
+              ]}
+              activeOpacity={0.8}
+            >
+              <LinearGradient colors={['#10B981', '#047857']} style={styles.actionIconBox}>
+                <BarChart3 size={18} color="#FFFFFF" />
+              </LinearGradient>
+              <Text style={[styles.actionTileTitle, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]}>Analytics</Text>
+              <Text style={[styles.actionTileDesc, { color: isDarkMode ? '#94A3B8' : '#6B7280' }]}>Impressions & ROI</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* ── Active Campaigns Section ──────────────────────────────── */}
+          <View style={styles.sectionHeaderRow}>
+            <View style={styles.sectionTitleWithIcon}>
+              <Sparkles size={16} color={isDarkMode ? '#C084FC' : '#7C3AED'} />
+              <Text style={[styles.sectionHeading, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]}>
+                Active Campaigns
+              </Text>
+            </View>
+            <TouchableOpacity onPress={() => navigation.navigate('My Ads')} activeOpacity={0.7} style={styles.viewAllRow}>
+              <Text style={[styles.viewAllText, { color: isDarkMode ? '#C084FC' : '#7C3AED' }]}>View All</Text>
+              <ArrowRight size={13} color={isDarkMode ? '#C084FC' : '#7C3AED'} />
             </TouchableOpacity>
           </View>
 
           {campaigns.length === 0 ? (
-            <View className="bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-3xl p-6 items-center shadow-sm mb-6">
-              <View className="w-16 h-16 bg-amber-50 dark:bg-amber-900/20 rounded-full items-center justify-center mb-4">
-                <Megaphone size={28} className="text-amber-500" />
+            <View style={[
+              styles.emptyCard, 
+              { backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF', borderColor: isDarkMode ? '#281B4B' : '#EDE9FE' }
+            ]}>
+              <View style={[styles.emptyIconBox, { backgroundColor: isDarkMode ? '#201642' : '#F3F0FF' }]}>
+                <Megaphone size={28} color="#A855F7" />
               </View>
-              <Text className="text-slate-900 dark:text-white font-black text-lg mb-2 text-center">Start advertising on BRT screens 🚍</Text>
-              <Text className="text-slate-500 dark:text-[#8B949E] text-center text-sm leading-relaxed mb-5 px-4">
-                Choose where and when you want your advertisement displayed.
+              <Text style={[styles.emptyTitle, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]}>
+                No Active Campaigns
+              </Text>
+              <Text style={[styles.emptySubtitle, { color: isDarkMode ? '#94A3B8' : '#6B7280' }]}>
+                Put your brand in front of thousands of daily commuters by launching your first ad campaign.
               </Text>
               <TouchableOpacity 
                 onPress={() => navigation.navigate('CreateCampaign')}
-                className="bg-slate-900 dark:bg-white px-6 py-3 rounded-full shadow-sm"
+                activeOpacity={0.88}
+                style={styles.emptyCta}
               >
-                <Text className="text-white dark:text-slate-900 font-bold text-sm">
-                  Launch Your First Ad
-                </Text>
+                <LinearGradient
+                  colors={['#7C3AED', '#9333EA']}
+                  style={styles.emptyCtaGradient}
+                >
+                  <Plus size={16} color="#FFFFFF" strokeWidth={3} />
+                  <Text style={styles.emptyCtaText}>Create Campaign</Text>
+                </LinearGradient>
               </TouchableOpacity>
             </View>
           ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-6 -mx-5 px-5">
-              {campaigns.map((campaign, idx) => (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll} contentContainerStyle={styles.horizontalScrollContent}>
+              {campaigns.map((camp, idx) => (
                 <TouchableOpacity 
-                  key={campaign.id || idx}
+                  key={camp.id || idx}
                   onPress={() => navigation.navigate('My Ads')}
-                  className="bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-3xl p-4 mr-4 w-64 shadow-sm"
+                  style={[
+                    styles.campaignCard,
+                    { 
+                      backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF', 
+                      borderColor: isDarkMode ? '#281B4B' : '#EDE9FE' 
+                    }
+                  ]}
+                  activeOpacity={0.85}
                 >
-                  <View className="flex-row justify-between items-start mb-3">
-                    <View className="flex-1 pr-2">
-                      <Text className="text-slate-900 dark:text-white font-black text-base tracking-tight mb-1" numberOfLines={1}>{campaign.campaign_name}</Text>
-                      <View className="flex-row items-center">
-                        <MapPin size={12} className="text-slate-400" />
-                        <Text className="text-slate-500 text-xs font-medium ml-1" numberOfLines={1}>{campaign.area || 'All Areas'}</Text>
+                  <View style={styles.campaignCardTop}>
+                    <View style={styles.campTitleContainer}>
+                      <Text style={[styles.campaignCardTitle, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]} numberOfLines={1}>
+                        {camp.campaign_name}
+                      </Text>
+                      <View style={styles.campLocationRow}>
+                        <MapPin size={11} color={isDarkMode ? '#A78BFA' : '#6B7280'} />
+                        <Text style={[styles.campLocationText, { color: isDarkMode ? '#94A3B8' : '#6B7280' }]} numberOfLines={1}>
+                          {camp.area || 'All City Routes'}
+                        </Text>
                       </View>
                     </View>
-                    {renderCampaignStatus(campaign)}
+                    {renderCampaignStatus(camp)}
                   </View>
 
-                  <View className="flex-row justify-between items-center bg-slate-50 dark:bg-[#0D1117] p-3 rounded-2xl border border-slate-100 dark:border-[#30363D]">
-                    <View>
-                      <Text className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Spend</Text>
-                      <Text className="text-slate-800 dark:text-slate-200 font-bold">{formatCurrency(campaign.total_spend || 0)}</Text>
+                  <View style={[styles.campaignCardStats, { backgroundColor: isDarkMode ? '#090614' : '#F8F7FF', borderColor: isDarkMode ? '#1E153D' : '#EDE9FE' }]}>
+                    <View style={styles.campStatBox}>
+                      <Text style={styles.campStatSub}>TOTAL SPEND</Text>
+                      <Text style={[styles.campStatVal, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]}>
+                        {formatCurrency(camp.total_spend || 0)}
+                      </Text>
                     </View>
-                    <View className="h-6 w-px bg-slate-200 dark:bg-[#30363D]" />
-                    <View className="items-end">
-                      <Text className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Plays</Text>
-                      <Text className="text-slate-800 dark:text-slate-200 font-bold">{campaign.total_plays || 0}</Text>
+                    <View style={[styles.campStatDivider, { backgroundColor: isDarkMode ? '#281B4B' : '#E2E8F0' }]} />
+                    <View style={styles.campStatBox}>
+                      <Text style={styles.campStatSub}>TOTAL PLAYS</Text>
+                      <Text style={[styles.campStatVal, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]}>
+                        {camp.total_plays || 0}
+                      </Text>
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -267,92 +388,79 @@ export default function DashboardScreen({ navigation }) {
             </ScrollView>
           )}
 
-          {/* Section B: Configured Display Network */}
-          <Text className="text-sm font-black text-slate-800 dark:text-white tracking-tight uppercase mb-4 mt-2">Configured Display Network</Text>
-          <View className="bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-3xl p-5 shadow-sm mb-8">
-            <View className="flex-row justify-between items-center mb-5 pb-5 border-b border-slate-100 dark:border-[#30363D]">
-              <View className="flex-row items-center">
-                <View className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-2xl items-center justify-center mr-3">
-                  <MonitorSmartphone size={24} className="text-blue-500" />
-                </View>
-                <View>
-                  <Text className="text-slate-500 dark:text-[#8B949E] text-[10px] font-black uppercase tracking-widest mb-0.5">Target Displays Configured</Text>
-                  <View className="flex-row items-center">
-                    <Text className="text-slate-900 dark:text-white font-black text-2xl tracking-tight mr-2">{liveFleet.length}</Text>
-                    {liveFleet.length > 0 && <View className="w-2 h-2 rounded-full bg-emerald-500" />}
-                  </View>
-                </View>
-              </View>
-              <TouchableOpacity onPress={() => navigation.navigate('LiveFleet')} className="bg-slate-50 dark:bg-[#0D1117] p-2.5 rounded-full border border-slate-200 dark:border-[#30363D]">
-                <ChevronRight size={20} className="text-slate-400" />
-              </TouchableOpacity>
+          {/* ── Transit Display Network Card ─────────────────────────── */}
+          <View style={styles.sectionHeaderRow}>
+            <View style={styles.sectionTitleWithIcon}>
+              <Radio size={16} color={isDarkMode ? '#38BDF8' : '#0284C7'} />
+              <Text style={[styles.sectionHeading, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]}>
+                Live Transit Display Network
+              </Text>
             </View>
-
-            {liveFleet.length === 0 ? (
-              <View className="items-center py-2">
-                <Text className="text-slate-500 dark:text-slate-400 text-sm text-center">
-                  Your ads are not playing on any screens right now. Check your active ads or create a new one.
-                </Text>
-              </View>
-            ) : (
-              <View>
-                <Text className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Target Network</Text>
-                {liveFleet.slice(0, 2).map((vehicle, index) => (
-                  <View key={index} className="flex-row justify-between items-center bg-slate-50 dark:bg-[#0D1117] p-3 rounded-xl mb-2">
-                    <View className="flex-row items-center">
-                      <MapPin size={14} className="text-slate-400 mr-2" />
-                      <Text className="text-slate-700 dark:text-slate-300 font-semibold text-sm">{vehicle.area || 'Active Zone'}</Text>
-                    </View>
-                    <Text className="text-slate-500 dark:text-slate-400 text-xs">BRT {vehicle.vehicle_number}</Text>
-                  </View>
-                ))}
-                {liveFleet.length > 2 && (
-                  <TouchableOpacity onPress={() => navigation.navigate('LiveFleet')} className="mt-2 items-center">
-                    <Text className="text-amber-500 font-bold text-xs">View all {liveFleet.length} target screens</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
           </View>
 
-          {/* Section C: Performance */}
-          <Text className="text-sm font-black text-slate-800 dark:text-white tracking-tight uppercase mb-4">Performance Overview</Text>
-          <View className="flex-row flex-wrap justify-between">
-            {/* Wallet / Spend */}
-            <View className="w-[48%] bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-3xl p-5 mb-4 shadow-sm">
-              <View className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl items-center justify-center mb-4">
-                <Wallet size={20} className="text-emerald-500" />
+          <View style={[
+            styles.fleetNetworkCard,
+            { backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF', borderColor: isDarkMode ? '#281B4B' : '#EDE9FE' }
+          ]}>
+            <View style={styles.fleetCardHeader}>
+              <View style={styles.fleetCardHeaderLeft}>
+                <View style={[styles.fleetIconContainer, { backgroundColor: isDarkMode ? 'rgba(6, 182, 212, 0.15)' : '#E0F2FE' }]}>
+                  <MonitorSmartphone size={22} color="#06B6D4" />
+                </View>
+                <View>
+                  <Text style={[styles.fleetHeaderTitle, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]}>
+                    {liveFleet.length} Screens Active in Fleet
+                  </Text>
+                  <Text style={[styles.fleetHeaderSub, { color: isDarkMode ? '#94A3B8' : '#64748B' }]}>
+                    Auto-rickshaws & transit buses broadcasting ads
+                  </Text>
+                </View>
               </View>
-              <Text className="text-slate-500 dark:text-[#8B949E] text-xs font-medium mb-1">Available Budget</Text>
-              <Text className="text-slate-900 dark:text-white text-xl font-black tracking-tight mb-4" adjustsFontSizeToFit numberOfLines={1}>
-                {formatCurrency(stats?.wallet_balance)}
-              </Text>
+
               <TouchableOpacity 
-                onPress={() => navigation.navigate('AddMoney')}
-                className="bg-slate-50 dark:bg-[#0D1117] py-2 px-3 rounded-xl flex-row items-center justify-center border border-slate-200 dark:border-[#30363D]"
+                onPress={() => navigation.navigate('LiveFleet')}
+                style={[styles.fleetActionChevron, { backgroundColor: isDarkMode ? '#1E153D' : '#F3F0FF' }]}
+                activeOpacity={0.7}
               >
-                <Plus size={14} className="text-slate-600 dark:text-slate-300" />
-                <Text className="text-slate-700 dark:text-slate-300 text-xs font-bold ml-1">Add Funds</Text>
+                <ChevronRight size={18} color={isDarkMode ? '#C084FC' : '#7C3AED'} />
               </TouchableOpacity>
             </View>
 
-            {/* Plays */}
-            <View className="w-[48%] bg-white dark:bg-[#161B22] border border-slate-200 dark:border-[#30363D] rounded-3xl p-5 mb-4 shadow-sm">
-              <View className="w-10 h-10 bg-purple-50 dark:bg-purple-900/20 rounded-2xl items-center justify-center mb-4">
-                <BarChart3 size={20} className="text-purple-500" />
+            {liveFleet.length > 0 ? (
+              <View style={styles.fleetListPreview}>
+                {liveFleet.slice(0, 3).map((vehicle, idx) => (
+                  <View 
+                    key={idx} 
+                    style={[
+                      styles.fleetItemRow, 
+                      { 
+                        backgroundColor: isDarkMode ? '#090614' : '#F8F7FF',
+                        borderColor: isDarkMode ? '#1E153D' : '#EDE9FE' 
+                      }
+                    ]}
+                  >
+                    <View style={styles.fleetItemLeft}>
+                      <View style={styles.liveVehicleDot} />
+                      <Text style={[styles.fleetVehicleNumber, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]}>
+                        {vehicle.vehicle_number || `ADSD-${vehicle.id}`}
+                      </Text>
+                    </View>
+                    <View style={styles.fleetItemRight}>
+                      <MapPin size={12} color={isDarkMode ? '#A78BFA' : '#6B7280'} />
+                      <Text style={[styles.fleetVehicleArea, { color: isDarkMode ? '#94A3B8' : '#6B7280' }]}>
+                        {vehicle.area || 'Active Zone'}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
               </View>
-              <Text className="text-slate-500 dark:text-[#8B949E] text-xs font-medium mb-1">Times Played (Today)</Text>
-              <Text className="text-slate-900 dark:text-white text-xl font-black tracking-tight mb-4" adjustsFontSizeToFit numberOfLines={1}>
-                {stats?.today_plays || 0}
-              </Text>
-              <TouchableOpacity 
-                onPress={() => navigation.navigate('Analytics')}
-                className="bg-slate-50 dark:bg-[#0D1117] py-2 px-3 rounded-xl flex-row items-center justify-center border border-slate-200 dark:border-[#30363D]"
-              >
-                <Text className="text-slate-700 dark:text-slate-300 text-xs font-bold mr-1">View Analytics</Text>
-                <ArrowRight size={14} className="text-slate-600 dark:text-slate-300" />
-              </TouchableOpacity>
-            </View>
+            ) : (
+              <View style={styles.noFleetBox}>
+                <Text style={[styles.noFleetText, { color: isDarkMode ? '#94A3B8' : '#6B7280' }]}>
+                  All transit devices are registered and synced with GPS triggers.
+                </Text>
+              </View>
+            )}
           </View>
 
         </View>
@@ -360,3 +468,473 @@ export default function DashboardScreen({ navigation }) {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  flex1: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 110,
+  },
+  contentContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+  },
+
+  // Top Bar
+  headerBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  avatarBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    marginRight: 12,
+  },
+  avatarGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  neonGlowSmall: {
+    shadowColor: '#A855F7',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  tagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+  },
+  welcomeTag: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
+  onlineDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
+  },
+  companyName: {
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  settingsBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    borderWidth: 1.2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // Hero Wallet Card
+  walletCardWrapper: {
+    marginBottom: 20,
+  },
+  walletCardGlow: {
+    shadowColor: '#A855F7',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  walletCard: {
+    borderRadius: 24,
+    padding: 20,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  ambientCircle1: {
+    position: 'absolute',
+    top: -30,
+    right: -30,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+  },
+  ambientCircle2: {
+    position: 'absolute',
+    bottom: -40,
+    left: -20,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+  },
+  walletTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  walletLabelBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  walletLabelText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#E9D5FF',
+    letterSpacing: 0.6,
+  },
+  liveIndicatorPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  liveIndicatorText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#34D399',
+  },
+  walletBalanceText: {
+    fontSize: 34,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+    marginVertical: 4,
+  },
+  walletDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    marginVertical: 14,
+  },
+  walletBottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  walletStatItem: {
+    flex: 1,
+  },
+  walletStatLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#DDD6FE',
+    marginBottom: 2,
+  },
+  walletStatValue: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  addFundsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 14,
+    gap: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  addFundsBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#6D28D9',
+  },
+
+  // Quick Actions Grid
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 24,
+  },
+  actionTile: {
+    width: '48%',
+    padding: 14,
+    borderRadius: 20,
+    borderWidth: 1.2,
+  },
+  actionIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  actionTileTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    marginBottom: 2,
+  },
+  actionTileDesc: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+
+  // Section Headers
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  sectionTitleWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  sectionHeading: {
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  viewAllRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  viewAllText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  // Empty State
+  emptyCard: {
+    padding: 24,
+    borderRadius: 24,
+    borderWidth: 1.2,
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  emptyIconBox: {
+    width: 56,
+    height: 56,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 18,
+  },
+  emptyCta: {
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  emptyCtaGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    gap: 6,
+  },
+  emptyCtaText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+
+  // Horizontal Scroll Campaigns
+  horizontalScroll: {
+    marginHorizontal: -20,
+    marginBottom: 24,
+  },
+  horizontalScrollContent: {
+    paddingHorizontal: 20,
+    gap: 14,
+  },
+  campaignCard: {
+    width: 250,
+    padding: 16,
+    borderRadius: 22,
+    borderWidth: 1.2,
+  },
+  campaignCardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  campTitleContainer: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  campaignCardTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  campLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  campLocationText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  greenPulse: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#10B981',
+  },
+  statusPillText: {
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  campaignCardStats: {
+    flexDirection: 'row',
+    borderRadius: 14,
+    padding: 10,
+    borderWidth: 1,
+  },
+  campStatBox: {
+    flex: 1,
+  },
+  campStatSub: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#8B5CF6',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  campStatVal: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  campStatDivider: {
+    width: 1,
+    marginHorizontal: 8,
+  },
+
+  // Fleet Network Card
+  fleetNetworkCard: {
+    padding: 18,
+    borderRadius: 22,
+    borderWidth: 1.2,
+    marginBottom: 20,
+  },
+  fleetCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  fleetCardHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  fleetIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fleetHeaderTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  fleetHeaderSub: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  fleetActionChevron: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fleetListPreview: {
+    gap: 8,
+  },
+  fleetItemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  fleetItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  liveVehicleDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: '#06B6D4',
+  },
+  fleetVehicleNumber: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  fleetItemRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  fleetVehicleArea: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  noFleetBox: {
+    paddingVertical: 6,
+  },
+  noFleetText: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
+});

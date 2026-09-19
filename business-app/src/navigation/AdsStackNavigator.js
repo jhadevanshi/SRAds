@@ -6,7 +6,7 @@ const Stack = createNativeStackNavigator();
 
 export default function AdsStackNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#0D1117' } }}>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="AdsList" component={AdsListScreen} />
     </Stack.Navigator>
   );

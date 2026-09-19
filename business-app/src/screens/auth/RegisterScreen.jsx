@@ -1,29 +1,24 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { 
+  View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, 
+  KeyboardAvoidingView, Platform, ScrollView, StyleSheet 
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../../context/ThemeContext';
 import { businessService } from '../../services/business';
-import { Building2, User, Mail, Phone, Lock, Eye, EyeOff, ArrowLeft, CheckCircle2, Circle, Check } from 'lucide-react-native';
-
-const InputWrapper = ({ label, icon: Icon, children, fieldName, focusedField }) => (
-  <View className="mb-5">
-    <Text className="text-slate-700 text-xs font-bold mb-2 uppercase tracking-wide">{label}</Text>
-    <View className="relative justify-center">
-      {Icon && (
-        <View className="absolute left-4 z-10">
-          <Icon size={20} className={focusedField === fieldName ? 'text-[#F59E0B]' : 'text-slate-400'} />
-        </View>
-      )}
-      {children}
-    </View>
-  </View>
-);
+import { 
+  Building2, User, Mail, Phone, Lock, Eye, EyeOff, 
+  ArrowLeft, Check, Sparkles, MapPin, ShieldCheck, CheckCircle2 
+} from 'lucide-react-native';
 
 export default function RegisterScreen({ navigation }) {
+  const { isDarkMode } = useTheme();
+
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
-  const [showAddress, setShowAddress] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   
   const [form, setForm] = useState({
@@ -33,324 +28,603 @@ export default function RegisterScreen({ navigation }) {
     phone: '',
     password: '',
     confirm_password: '',
-    address: ''
+    address: '',
+    area: '',
+    city: 'Ahmedabad',
+    business_type: 'Retail / Service'
   });
 
   const getPasswordStrength = (pass) => {
-    if (pass.length === 0) return { label: '', color: 'bg-slate-200', text: '' };
-    if (pass.length < 6) return { label: 'Weak', color: 'bg-red-500', text: 'text-red-500', bars: 1 };
-    if (pass.length >= 8 && /[A-Z]/.test(pass) && /[0-9]/.test(pass)) return { label: 'Strong', color: 'bg-emerald-500', text: 'text-emerald-600', bars: 3 };
-    return { label: 'Medium', color: 'bg-[#F59E0B]', text: 'text-[#F59E0B]', bars: 2 };
+    if (!pass || pass.length === 0) return { label: '', color: '#CBD5E1', bars: 0 };
+    if (pass.length < 6) return { label: 'Weak', color: '#EF4444', bars: 1 };
+    if (pass.length >= 8 && /[A-Z]/.test(pass) && /[0-9]/.test(pass)) return { label: 'Strong', color: '#10B981', bars: 3 };
+    return { label: 'Medium', color: '#F59E0B', bars: 2 };
   };
 
   const handleContinue = () => {
-    if (!form.company_name) return Alert.alert('Missing Information', 'Please enter your business name.');
-    if (!form.owner_name) return Alert.alert('Missing Information', "Please enter the owner's full name.");
-    if (!form.email) return Alert.alert('Missing Information', 'Please enter a valid email address.');
-    if (!form.phone) return Alert.alert('Missing Information', 'Please enter a valid phone number.');
+    if (!form.company_name.trim()) return Alert.alert('Missing Details', 'Please enter your company or business name.');
+    if (!form.owner_name.trim()) return Alert.alert('Missing Details', "Please enter the authorized owner or manager's name.");
+    if (!form.email.trim()) return Alert.alert('Missing Details', 'Please enter a valid work email address.');
+    if (!form.phone.trim()) return Alert.alert('Missing Details', 'Please enter your mobile phone number.');
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(form.email)) {
+    if (!emailRegex.test(form.email.trim())) {
       return Alert.alert('Invalid Email', 'Please enter a valid email address.');
     }
     
-    // Quick simple phone validation (allowing digits and spaces)
     const digitsOnly = form.phone.replace(/\D/g, '');
     if (digitsOnly.length < 10) {
-      return Alert.alert('Invalid Phone', 'Please enter a valid 10-digit phone number.');
+      return Alert.alert('Invalid Phone', 'Please enter a valid 10-digit mobile number.');
     }
 
     setStep(2);
   };
 
   const handleRegister = async () => {
-    if (!form.password) return Alert.alert('Missing Information', 'Please create a password.');
-    
+    if (!form.password) return Alert.alert('Missing Details', 'Please create a secure password.');
     if (form.password.length < 6) {
-      return Alert.alert('Invalid Password', 'Password must be at least 6 characters long.');
+      return Alert.alert('Weak Password', 'Password must be at least 6 characters long.');
     }
     if (form.password !== form.confirm_password) {
-      return Alert.alert('Password Mismatch', 'Passwords do not match. Please try again.');
+      return Alert.alert('Password Mismatch', 'Passwords do not match. Please verify.');
     }
     if (!termsAccepted) {
-      return Alert.alert('Terms of Service', 'Please accept the Terms of Service and Privacy Policy to continue.');
+      return Alert.alert('Terms Required', 'Please accept the Advertiser Terms & Conditions to complete account setup.');
     }
 
     setLoading(true);
     try {
-      const res = await businessService.register(form);
+      const res = await businessService.register({
+        ...form,
+        email: form.email.trim(),
+        phone: form.phone.trim()
+      });
+
       if (res.success) {
-        Alert.alert('Account created successfully 🎉', 'Your business account is ready. Let\'s get your first advertisement on BRT screens.', [
-          { text: 'Continue to Sign In', onPress: () => navigation.navigate('Login') }
-        ]);
+        Alert.alert(
+          'Account Created 🎉', 
+          'Your advertiser account has been created successfully! Sign in to create your first transit ad campaign.', 
+          [{ text: 'Proceed to Sign In', onPress: () => navigation.navigate('Login') }]
+        );
       } else {
-        Alert.alert('Registration Failed', res.message || 'Error occurred');
+        Alert.alert('Registration Failed', res.message || 'Unable to register account.');
       }
     } catch (err) {
-      if (!err.response) {
-        Alert.alert('Network Error', 'Cannot connect to the server. Please check your internet connection.');
+      const errorMsg = err.response?.data?.message || err.message || 'Server error occurred.';
+      if (errorMsg.toLowerCase().includes('already exists') || errorMsg.toLowerCase().includes('duplicate')) {
+        Alert.alert('Email Registered', 'An account with this email already exists. Please sign in instead.');
       } else {
-        const errorMsg = err.response?.data?.message || 'Server error';
-        if (errorMsg.toLowerCase().includes('already exists') || errorMsg.toLowerCase().includes('duplicate')) {
-          Alert.alert('Email Registered', 'This email is already registered. Please sign in instead.');
-        } else {
-          Alert.alert('Registration Error', errorMsg);
-        }
+        Alert.alert('Registration Error', errorMsg);
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const isPasswordMatch = form.password.length > 0 && form.password === form.confirm_password;
   const strength = getPasswordStrength(form.password);
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
-        
-        {/* Progress Header */}
-        <View className="px-6 pt-4 pb-4 border-b border-slate-100 flex-row items-center justify-between">
-          <View className="flex-row items-center">
-            {step === 2 ? (
-              <TouchableOpacity onPress={() => setStep(1)} className="mr-4 p-2 -ml-2 rounded-full bg-slate-50">
-                <ArrowLeft size={20} className="text-slate-900" />
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity onPress={() => navigation.goBack()} className="mr-4 p-2 -ml-2 rounded-full bg-slate-50">
-                <ArrowLeft size={20} className="text-slate-900" />
-              </TouchableOpacity>
-            )}
-            <View>
-              <Text className="text-xs font-bold text-slate-400 uppercase tracking-widest">Step {step} of 2</Text>
-              <Text className="text-lg font-black text-slate-900 tracking-tight">{step === 1 ? 'Business Profile' : 'Account Security'}</Text>
-            </View>
-          </View>
-          <View className="flex-row gap-1">
-            <View className={`h-1.5 w-6 rounded-full ${step >= 1 ? 'bg-[#F59E0B]' : 'bg-slate-200'}`} />
-            <View className={`h-1.5 w-6 rounded-full ${step >= 2 ? 'bg-[#F59E0B]' : 'bg-slate-200'}`} />
-          </View>
-        </View>
-
-        <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 24 }} showsVerticalScrollIndicator={false}>
-          <View className="max-w-md w-full mx-auto">
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: isDarkMode ? '#090614' : '#F8F7FF' }]}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
+        style={styles.flex1}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent} 
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.container}>
             
-            {step === 1 && (
-              <View>
-                <View className="mb-8">
-                  <Text className="text-3xl font-black text-[#0F172A] tracking-tight mb-2">Tell us about your business</Text>
-                  <Text className="text-[#94A3B8] text-[15px] font-medium leading-relaxed">A few details to get your business account started.</Text>
+            {/* ── Top Bar ──────────────────────────────────────────────── */}
+            <View style={styles.topBar}>
+              <TouchableOpacity 
+                onPress={() => step === 2 ? setStep(1) : navigation.goBack()}
+                style={[
+                  styles.backBtn,
+                  { backgroundColor: isDarkMode ? '#181033' : '#FFFFFF', borderColor: isDarkMode ? '#281B4B' : '#E2E8F0' }
+                ]}
+                activeOpacity={0.7}
+              >
+                <ArrowLeft size={18} color={isDarkMode ? '#F8FAFC' : '#1E1B4B'} />
+              </TouchableOpacity>
+
+              <View style={styles.stepBadge}>
+                <Text style={[styles.stepBadgeText, { color: isDarkMode ? '#C084FC' : '#7C3AED' }]}>
+                  Step {step} of 2
+                </Text>
+              </View>
+            </View>
+
+            {/* ── Heading ──────────────────────────────────────────────── */}
+            <View style={styles.headingSection}>
+              <Text style={[styles.mainTitle, { color: isDarkMode ? '#F8FAFC' : '#111827' }]}>
+                {step === 1 ? 'Create Business Account' : 'Security & Location'}
+              </Text>
+              <Text style={[styles.subtitle, { color: isDarkMode ? '#94A3B8' : '#6B7280' }]}>
+                {step === 1 
+                  ? 'Join Adsnetvo to launch dynamic DOOH campaigns across smart transit displays' 
+                  : 'Set up your secure password and company headquarters'}
+              </Text>
+            </View>
+
+            {/* ── Step Progress Indicator ───────────────────────────────── */}
+            <View style={styles.progressRow}>
+              <View style={[styles.progressTrack, { backgroundColor: isDarkMode ? '#281B4B' : '#E2E8F0' }]}>
+                <LinearGradient
+                  colors={['#7C3AED', '#A855F7']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[styles.progressFill, { width: step === 1 ? '50%' : '100%' }]}
+                />
+              </View>
+            </View>
+
+            {/* ── STEP 1: Business Details ─────────────────────────────── */}
+            {step === 1 ? (
+              <View style={styles.formSection}>
+                
+                {/* Business Name */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: isDarkMode ? '#CBD5E1' : '#374151' }]}>
+                    Business / Company Name
+                  </Text>
+                  <View style={[
+                    styles.inputWrapper,
+                    { backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF', borderColor: focusedField === 'company_name' ? '#A855F7' : (isDarkMode ? '#281B4B' : '#E2E8F0') }
+                  ]}>
+                    <Building2 size={19} color={focusedField === 'company_name' ? '#A855F7' : (isDarkMode ? '#64748B' : '#94A3B8')} style={styles.inputIcon} />
+                    <TextInput
+                      style={[styles.inputField, { color: isDarkMode ? '#F8FAFC' : '#111827' }]}
+                      placeholder="e.g. Blue Dart Logistics Ltd."
+                      placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
+                      value={form.company_name}
+                      onChangeText={(v) => setForm(f => ({ ...f, company_name: v }))}
+                      onFocus={() => setFocusedField('company_name')}
+                      onBlur={() => setFocusedField(null)}
+                    />
+                  </View>
                 </View>
 
-                <InputWrapper label="Business Name *" fieldName="company_name" focusedField={focusedField} icon={Building2}>
-                  <TextInput
-                    className={`bg-slate-50 text-[#0F172A] border ${focusedField === 'company_name' ? 'border-[#F59E0B]' : 'border-slate-200'} rounded-[16px] pl-12 pr-4 h-[52px] text-[15px] font-medium`}
-                    placeholder="Enter business name"
-                    placeholderTextColor="#94A3B8"
-                    value={form.company_name}
-                    onChangeText={(t) => setForm({...form, company_name: t})}
-                    onFocus={() => setFocusedField('company_name')}
-                    onBlur={() => setFocusedField(null)}
-                  />
-                </InputWrapper>
-
-                <InputWrapper label="Owner Full Name *" fieldName="owner_name" focusedField={focusedField} icon={User}>
-                  <TextInput
-                    className={`bg-slate-50 text-[#0F172A] border ${focusedField === 'owner_name' ? 'border-[#F59E0B]' : 'border-slate-200'} rounded-[16px] pl-12 pr-4 h-[52px] text-[15px] font-medium`}
-                    placeholder="Enter owner's full name"
-                    placeholderTextColor="#94A3B8"
-                    value={form.owner_name}
-                    onChangeText={(t) => setForm({...form, owner_name: t})}
-                    onFocus={() => setFocusedField('owner_name')}
-                    onBlur={() => setFocusedField(null)}
-                  />
-                </InputWrapper>
-
-                <InputWrapper label="Work Email Address *" fieldName="email" focusedField={focusedField} icon={Mail}>
-                  <TextInput
-                    className={`bg-slate-50 text-[#0F172A] border ${focusedField === 'email' ? 'border-[#F59E0B]' : 'border-slate-200'} rounded-[16px] pl-12 pr-4 h-[52px] text-[15px] font-medium`}
-                    placeholder="you@company.com"
-                    placeholderTextColor="#94A3B8"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    value={form.email}
-                    onChangeText={(t) => setForm({...form, email: t})}
-                    onFocus={() => setFocusedField('email')}
-                    onBlur={() => setFocusedField(null)}
-                  />
-                </InputWrapper>
-
-                <View className="mb-5">
-                  <Text className="text-slate-700 text-xs font-bold mb-2 uppercase tracking-wide">Phone Number *</Text>
-                  <View className="relative justify-center flex-row items-center">
-                    <View className="absolute left-4 z-10">
-                      <Phone size={20} className={focusedField === 'phone' ? 'text-[#F59E0B]' : 'text-slate-400'} />
-                    </View>
-                    <View className="absolute left-[44px] z-10 border-r border-slate-200 pr-3 h-[24px] justify-center">
-                      <Text className="text-[#0F172A] font-bold text-[15px]">+91</Text>
-                    </View>
+                {/* Owner Name */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: isDarkMode ? '#CBD5E1' : '#374151' }]}>
+                    Authorized Contact Person
+                  </Text>
+                  <View style={[
+                    styles.inputWrapper,
+                    { backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF', borderColor: focusedField === 'owner_name' ? '#A855F7' : (isDarkMode ? '#281B4B' : '#E2E8F0') }
+                  ]}>
+                    <User size={19} color={focusedField === 'owner_name' ? '#A855F7' : (isDarkMode ? '#64748B' : '#94A3B8')} style={styles.inputIcon} />
                     <TextInput
-                      className={`flex-1 bg-slate-50 text-[#0F172A] border ${focusedField === 'phone' ? 'border-[#F59E0B]' : 'border-slate-200'} rounded-[16px] pl-[94px] pr-4 h-[52px] text-[15px] font-medium`}
-                      placeholder="XXXXX XXXXX"
-                      placeholderTextColor="#94A3B8"
+                      style={[styles.inputField, { color: isDarkMode ? '#F8FAFC' : '#111827' }]}
+                      placeholder="Full Name (e.g. Rahul Sharma)"
+                      placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
+                      value={form.owner_name}
+                      onChangeText={(v) => setForm(f => ({ ...f, owner_name: v }))}
+                      onFocus={() => setFocusedField('owner_name')}
+                      onBlur={() => setFocusedField(null)}
+                    />
+                  </View>
+                </View>
+
+                {/* Work Email */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: isDarkMode ? '#CBD5E1' : '#374151' }]}>
+                    Work Email Address
+                  </Text>
+                  <View style={[
+                    styles.inputWrapper,
+                    { backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF', borderColor: focusedField === 'email' ? '#A855F7' : (isDarkMode ? '#281B4B' : '#E2E8F0') }
+                  ]}>
+                    <Mail size={19} color={focusedField === 'email' ? '#A855F7' : (isDarkMode ? '#64748B' : '#94A3B8')} style={styles.inputIcon} />
+                    <TextInput
+                      style={[styles.inputField, { color: isDarkMode ? '#F8FAFC' : '#111827' }]}
+                      placeholder="name@company.com"
+                      placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      value={form.email}
+                      onChangeText={(v) => setForm(f => ({ ...f, email: v }))}
+                      onFocus={() => setFocusedField('email')}
+                      onBlur={() => setFocusedField(null)}
+                    />
+                  </View>
+                </View>
+
+                {/* Phone */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: isDarkMode ? '#CBD5E1' : '#374151' }]}>
+                    Phone Number
+                  </Text>
+                  <View style={[
+                    styles.inputWrapper,
+                    { backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF', borderColor: focusedField === 'phone' ? '#A855F7' : (isDarkMode ? '#281B4B' : '#E2E8F0') }
+                  ]}>
+                    <Phone size={19} color={focusedField === 'phone' ? '#A855F7' : (isDarkMode ? '#64748B' : '#94A3B8')} style={styles.inputIcon} />
+                    <TextInput
+                      style={[styles.inputField, { color: isDarkMode ? '#F8FAFC' : '#111827' }]}
+                      placeholder="+91 98765 43210"
+                      placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
                       keyboardType="phone-pad"
                       value={form.phone}
-                      onChangeText={(t) => setForm({...form, phone: t})}
+                      onChangeText={(v) => setForm(f => ({ ...f, phone: v }))}
                       onFocus={() => setFocusedField('phone')}
                       onBlur={() => setFocusedField(null)}
                     />
                   </View>
                 </View>
 
+                {/* Continue CTA */}
                 <TouchableOpacity 
-                  className="bg-[#F59E0B] rounded-[16px] h-[56px] flex-row justify-center items-center mt-6 shadow-md shadow-amber-500/25"
                   onPress={handleContinue}
-                  activeOpacity={0.8}
+                  activeOpacity={0.88}
+                  style={styles.ctaButtonWrapper}
                 >
-                  <Text className="text-white font-black text-lg">Continue to Security →</Text>
+                  <LinearGradient
+                    colors={['#7C3AED', '#9333EA', '#A855F7']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={[styles.ctaGradient, isDarkMode ? styles.ctaGlowDark : styles.ctaGlowLight]}
+                  >
+                    <Text style={styles.ctaButtonText}>Continue to Step 2 →</Text>
+                  </LinearGradient>
                 </TouchableOpacity>
 
-                <View className="flex-row justify-center mt-8 pb-10">
-                  <Text className="text-[#94A3B8] font-medium text-[15px]">Already have an account? </Text>
-                  <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                    <Text className="text-[#F59E0B] font-bold text-[15px]">Sign in</Text>
-                  </TouchableOpacity>
-                </View>
               </View>
-            )}
-
-            {step === 2 && (
-              <View>
-                <View className="mb-8">
-                  <Text className="text-3xl font-black text-[#0F172A] tracking-tight mb-2">Secure your account</Text>
-                  <Text className="text-[#94A3B8] text-[15px] font-medium leading-relaxed">Create a secure password for your business portal.</Text>
-                </View>
-
-                <InputWrapper label="Password *" fieldName="password" focusedField={focusedField} icon={Lock}>
-                  <TextInput
-                    className={`bg-slate-50 text-[#0F172A] border ${focusedField === 'password' ? 'border-[#F59E0B]' : 'border-slate-200'} rounded-[16px] pl-12 pr-12 h-[52px] text-[15px] font-medium`}
-                    placeholder="Create a password"
-                    placeholderTextColor="#94A3B8"
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                    value={form.password}
-                    onChangeText={(t) => setForm({...form, password: t})}
-                    onFocus={() => setFocusedField('password')}
-                    onBlur={() => setFocusedField(null)}
-                  />
-                  <TouchableOpacity 
-                    className="absolute right-2 p-2 z-10" 
-                    onPress={() => setShowPassword(!showPassword)}
-                    activeOpacity={0.7}
-                  >
-                    {showPassword ? <EyeOff size={20} className="text-slate-400" /> : <Eye size={20} className="text-slate-400" />}
-                  </TouchableOpacity>
-                </InputWrapper>
-
-                {/* Password Strength Indicator */}
-                {form.password.length > 0 && (
-                  <View className="flex-row items-center justify-between mb-5 -mt-2 px-1">
-                    <View className="flex-row gap-1 flex-1 mr-4">
-                      <View className={`h-1.5 flex-1 rounded-full ${strength.bars >= 1 ? strength.color : 'bg-slate-100'}`} />
-                      <View className={`h-1.5 flex-1 rounded-full ${strength.bars >= 2 ? strength.color : 'bg-slate-100'}`} />
-                      <View className={`h-1.5 flex-1 rounded-full ${strength.bars >= 3 ? strength.color : 'bg-slate-100'}`} />
-                    </View>
-                    <Text className={`text-xs font-bold ${strength.text}`}>{strength.label}</Text>
-                  </View>
-                )}
-
-                <InputWrapper label="Confirm Password *" fieldName="confirm_password" focusedField={focusedField} icon={Lock}>
-                  <TextInput
-                    className={`bg-slate-50 text-[#0F172A] border ${focusedField === 'confirm_password' ? 'border-[#F59E0B]' : 'border-slate-200'} rounded-[16px] pl-12 pr-4 h-[52px] text-[15px] font-medium`}
-                    placeholder="Confirm your password"
-                    placeholderTextColor="#94A3B8"
-                    secureTextEntry
-                    autoCapitalize="none"
-                    value={form.confirm_password}
-                    onChangeText={(t) => setForm({...form, confirm_password: t})}
-                    onFocus={() => setFocusedField('confirm_password')}
-                    onBlur={() => setFocusedField(null)}
-                  />
-                </InputWrapper>
-
-                {/* Confirm Password Feedback */}
-                {form.confirm_password.length > 0 && (
-                  <View className="flex-row items-center mb-5 -mt-2 px-1">
-                    {isPasswordMatch ? (
-                      <>
-                        <CheckCircle2 size={16} className="text-emerald-500 mr-2" />
-                        <Text className="text-emerald-600 font-bold text-xs">Passwords match</Text>
-                      </>
-                    ) : (
-                      <>
-                        <Circle size={16} className="text-red-400 mr-2" />
-                        <Text className="text-red-500 font-bold text-xs">Passwords do not match</Text>
-                      </>
-                    )}
-                  </View>
-                )}
-
-                <View className="mb-6 mt-2">
-                  <View className="flex-row justify-between items-center mb-2">
-                    <Text className="text-slate-700 text-xs font-bold uppercase tracking-wide">Business Address</Text>
-                    <Text className="text-slate-400 text-[10px] uppercase font-bold tracking-widest bg-slate-100 px-2 py-0.5 rounded-full">Optional</Text>
-                  </View>
-                  
-                  {!showAddress ? (
-                    <TouchableOpacity 
-                      className="border border-dashed border-slate-300 rounded-[16px] h-[52px] justify-center items-center bg-slate-50/50"
-                      onPress={() => setShowAddress(true)}
-                    >
-                      <Text className="text-[#F59E0B] font-bold text-sm">+ Add business address</Text>
-                    </TouchableOpacity>
-                  ) : (
+            ) : (
+              /* ── STEP 2: Password & Address ─────────────────────────── */
+              <View style={styles.formSection}>
+                
+                {/* Password */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: isDarkMode ? '#CBD5E1' : '#374151' }]}>
+                    Create Password
+                  </Text>
+                  <View style={[
+                    styles.inputWrapper,
+                    { backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF', borderColor: focusedField === 'password' ? '#A855F7' : (isDarkMode ? '#281B4B' : '#E2E8F0') }
+                  ]}>
+                    <Lock size={19} color={focusedField === 'password' ? '#A855F7' : (isDarkMode ? '#64748B' : '#94A3B8')} style={styles.inputIcon} />
                     <TextInput
-                      className={`bg-slate-50 text-[#0F172A] border ${focusedField === 'address' ? 'border-[#F59E0B]' : 'border-slate-200'} rounded-[16px] p-4 h-28 text-[15px] font-medium`}
-                      placeholder="Enter your full business address"
-                      placeholderTextColor="#94A3B8"
-                      multiline
-                      textAlignVertical="top"
-                      value={form.address}
-                      onChangeText={(t) => setForm({...form, address: t})}
-                      onFocus={() => setFocusedField('address')}
+                      style={[styles.inputField, { color: isDarkMode ? '#F8FAFC' : '#111827' }]}
+                      placeholder="Minimum 6 characters"
+                      placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
+                      secureTextEntry={!showPassword}
+                      value={form.password}
+                      onChangeText={(v) => setForm(f => ({ ...f, password: v }))}
+                      onFocus={() => setFocusedField('password')}
                       onBlur={() => setFocusedField(null)}
                     />
+                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.showPasswordBtn}>
+                      {showPassword ? <EyeOff size={18} color="#9CA3AF" /> : <Eye size={18} color="#9CA3AF" />}
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Password Strength Indicator */}
+                  {form.password.length > 0 && (
+                    <View style={styles.strengthRow}>
+                      <View style={styles.strengthBars}>
+                        {[1, 2, 3].map(i => (
+                          <View 
+                            key={i} 
+                            style={[
+                              styles.strengthBar, 
+                              { backgroundColor: i <= strength.bars ? strength.color : (isDarkMode ? '#281B4B' : '#E2E8F0') }
+                            ]} 
+                          />
+                        ))}
+                      </View>
+                      <Text style={[styles.strengthText, { color: strength.color }]}>
+                        {strength.label}
+                      </Text>
+                    </View>
                   )}
                 </View>
 
-                {/* Terms and Privacy */}
-                <TouchableOpacity 
-                  className="flex-row items-start mb-8 pr-4" 
-                  onPress={() => setTermsAccepted(!termsAccepted)}
-                  activeOpacity={0.7}
-                >
-                  <View className={`w-6 h-6 rounded border mr-3 items-center justify-center ${termsAccepted ? 'bg-[#F59E0B] border-[#F59E0B]' : 'border-slate-300 bg-white'}`}>
-                    {termsAccepted && <Check size={16} color="white" strokeWidth={3} />}
+                {/* Confirm Password */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: isDarkMode ? '#CBD5E1' : '#374151' }]}>
+                    Confirm Password
+                  </Text>
+                  <View style={[
+                    styles.inputWrapper,
+                    { backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF', borderColor: focusedField === 'confirm_password' ? '#A855F7' : (isDarkMode ? '#281B4B' : '#E2E8F0') }
+                  ]}>
+                    <Lock size={19} color={focusedField === 'confirm_password' ? '#A855F7' : (isDarkMode ? '#64748B' : '#94A3B8')} style={styles.inputIcon} />
+                    <TextInput
+                      style={[styles.inputField, { color: isDarkMode ? '#F8FAFC' : '#111827' }]}
+                      placeholder="Re-enter password"
+                      placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
+                      secureTextEntry={!showPassword}
+                      value={form.confirm_password}
+                      onChangeText={(v) => setForm(f => ({ ...f, confirm_password: v }))}
+                      onFocus={() => setFocusedField('confirm_password')}
+                      onBlur={() => setFocusedField(null)}
+                    />
                   </View>
-                  <Text className="text-slate-600 text-sm leading-relaxed flex-1">
-                    I agree to SRAds <Text className="text-[#0F172A] font-bold">Terms of Service</Text> and <Text className="text-[#0F172A] font-bold">Privacy Policy</Text>.
+                </View>
+
+                {/* Business Address & Area */}
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: isDarkMode ? '#CBD5E1' : '#374151' }]}>
+                    Business Area / Headquarters
+                  </Text>
+                  <View style={[
+                    styles.inputWrapper,
+                    { backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF', borderColor: focusedField === 'area' ? '#A855F7' : (isDarkMode ? '#281B4B' : '#E2E8F0') }
+                  ]}>
+                    <MapPin size={19} color={focusedField === 'area' ? '#A855F7' : (isDarkMode ? '#64748B' : '#94A3B8')} style={styles.inputIcon} />
+                    <TextInput
+                      style={[styles.inputField, { color: isDarkMode ? '#F8FAFC' : '#111827' }]}
+                      placeholder="e.g. Navrangpura, SG Highway, Bopal"
+                      placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
+                      value={form.area}
+                      onChangeText={(v) => setForm(f => ({ ...f, area: v }))}
+                      onFocus={() => setFocusedField('area')}
+                      onBlur={() => setFocusedField(null)}
+                    />
+                  </View>
+                </View>
+
+                {/* Terms Agreement */}
+                <TouchableOpacity 
+                  style={styles.termsRow}
+                  onPress={() => setTermsAccepted(!termsAccepted)}
+                  activeOpacity={0.75}
+                >
+                  <View style={[
+                    styles.checkbox,
+                    termsAccepted ? styles.checkboxActive : (isDarkMode ? styles.checkboxInactiveDark : styles.checkboxInactiveLight)
+                  ]}>
+                    {termsAccepted && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
+                  </View>
+                  <Text style={[styles.termsText, { color: isDarkMode ? '#94A3B8' : '#4B5563' }]}>
+                    I accept the <Text style={{ color: isDarkMode ? '#C084FC' : '#7C3AED', fontWeight: '700' }}>Terms of Service</Text> and <Text style={{ color: isDarkMode ? '#C084FC' : '#7C3AED', fontWeight: '700' }}>Advertiser Code of Conduct</Text>.
                   </Text>
                 </TouchableOpacity>
 
+                {/* Submit Register CTA */}
                 <TouchableOpacity 
-                  className={`rounded-[16px] h-[56px] flex-row justify-center items-center shadow-md pb-1 ${(!termsAccepted || loading) ? 'bg-slate-200' : 'bg-[#F59E0B] shadow-amber-500/25'}`}
                   onPress={handleRegister}
-                  disabled={!termsAccepted || loading}
-                  activeOpacity={0.8}
+                  disabled={loading}
+                  activeOpacity={0.88}
+                  style={styles.ctaButtonWrapper}
                 >
-                  {loading ? (
-                    <ActivityIndicator color={termsAccepted ? '#FFFFFF' : '#94A3B8'} />
-                  ) : (
-                    <Text className={`${termsAccepted ? 'text-white' : 'text-slate-400'} font-black text-lg`}>Create Business Account ✓</Text>
-                  )}
+                  <LinearGradient
+                    colors={['#7C3AED', '#9333EA', '#A855F7']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={[styles.ctaGradient, isDarkMode ? styles.ctaGlowDark : styles.ctaGlowLight]}
+                  >
+                    {loading ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Text style={styles.ctaButtonText}>Complete Registration 🎉</Text>
+                    )}
+                  </LinearGradient>
                 </TouchableOpacity>
 
               </View>
             )}
-            
+
+            {/* ── Footer ─────────────────────────────────────────────────── */}
+            <View style={styles.footerSection}>
+              <Text style={[styles.footerText, { color: isDarkMode ? '#94A3B8' : '#6B7280' }]}>
+                Already have an account?{' '}
+              </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Login')} activeOpacity={0.7}>
+                <Text style={[styles.signUpText, { color: isDarkMode ? '#C084FC' : '#7C3AED' }]}>
+                  Sign In
+                </Text>
+              </TouchableOpacity>
+            </View>
+
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  flex1: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 28,
+  },
+  container: {
+    maxWidth: 420,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stepBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: 'rgba(168, 85, 247, 0.12)',
+  },
+  stepBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  headingSection: {
+    marginBottom: 20,
+  },
+  mainTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+    marginBottom: 6,
+  },
+  subtitle: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  progressRow: {
+    marginBottom: 24,
+  },
+  progressTrack: {
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  formSection: {
+    width: '100%',
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 6,
+    marginLeft: 2,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.2,
+    borderRadius: 16,
+    height: 52,
+    paddingHorizontal: 14,
+  },
+  inputIcon: {
+    marginRight: 10,
+  },
+  inputField: {
+    flex: 1,
+    height: '100%',
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  showPasswordBtn: {
+    padding: 6,
+  },
+  strengthRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 6,
+    paddingHorizontal: 2,
+  },
+  strengthBars: {
+    flexDirection: 'row',
+    gap: 4,
+    flex: 1,
+    marginRight: 12,
+  },
+  strengthBar: {
+    height: 4,
+    flex: 1,
+    borderRadius: 2,
+  },
+  strengthText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  termsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginVertical: 16,
+    paddingHorizontal: 2,
+  },
+  checkbox: {
+    width: 18,
+    height: 18,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+    marginTop: 2,
+  },
+  checkboxActive: {
+    backgroundColor: '#9333EA',
+    borderColor: '#9333EA',
+  },
+  checkboxInactiveDark: {
+    borderColor: '#4C3B78',
+    backgroundColor: '#140F24',
+  },
+  checkboxInactiveLight: {
+    borderColor: '#D1D5DB',
+    backgroundColor: '#FFFFFF',
+  },
+  termsText: {
+    fontSize: 13,
+    lineHeight: 18,
+    flex: 1,
+  },
+  ctaButtonWrapper: {
+    width: '100%',
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  ctaGradient: {
+    height: 52,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  ctaGlowDark: {
+    shadowColor: '#A855F7',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 14,
+    elevation: 8,
+  },
+  ctaGlowLight: {
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  ctaButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  footerSection: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  footerText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  signUpText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+});

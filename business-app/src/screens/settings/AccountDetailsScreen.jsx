@@ -1,25 +1,36 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronRight, Camera } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ChevronRight, Camera, ArrowLeft, Building2 } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { businessService } from '../../services/business';
+import { colors } from '../../theme/designTokens';
 
-const InputField = React.memo(({ label, value, onChangeText, keyboardType = 'default', editable = true }) => (
+const InputField = React.memo(({ label, value, onChangeText, keyboardType = 'default', editable = true, isDark }) => (
   <View className="mb-4">
-    <Text className="text-slate-500 dark:text-[#8B949E] text-xs font-bold uppercase tracking-wider mb-2 ml-1">{label}</Text>
+    <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-bold uppercase tracking-wider mb-2 ml-1">
+      {label}
+    </Text>
     <TextInput
-      className={`bg-white dark:bg-[#1E293B] ${editable ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-[#64748B]'} border border-slate-200 dark:border-[#30363D] rounded-2xl px-5 py-4 font-bold shadow-sm`}
+      style={{ 
+        backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+        borderColor: isDark ? '#281B4B' : '#EDE9FE',
+        color: !editable ? (isDark ? '#64748B' : '#94A3B8') : (isDark ? '#F8FAFC' : '#1E1B4B') 
+      }}
+      className="border rounded-2xl px-4 py-3.5 font-bold shadow-sm text-sm"
       value={value}
       onChangeText={onChangeText}
       keyboardType={keyboardType}
-      placeholderTextColor="#94A3B8"
+      placeholderTextColor={isDark ? '#64748B' : '#94A3B8'}
       editable={editable}
     />
   </View>
 ));
 
 export default function AccountDetailsScreen({ navigation }) {
+  const { isDark } = useTheme();
   const { user, setUser } = useAuth();
   const [saving, setSaving] = useState(false);
   
@@ -52,44 +63,82 @@ export default function AccountDetailsScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F8FAFC] dark:bg-[#0D1117]">
-      <View className="px-5 py-4 border-b border-slate-100 dark:border-[#30363D] bg-[#F8FAFC] dark:bg-[#0D1117] z-10 flex-row items-center justify-between">
-        <View className="flex-row items-center">
-          <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 -ml-2 rounded-full bg-slate-100 dark:bg-[#161B22] mr-3">
-            <ChevronRight size={20} className="text-slate-900 dark:text-white rotate-180" />
-          </TouchableOpacity>
-          <Text className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Account Details</Text>
+    <SafeAreaView style={{ backgroundColor: isDark ? '#090614' : '#F8F7FF' }} className="flex-1" edges={['top']}>
+      {/* Top Header */}
+      <View 
+        style={{ 
+          backgroundColor: isDark ? '#120C26' : '#FFFFFF',
+          borderBottomColor: isDark ? '#281B4B' : '#EDE9FE' 
+        }}
+        className="px-5 py-4 border-b z-10 flex-row items-center"
+      >
+        <TouchableOpacity 
+          onPress={() => navigation.goBack()} 
+          style={{ 
+            backgroundColor: isDark ? '#1F1735' : '#F8F7FF',
+            borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+          }}
+          className="p-2.5 rounded-full border mr-3"
+        >
+          <ArrowLeft size={18} color={isDark ? '#F8FAFC' : '#1E1B4B'} />
+        </TouchableOpacity>
+        <View>
+          <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-xl font-black tracking-tight">
+            Business Profile
+          </Text>
+          <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold">
+            Merchant KYC & Contact Info
+          </Text>
         </View>
       </View>
 
-      <ScrollView className="flex-1 px-5 pt-6" contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView className="flex-1 px-5 pt-6" contentContainerStyle={{ paddingBottom: 110 }}>
         
-        <View className="items-center mb-8">
-          <View className="w-24 h-24 bg-slate-200 dark:bg-[#1E293B] rounded-full items-center justify-center border-4 border-white dark:border-[#30363D] shadow-sm mb-3 relative">
-            <Camera size={32} className="text-slate-400 dark:text-[#8B949E]" />
-            <TouchableOpacity className="absolute bottom-0 right-0 bg-[#F59E0B] w-8 h-8 rounded-full items-center justify-center border-2 border-white dark:border-[#0D1117]">
-              <Text className="text-white font-bold text-lg leading-tight">+</Text>
-            </TouchableOpacity>
-          </View>
-          <Text className="text-slate-500 dark:text-[#8B949E] font-bold text-sm">Update Business Logo</Text>
+        {/* Avatar */}
+        <View className="items-center mb-6">
+          <LinearGradient
+            colors={['#7C3AED', '#9333EA', '#C084FC']}
+            className="w-20 h-20 rounded-3xl items-center justify-center shadow-lg mb-2 relative"
+            style={{ shadowColor: '#9333EA', shadowRadius: 10 }}
+          >
+            <Building2 size={36} color="#FFFFFF" />
+          </LinearGradient>
+          <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="font-extrabold text-xs">
+            Merchant ID #{user?.id || '0000'}
+          </Text>
         </View>
 
-        <InputField label="Business Name" value={form.businessName} onChangeText={(t) => setForm({...form, businessName: t})} />
-        <InputField label="Owner Name" value={form.ownerName} onChangeText={(t) => setForm({...form, ownerName: t})} />
-        <InputField label="Email Address" value={form.email} onChangeText={(t) => setForm({...form, email: t})} keyboardType="email-address" />
-        <InputField label="Phone Number" value={form.phone} onChangeText={(t) => setForm({...form, phone: t})} keyboardType="phone-pad" />
-        <InputField label="GSTIN" value={form.gstin} onChangeText={(t) => setForm({...form, gstin: t})} editable={false} />
-        <InputField label="Registered Address" value={form.address} onChangeText={(t) => setForm({...form, address: t})} />
+        <InputField isDark={isDark} label="Business Entity Name" value={form.businessName} onChangeText={(t) => setForm({...form, businessName: t})} />
+        <InputField isDark={isDark} label="Authorised Representative" value={form.ownerName} onChangeText={(t) => setForm({...form, ownerName: t})} />
+        <InputField isDark={isDark} label="Work Email" value={form.email} onChangeText={(t) => setForm({...form, email: t})} keyboardType="email-address" />
+        <InputField isDark={isDark} label="Mobile Phone" value={form.phone} onChangeText={(t) => setForm({...form, phone: t})} keyboardType="phone-pad" />
+        <InputField isDark={isDark} label="GSTIN (Verified)" value={form.gstin} onChangeText={(t) => setForm({...form, gstin: t})} editable={false} />
+        <InputField isDark={isDark} label="Registered Billing Address" value={form.address} onChangeText={(t) => setForm({...form, address: t})} />
 
       </ScrollView>
 
-      <View className="absolute bottom-0 left-0 right-0 p-5 bg-[#F8FAFC]/90 dark:bg-[#0D1117]/90 border-t border-slate-100 dark:border-[#30363D]">
+      {/* Sticky Bottom Save */}
+      <View 
+        style={{ 
+          backgroundColor: isDark ? '#120C26' : '#FFFFFF',
+          borderTopColor: isDark ? '#281B4B' : '#EDE9FE' 
+        }}
+        className="p-5 border-t"
+      >
         <TouchableOpacity 
-          className="bg-[#F59E0B] rounded-2xl py-4 items-center shadow-md shadow-amber-500/20"
           onPress={handleSave}
           disabled={saving}
+          className="rounded-2xl overflow-hidden shadow-lg"
+          style={{ shadowColor: '#9333EA', shadowRadius: 10, opacity: saving ? 0.6 : 1 }}
+          activeOpacity={0.8}
         >
-          {saving ? <ActivityIndicator color="#FFFFFF" /> : <Text className="text-white font-black text-lg tracking-tight">Save Changes</Text>}
+          <LinearGradient
+            colors={['#7C3AED', '#9333EA', '#C084FC']}
+            className="py-4 items-center justify-center flex-row"
+          >
+            {saving ? <ActivityIndicator color="#FFFFFF" className="mr-2" size="small" /> : null}
+            <Text className="text-white font-black text-sm uppercase tracking-wide">Save Changes</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

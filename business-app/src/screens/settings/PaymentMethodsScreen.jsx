@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronRight, Plus, CreditCard, Trash2, Smartphone } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ChevronRight, Plus, CreditCard, Trash2, Smartphone, ArrowLeft, ShieldCheck } from 'lucide-react-native';
 import { businessService } from '../../services/business';
+import { useTheme } from '../../context/ThemeContext';
+import { colors } from '../../theme/designTokens';
 
 export default function PaymentMethodsScreen({ navigation }) {
+  const { isDark } = useTheme();
   const [methods, setMethods] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -13,7 +17,7 @@ export default function PaymentMethodsScreen({ navigation }) {
     try {
       const res = await businessService.getPaymentMethods();
       if (res.success) {
-        setMethods(res.methods);
+        setMethods(res.methods || []);
       }
     } catch (err) {
       console.error('Fetch payment methods error', err);
@@ -28,7 +32,7 @@ export default function PaymentMethodsScreen({ navigation }) {
   }, [navigation, fetchMethods]);
 
   const handleDelete = (id) => {
-    Alert.alert('Remove Payment Method', 'Are you sure you want to remove this payment method?', [
+    Alert.alert('Remove Method', 'Are you sure you want to remove this saved payment method?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Remove', style: 'destructive', onPress: async () => {
         try {
@@ -44,70 +48,126 @@ export default function PaymentMethodsScreen({ navigation }) {
   };
 
   const renderItem = ({ item }) => (
-    <View className="bg-white dark:bg-[#1E293B] border border-slate-100 dark:border-[#30363D] rounded-2xl p-5 mb-4 shadow-sm">
+    <View 
+      style={{ 
+        backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+        borderColor: isDark ? '#281B4B' : '#EDE9FE',
+        shadowColor: isDark ? '#7C3AED' : '#9333EA',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: isDark ? 0.15 : 0.05,
+        shadowRadius: 6,
+        elevation: 2
+      }}
+      className="border rounded-2xl p-4 mb-3.5 shadow-sm"
+    >
       <View className="flex-row justify-between items-center mb-1">
-        <View className="flex-row items-center">
-          <View className="w-12 h-12 bg-slate-50 dark:bg-[#0D1117] rounded-xl items-center justify-center mr-4 border border-slate-100 dark:border-[#30363D]">
-            {item.type === 'UPI' ? <Smartphone size={24} color="#38bdf8" /> : <CreditCard size={24} color="#8b5cf6" />}
+        <View className="flex-row items-center flex-1">
+          <View 
+            style={{ backgroundColor: isDark ? '#1F1735' : '#EDE9FE' }}
+            className="w-11 h-11 rounded-xl items-center justify-center mr-3.5"
+          >
+            {item.type === 'UPI' ? <Smartphone size={22} color="#38bdf8" /> : <CreditCard size={22} color="#A855F7" />}
           </View>
-          <View>
+          <View className="flex-1">
             <View className="flex-row items-center">
-              <Text className="text-slate-900 dark:text-white font-black text-lg mr-2">{item.type}</Text>
+              <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-extrabold text-base mr-2">{item.type}</Text>
               {item.isPrimary && (
-                <View className="bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded-sm border border-amber-200 dark:border-amber-500/30">
-                  <Text className="text-amber-600 dark:text-amber-400 text-[10px] font-black uppercase tracking-wider">Primary</Text>
+                <View 
+                  style={{ backgroundColor: 'rgba(124, 58, 237, 0.12)', borderColor: '#7C3AED' }}
+                  className="px-2 py-0.5 rounded-md border"
+                >
+                  <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="text-[10px] font-black uppercase">Primary</Text>
                 </View>
               )}
             </View>
-            <Text className="text-slate-500 dark:text-[#8B949E] text-sm font-bold mt-0.5">{item.details}</Text>
+            <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold mt-0.5">{item.details}</Text>
           </View>
         </View>
       </View>
-      <View className="flex-row justify-end mt-2 pt-3 border-t border-slate-100 dark:border-[#30363D]">
-        <TouchableOpacity className="mr-6">
-          <Text className="text-[#F59E0B] font-bold">Edit</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleDelete(item.id)}>
-          <Text className="text-red-500 font-bold">Remove</Text>
+      <View 
+        style={{ borderTopColor: isDark ? '#281B4B' : '#F1F5F9' }}
+        className="flex-row justify-end mt-2 pt-2.5 border-t"
+      >
+        <TouchableOpacity onPress={() => handleDelete(item.id)} className="p-1">
+          <Text className="text-rose-500 font-extrabold text-xs">Remove</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F8FAFC] dark:bg-[#0D1117]">
-      <View className="px-5 py-4 border-b border-slate-100 dark:border-[#30363D] bg-[#F8FAFC] dark:bg-[#0D1117] z-10 flex-row items-center">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 -ml-2 rounded-full bg-slate-100 dark:bg-[#161B22] mr-3">
-          <ChevronRight size={20} className="text-slate-900 dark:text-white rotate-180" />
+    <SafeAreaView style={{ backgroundColor: isDark ? '#090614' : '#F8F7FF' }} className="flex-1" edges={['top']}>
+      {/* Header */}
+      <View 
+        style={{ 
+          backgroundColor: isDark ? '#120C26' : '#FFFFFF',
+          borderBottomColor: isDark ? '#281B4B' : '#EDE9FE' 
+        }}
+        className="px-5 py-4 border-b z-10 flex-row items-center"
+      >
+        <TouchableOpacity 
+          onPress={() => navigation.goBack()} 
+          style={{ 
+            backgroundColor: isDark ? '#1F1735' : '#F8F7FF',
+            borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+          }}
+          className="p-2.5 rounded-full border mr-3"
+        >
+          <ArrowLeft size={18} color={isDark ? '#F8FAFC' : '#1E1B4B'} />
         </TouchableOpacity>
-        <Text className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Payment Methods</Text>
+        <View>
+          <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-xl font-black tracking-tight">Payment Methods</Text>
+          <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold">Saved UPI & Bank Accounts</Text>
+        </View>
       </View>
 
       {loading ? (
         <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#F59E0B" />
+          <ActivityIndicator size="large" color="#A855F7" />
         </View>
       ) : (
         <FlatList
           data={methods}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
-          contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
+          contentContainerStyle={{ padding: 18, paddingBottom: 100 }}
           ListEmptyComponent={
-            <View className="items-center mt-10">
-              <Text className="text-slate-500 dark:text-[#8B949E] text-base font-bold">No payment methods linked.</Text>
+            <View 
+              style={{ 
+                backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+                borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+              }}
+              className="items-center mt-6 border rounded-3xl p-8 shadow-sm"
+            >
+              <CreditCard size={32} color={isDark ? '#64748B' : '#94A3B8'} className="mb-3" />
+              <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-base font-extrabold mb-1">No Saved Methods</Text>
+              <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs text-center">Add a UPI ID or Bank Account for fast one-tap wallet recharge.</Text>
             </View>
           }
         />
       )}
 
-      <View className="absolute bottom-0 left-0 right-0 p-5 bg-[#F8FAFC]/90 dark:bg-[#0D1117]/90 border-t border-slate-100 dark:border-[#30363D]">
+      {/* Sticky Bottom Add Button */}
+      <View 
+        style={{ 
+          backgroundColor: isDark ? '#120C26' : '#FFFFFF',
+          borderTopColor: isDark ? '#281B4B' : '#EDE9FE' 
+        }}
+        className="p-5 border-t"
+      >
         <TouchableOpacity 
-          className="bg-[#F59E0B] rounded-2xl py-4 flex-row items-center justify-center shadow-md shadow-amber-500/20"
           onPress={() => navigation.navigate('AddPayment')}
+          className="rounded-2xl overflow-hidden shadow-lg"
+          style={{ shadowColor: '#9333EA', shadowRadius: 10 }}
+          activeOpacity={0.8}
         >
-          <Plus size={20} color="#FFFFFF" />
-          <Text className="text-white font-black text-lg tracking-tight ml-2">Add Payment Method</Text>
+          <LinearGradient
+            colors={['#7C3AED', '#9333EA', '#C084FC']}
+            className="py-4 flex-row items-center justify-center"
+          >
+            <Plus size={18} color="#FFFFFF" strokeWidth={3} style={{ marginRight: 6 }} />
+            <Text className="text-white font-black text-sm uppercase tracking-wide">Add Payment Method</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

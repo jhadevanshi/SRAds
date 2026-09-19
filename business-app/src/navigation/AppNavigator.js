@@ -20,15 +20,15 @@ export default function AppNavigator() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0D1117' }}>
-        <ActivityIndicator size="large" color="#F5C518" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#090614' }}>
+        <ActivityIndicator size="large" color="#A855F7" />
       </View>
     );
   }
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#090614' } }}>
         {user ? (
           <Stack.Group>
             <Stack.Screen name="MainTabs" component={TabNavigator} />
