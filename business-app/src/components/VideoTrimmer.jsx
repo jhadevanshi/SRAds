@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   View, Text, TouchableOpacity, PanResponder, Dimensions, 
-  StyleSheet, Alert 
+  StyleSheet, Alert, StatusBar 
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
 import { 
@@ -13,8 +13,8 @@ import {
 import { fonts } from '../theme/designTokens';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const TIMELINE_HORIZONTAL_PADDING = 16;
-const TRACK_WIDTH = SCREEN_WIDTH - (TIMELINE_HORIZONTAL_PADDING * 2) - 32; // subtracting card padding
+const CARD_HORIZONTAL_PADDING = 16;
+const TRACK_WIDTH = SCREEN_WIDTH - (CARD_HORIZONTAL_PADDING * 2);
 const THUMB_WIDTH = 22;
 const MIN_SELECTION_WIDTH = 28;
 const MAX_TRACK_WIDTH = TRACK_WIDTH - (THUMB_WIDTH * 2);
@@ -221,29 +221,14 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
   const playheadPos = progressRatio * MAX_TRACK_WIDTH + THUMB_WIDTH;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      {/* ── Top Header ────────────────────────────────────────────── */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onCancel} style={styles.headerIconBtn} activeOpacity={0.7}>
-          <ArrowLeft size={19} color="#F8FAFC" />
-        </TouchableOpacity>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-        <View style={styles.headerTitleBox}>
-          <Text style={styles.headerTitle}>Video Trimmer</Text>
-          <Text style={styles.headerSubtitle}>Min 30s Playback Required</Text>
-        </View>
-
-        <TouchableOpacity onPress={() => applyPreset('full')} style={styles.headerResetBtn} activeOpacity={0.7}>
-          <RotateCcw size={14} color="#C084FC" />
-          <Text style={styles.headerResetText}>Reset</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* ── 3/4 Video Player Preview Area (Dedicated screen portion) ── */}
-      <View style={styles.videoSection}>
+      {/* ── Full-Screen Immersive Video Display Area ────────────────── */}
+      <View style={styles.videoArea}>
         <VideoView
           player={player}
-          style={styles.video}
+          style={StyleSheet.absoluteFillObject}
           contentFit="contain"
           nativeControls={false}
         />
@@ -256,19 +241,38 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
         >
           <View style={[styles.playBtnCircle, isPlaying ? styles.playBtnCirclePlaying : null]}>
             {isPlaying ? (
-              <Pause size={28} color="#FFFFFF" />
+              <Pause size={30} color="#FFFFFF" />
             ) : (
-              <Play size={28} color="#FFFFFF" style={{ marginLeft: 4 }} />
+              <Play size={30} color="#FFFFFF" style={{ marginLeft: 4 }} />
             )}
           </View>
         </TouchableOpacity>
 
-        {/* Live Timestamp Badge Overlay */}
-        <View style={styles.currentPositionBadge}>
-          <View style={[styles.liveDot, { backgroundColor: isPlaying ? '#10B981' : '#A855F7' }]} />
-          <Text style={styles.currentPositionText}>
-            {formatTimeCode(currentTime)} / {formatTimeCode(duration)}
-          </Text>
+        {/* Floating Top Controls: Back Button | Timestamp | Reset Button */}
+        <View style={[styles.floatingTopBar, { top: Math.max(insets.top, 14) + 6 }]}>
+          <TouchableOpacity 
+            onPress={onCancel} 
+            style={styles.floatingGlassBtn} 
+            activeOpacity={0.75}
+          >
+            <ArrowLeft size={20} color="#F8FAFC" />
+          </TouchableOpacity>
+
+          <View style={styles.floatingTimeBadge}>
+            <View style={[styles.liveDot, { backgroundColor: isPlaying ? '#10B981' : '#A855F7' }]} />
+            <Text style={styles.floatingTimeText}>
+              {formatTimeCode(currentTime)} / {formatTimeCode(duration)}
+            </Text>
+          </View>
+
+          <TouchableOpacity 
+            onPress={() => applyPreset('full')} 
+            style={styles.floatingResetBtn} 
+            activeOpacity={0.75}
+          >
+            <RotateCcw size={14} color="#C084FC" />
+            <Text style={styles.floatingResetText}>Reset</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Duration Warning banner if video < 30s */}
@@ -282,10 +286,10 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
         )}
       </View>
 
-      {/* ── 1/4 Trimmer Control Section & Bottom Actions ───────────── */}
+      {/* ── Bottom Trimmer Control Card ────────────────────────────── */}
       <View style={[
-        styles.trimmerSection, 
-        { paddingBottom: Math.max(insets.bottom, 12) + 6 }
+        styles.trimmerCard, 
+        { paddingBottom: Math.max(insets.bottom, 12) + 8 }
       ]}>
         
         {/* Metric Overview Row (Start / Selected Duration / End) */}
@@ -299,7 +303,7 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
             styles.durationBadge, 
             !isValidDuration ? styles.durationBadgeInvalid : null
           ]}>
-            <Clock size={13} color={isValidDuration ? '#C084FC' : '#F59E0B'} />
+            <Clock size={12} color={isValidDuration ? '#C084FC' : '#F59E0B'} />
             <Text style={[
               styles.durationBadgeText, 
               !isValidDuration ? styles.durationBadgeTextInvalid : null
@@ -432,113 +436,103 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
         </View>
 
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#090614',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1E153D',
-  },
-  headerIconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 11,
-    backgroundColor: '#181033',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#281B4B',
-  },
-  headerTitleBox: {
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontFamily: fonts.displayBold,
-    fontSize: 16,
-    color: '#F8FAFC',
-    letterSpacing: -0.3,
-  },
-  headerSubtitle: {
-    fontFamily: fonts.medium,
-    fontSize: 11,
-    color: '#94A3B8',
-    marginTop: 1,
-  },
-  headerResetBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-    backgroundColor: '#181033',
-    borderWidth: 1,
-    borderColor: '#281B4B',
-  },
-  headerResetText: {
-    fontFamily: fonts.bold,
-    fontSize: 11,
-    color: '#C084FC',
+    backgroundColor: '#000000',
   },
 
-  /* 3/4 Video Display Section */
-  videoSection: {
-    flex: 3,
-    backgroundColor: '#000000',
+  /* ── Video Display Area (occupies full screen space above card) ── */
+  videoArea: {
+    flex: 1,
     position: 'relative',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  video: {
-    width: '100%',
-    height: '100%',
+    backgroundColor: '#000000',
+    overflow: 'hidden',
   },
   playOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 10,
   },
   playBtnCircle: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
-    backgroundColor: 'rgba(124, 58, 237, 0.88)',
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    backgroundColor: 'rgba(124, 58, 237, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderColor: 'rgba(255, 255, 255, 0.6)',
     shadowColor: '#A855F7',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.5,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowRadius: 14,
+    elevation: 10,
   },
   playBtnCirclePlaying: {
     backgroundColor: 'rgba(18, 12, 38, 0.65)',
-    borderColor: 'rgba(255, 255, 255, 0.25)',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
-  currentPositionBadge: {
+
+  /* ── Floating Top Header Over Video ── */
+  floatingTopBar: {
     position: 'absolute',
-    top: 12,
-    left: 14,
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    zIndex: 50,
+  },
+  floatingGlassBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(18, 12, 38, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.2,
+    borderColor: 'rgba(168, 85, 247, 0.35)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  floatingResetBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: 'rgba(18, 12, 38, 0.75)',
+    borderWidth: 1.2,
+    borderColor: 'rgba(168, 85, 247, 0.35)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  floatingResetText: {
+    fontFamily: fonts.bold,
+    fontSize: 11.5,
+    color: '#C084FC',
+  },
+  floatingTimeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(9, 6, 20, 0.88)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
+    backgroundColor: 'rgba(9, 6, 20, 0.85)',
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: 'rgba(168, 85, 247, 0.35)',
   },
@@ -547,38 +541,47 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
   },
-  currentPositionText: {
+  floatingTimeText: {
     fontFamily: fonts.bold,
-    fontSize: 10.5,
+    fontSize: 11,
     color: '#F8FAFC',
     letterSpacing: 0.3,
   },
   warningBanner: {
     position: 'absolute',
     bottom: 12,
+    alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(245, 158, 11, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: 'rgba(245, 158, 11, 0.25)',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#F59E0B',
+    zIndex: 20,
   },
   warningBannerText: {
     fontFamily: fonts.bold,
-    fontSize: 11,
+    fontSize: 11.5,
     color: '#FDE68A',
   },
 
-  /* 1/4 Trimmer Controls Card & Action Section */
-  trimmerSection: {
+  /* ── Bottom Trimmer Control Card ── */
+  trimmerCard: {
     backgroundColor: '#120C26',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     borderTopWidth: 1.5,
     borderTopColor: '#281B4B',
-    paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingHorizontal: CARD_HORIZONTAL_PADDING,
+    paddingTop: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 12,
   },
   metricRow: {
     flexDirection: 'row',
