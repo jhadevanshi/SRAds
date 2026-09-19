@@ -14,6 +14,7 @@ import {
   MonitorSmartphone, ChevronRight, ArrowRight, BarChart3, Sparkles, 
   Activity, Radio, ShieldCheck, Zap, Moon, Sun
 } from 'lucide-react-native';
+import { fonts } from '../../theme/designTokens';
 
 const { width } = Dimensions.get('window');
 
@@ -197,7 +198,7 @@ export default function DashboardScreen({ navigation }) {
       <ScrollView 
         style={styles.flex1}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#A855F7" />}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: 110 + insets.bottom }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 24 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.contentContainer}>
@@ -353,13 +354,13 @@ export default function DashboardScreen({ navigation }) {
               { backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF', borderColor: isDarkMode ? '#281B4B' : '#EDE9FE' }
             ]}>
               <View style={[styles.emptyIconBox, { backgroundColor: isDarkMode ? '#201642' : '#F3F0FF' }]}>
-                <Megaphone size={28} color="#A855F7" />
+                <Megaphone size={24} color="#A855F7" />
               </View>
               <Text style={[styles.emptyTitle, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]}>
                 No Active Campaigns
               </Text>
               <Text style={[styles.emptySubtitle, { color: isDarkMode ? '#94A3B8' : '#6B7280' }]}>
-                Put your brand in front of thousands of daily commuters by launching your first ad campaign.
+                Put your brand in front of daily commuters across transit screens.
               </Text>
               <TouchableOpacity 
                 onPress={() => navigation.navigate('CreateCampaign')}
@@ -370,7 +371,7 @@ export default function DashboardScreen({ navigation }) {
                   colors={['#7C3AED', '#9333EA']}
                   style={styles.emptyCtaGradient}
                 >
-                  <Plus size={16} color="#FFFFFF" strokeWidth={3} />
+                  <Plus size={15} color="#FFFFFF" strokeWidth={3} />
                   <Text style={styles.emptyCtaText}>Create Campaign</Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -425,7 +426,7 @@ export default function DashboardScreen({ navigation }) {
             </ScrollView>
           )}
 
-          {/* ── Transit Display Network Card ─────────────────────────── */}
+          {/* ── Live Transit Display Network Section ─────────────────── */}
           <View style={styles.sectionHeaderRow}>
             <View style={styles.sectionTitleWithIcon}>
               <Radio size={16} color={isDarkMode ? '#38BDF8' : '#0284C7'} />
@@ -433,12 +434,20 @@ export default function DashboardScreen({ navigation }) {
                 Live Transit Display Network
               </Text>
             </View>
+            <TouchableOpacity onPress={() => navigation.navigate('LiveFleet')} activeOpacity={0.7} style={styles.viewAllRow}>
+              <Text style={[styles.viewAllText, { color: isDarkMode ? '#38BDF8' : '#0284C7' }]}>Live Map</Text>
+              <ArrowRight size={13} color={isDarkMode ? '#38BDF8' : '#0284C7'} />
+            </TouchableOpacity>
           </View>
 
-          <View style={[
-            styles.fleetNetworkCard,
-            { backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF', borderColor: isDarkMode ? '#281B4B' : '#EDE9FE' }
-          ]}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('LiveFleet')}
+            activeOpacity={0.9}
+            style={[
+              styles.fleetNetworkCard,
+              { backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF', borderColor: isDarkMode ? '#281B4B' : '#EDE9FE' }
+            ]}
+          >
             <View style={styles.fleetCardHeader}>
               <View style={styles.fleetCardHeaderLeft}>
                 <View style={[styles.fleetIconContainer, { backgroundColor: isDarkMode ? 'rgba(6, 182, 212, 0.15)' : '#E0F2FE' }]}>
@@ -454,13 +463,10 @@ export default function DashboardScreen({ navigation }) {
                 </View>
               </View>
 
-              <TouchableOpacity 
-                onPress={() => navigation.navigate('LiveFleet')}
-                style={[styles.fleetActionChevron, { backgroundColor: isDarkMode ? '#1E153D' : '#F3F0FF' }]}
-                activeOpacity={0.7}
-              >
-                <ChevronRight size={18} color={isDarkMode ? '#C084FC' : '#7C3AED'} />
-              </TouchableOpacity>
+              <View style={[styles.fleetActionBtn, { backgroundColor: isDarkMode ? '#1E153D' : '#F3F0FF' }]}>
+                <Navigation size={13} color={isDarkMode ? '#38BDF8' : '#0284C7'} />
+                <Text style={[styles.fleetActionBtnText, { color: isDarkMode ? '#38BDF8' : '#0284C7' }]}>Track</Text>
+              </View>
             </View>
 
             {liveFleet.length > 0 ? (
@@ -494,11 +500,11 @@ export default function DashboardScreen({ navigation }) {
             ) : (
               <View style={styles.noFleetBox}>
                 <Text style={[styles.noFleetText, { color: isDarkMode ? '#94A3B8' : '#6B7280' }]}>
-                  All transit devices are registered and synced with GPS triggers.
+                  All transit devices are registered and synced with GPS triggers. Tap to view fleet map.
                 </Text>
               </View>
             )}
-          </View>
+          </TouchableOpacity>
 
         </View>
       </ScrollView>
@@ -514,11 +520,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 110,
+    paddingBottom: 24,
   },
   contentContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingHorizontal: 18,
+    paddingTop: 10,
   },
 
   // Top Bar
@@ -526,8 +532,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
     borderBottomWidth: 1,
   },
   headerLeft: {
@@ -537,15 +543,15 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   avatarBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 42,
+    height: 42,
+    borderRadius: 13,
     marginRight: 12,
   },
   avatarGradient: {
     width: '100%',
     height: '100%',
-    borderRadius: 14,
+    borderRadius: 13,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -567,8 +573,8 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   welcomeTag: {
+    fontFamily: fonts.bold,
     fontSize: 10,
-    fontWeight: '800',
     letterSpacing: 0.8,
   },
   onlineDot: {
@@ -578,8 +584,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#10B981',
   },
   companyName: {
+    fontFamily: fonts.displayBold,
     fontSize: 18,
-    fontWeight: '800',
     letterSpacing: -0.3,
   },
   headerRight: {
@@ -588,17 +594,17 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   themeToggleBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 13,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     borderWidth: 1.2,
     justifyContent: 'center',
     alignItems: 'center',
   },
   settingsBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 13,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     borderWidth: 1.2,
     justifyContent: 'center',
     alignItems: 'center',
@@ -606,7 +612,7 @@ const styles = StyleSheet.create({
 
   // Hero Wallet Card
   walletCardWrapper: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   walletCardGlow: {
     shadowColor: '#A855F7',
@@ -616,8 +622,8 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   walletCard: {
-    borderRadius: 24,
-    padding: 20,
+    borderRadius: 22,
+    padding: 18,
     position: 'relative',
     overflow: 'hidden',
   },
@@ -625,7 +631,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   walletLabelBox: {
     flexDirection: 'row',
@@ -633,8 +639,8 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   walletLabelText: {
+    fontFamily: fonts.bold,
     fontSize: 14,
-    fontWeight: '800',
     color: '#E9D5FF',
     letterSpacing: 0.2,
   },
@@ -648,13 +654,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   liveIndicatorText: {
+    fontFamily: fonts.bold,
     fontSize: 11,
-    fontWeight: '700',
     color: '#34D399',
   },
   walletBalanceText: {
+    fontFamily: fonts.displayExtraBold,
     fontSize: 34,
-    fontWeight: '900',
     color: '#FFFFFF',
     letterSpacing: -0.5,
     marginVertical: 4,
@@ -662,7 +668,7 @@ const styles = StyleSheet.create({
   walletDivider: {
     height: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.18)',
-    marginVertical: 14,
+    marginVertical: 12,
   },
   walletBottomRow: {
     flexDirection: 'row',
@@ -674,14 +680,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   walletStatLabel: {
+    fontFamily: fonts.semiBold,
     fontSize: 11,
-    fontWeight: '600',
     color: '#DDD6FE',
     marginBottom: 2,
   },
   walletStatValue: {
+    fontFamily: fonts.displayBold,
     fontSize: 14,
-    fontWeight: '800',
     color: '#FFFFFF',
   },
   addFundsBtn: {
@@ -689,8 +695,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: 14,
+    paddingVertical: 8,
+    borderRadius: 13,
     gap: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -699,8 +705,8 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   addFundsBtnText: {
+    fontFamily: fonts.extraBold,
     fontSize: 13,
-    fontWeight: '800',
     color: '#6D28D9',
   },
 
@@ -709,14 +715,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    rowGap: 12,
-    marginBottom: 24,
+    rowGap: 10,
+    marginBottom: 16,
   },
   actionTile: {
-    width: '48%',
-    minHeight: 114,
-    padding: 14,
-    borderRadius: 20,
+    width: '48.5%',
+    minHeight: 102,
+    padding: 13,
+    borderRadius: 18,
     borderWidth: 1.2,
     justifyContent: 'center',
   },
@@ -726,18 +732,18 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   actionTileTitle: {
+    fontFamily: fonts.displayBold,
     fontSize: 14,
-    fontWeight: '800',
     marginBottom: 2,
     letterSpacing: -0.2,
   },
   actionTileDesc: {
+    fontFamily: fonts.medium,
     fontSize: 11,
-    fontWeight: '500',
-    lineHeight: 15,
+    lineHeight: 14,
   },
 
   // Section Headers
@@ -745,7 +751,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 10,
   },
   sectionTitleWithIcon: {
     flexDirection: 'row',
@@ -753,8 +759,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   sectionHeading: {
+    fontFamily: fonts.displayBold,
     fontSize: 16,
-    fontWeight: '800',
     letterSpacing: -0.3,
   },
   viewAllRow: {
@@ -763,83 +769,84 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   viewAllText: {
+    fontFamily: fonts.bold,
     fontSize: 12,
-    fontWeight: '700',
   },
 
   // Empty State
   emptyCard: {
-    padding: 24,
-    borderRadius: 24,
+    padding: 18,
+    borderRadius: 20,
     borderWidth: 1.2,
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   emptyIconBox: {
-    width: 56,
-    height: 56,
-    borderRadius: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   emptyTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    marginBottom: 6,
+    fontFamily: fonts.displayBold,
+    fontSize: 15,
+    marginBottom: 4,
   },
   emptySubtitle: {
-    fontSize: 13,
+    fontFamily: fonts.medium,
+    fontSize: 12,
     textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: 18,
+    lineHeight: 17,
+    marginBottom: 14,
   },
   emptyCta: {
-    borderRadius: 14,
+    borderRadius: 13,
     overflow: 'hidden',
   },
   emptyCtaGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
     gap: 6,
   },
   emptyCtaText: {
+    fontFamily: fonts.bold,
     color: '#FFFFFF',
     fontSize: 13,
-    fontWeight: '800',
   },
 
   // Horizontal Scroll Campaigns
   horizontalScroll: {
-    marginHorizontal: -20,
-    marginBottom: 24,
+    marginHorizontal: -18,
+    marginBottom: 16,
   },
   horizontalScrollContent: {
-    paddingHorizontal: 20,
-    gap: 14,
+    paddingHorizontal: 18,
+    gap: 12,
   },
   campaignCard: {
-    width: 260,
-    padding: 16,
-    borderRadius: 22,
+    width: 250,
+    padding: 14,
+    borderRadius: 18,
     borderWidth: 1.2,
   },
   campaignCardTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   campTitleContainer: {
     flex: 1,
     paddingRight: 8,
   },
   campaignCardTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    marginBottom: 4,
+    fontFamily: fonts.displayBold,
+    fontSize: 14,
+    marginBottom: 3,
   },
   campLocationRow: {
     flexDirection: 'row',
@@ -847,16 +854,16 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   campLocationText: {
+    fontFamily: fonts.semiBold,
     fontSize: 11,
-    fontWeight: '600',
   },
   statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingVertical: 3,
+    borderRadius: 7,
     borderWidth: 1,
   },
   greenPulse: {
@@ -866,29 +873,29 @@ const styles = StyleSheet.create({
     backgroundColor: '#10B981',
   },
   statusPillText: {
+    fontFamily: fonts.bold,
     fontSize: 10,
-    fontWeight: '800',
     textTransform: 'uppercase',
   },
   campaignCardStats: {
     flexDirection: 'row',
-    borderRadius: 14,
-    padding: 10,
+    borderRadius: 12,
+    padding: 9,
     borderWidth: 1,
   },
   campStatBox: {
     flex: 1,
   },
   campStatSub: {
+    fontFamily: fonts.bold,
     fontSize: 9,
-    fontWeight: '800',
     color: '#8B5CF6',
     letterSpacing: 0.5,
     marginBottom: 2,
   },
   campStatVal: {
+    fontFamily: fonts.displayBold,
     fontSize: 13,
-    fontWeight: '800',
   },
   campStatDivider: {
     width: 1,
@@ -897,28 +904,28 @@ const styles = StyleSheet.create({
 
   // Fleet Network Card
   fleetNetworkCard: {
-    padding: 18,
-    borderRadius: 22,
+    padding: 16,
+    borderRadius: 20,
     borderWidth: 1.2,
-    marginBottom: 20,
+    marginBottom: 12,
   },
   fleetCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
   },
   fleetCardHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
     flex: 1,
     marginRight: 8,
   },
   fleetIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 42,
+    height: 42,
+    borderRadius: 13,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -926,37 +933,42 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   fleetHeaderTitle: {
+    fontFamily: fonts.displayBold,
     fontSize: 15,
-    fontWeight: '800',
   },
   fleetHeaderSub: {
+    fontFamily: fonts.medium,
     fontSize: 12,
-    fontWeight: '500',
     marginTop: 2,
   },
-  fleetActionChevron: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    justifyContent: 'center',
+  fleetActionBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  fleetActionBtnText: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
   },
   fleetListPreview: {
-    gap: 8,
+    gap: 7,
   },
   fleetItemRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 12,
+    paddingVertical: 8,
+    borderRadius: 11,
     borderWidth: 1,
   },
   fleetItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 7,
     flex: 1,
   },
   liveVehicleDot: {
@@ -966,8 +978,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#06B6D4',
   },
   fleetVehicleNumber: {
+    fontFamily: fonts.displayBold,
     fontSize: 13,
-    fontWeight: '700',
   },
   fleetItemRight: {
     flexDirection: 'row',
@@ -975,14 +987,15 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   fleetVehicleArea: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontFamily: fonts.semiBold,
+    fontSize: 11,
     maxWidth: 130,
   },
   noFleetBox: {
-    paddingVertical: 6,
+    paddingVertical: 4,
   },
   noFleetText: {
+    fontFamily: fonts.medium,
     fontSize: 12,
     lineHeight: 16,
   },

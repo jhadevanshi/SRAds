@@ -44,6 +44,7 @@ export default function TabNavigator() {
         tabBarActiveTintColor: isDarkMode ? '#C084FC' : '#7C3AED',
         tabBarInactiveTintColor: isDarkMode ? '#64538A' : '#94A3B8',
         tabBarLabelStyle: {
+          fontFamily: 'PlusJakartaSans_700Bold',
           fontSize: 11,
           fontWeight: '700',
           marginTop: 2,

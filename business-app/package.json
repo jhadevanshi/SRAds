@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "dependencies": {
+    "@expo-google-fonts/outfit": "^0.4.3",
+    "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "9.1.0",
     "@react-navigation/bottom-tabs": "^7.18.14",
@@ -11,6 +13,7 @@
     "axios": "^1.19.0",
     "expo": "~57.0.18",
     "expo-file-system": "~57.0.6",
+    "expo-font": "^57.0.4",
     "expo-image-picker": "~57.0.14",
     "expo-linear-gradient": "^57.0.2",
     "expo-status-bar": "~57.0.1",

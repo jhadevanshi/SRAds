@@ -51,35 +51,56 @@ export const colors = {
   black: '#000000',
 };
 
+export const fonts = {
+  regular: 'PlusJakartaSans_400Regular',
+  medium: 'PlusJakartaSans_500Medium',
+  semiBold: 'PlusJakartaSans_600SemiBold',
+  bold: 'PlusJakartaSans_700Bold',
+  extraBold: 'PlusJakartaSans_800ExtraBold',
+  displayMedium: 'Outfit_500Medium',
+  displaySemiBold: 'Outfit_600SemiBold',
+  displayBold: 'Outfit_700Bold',
+  displayExtraBold: 'Outfit_800ExtraBold',
+  displayBlack: 'Outfit_900Black',
+};
+
 export const typography = {
   screenTitle: {
+    fontFamily: fonts.displayBold,
     fontSize: 28,
     fontWeight: '800',
     letterSpacing: -0.5,
   },
   pageHeaderTitle: {
+    fontFamily: fonts.displayBold,
     fontSize: 22,
     fontWeight: '700',
   },
   sectionTitle: {
+    fontFamily: fonts.displayBold,
     fontSize: 18,
     fontWeight: '700',
   },
   cardHeader: {
+    fontFamily: fonts.displaySemiBold,
     fontSize: 16,
     fontWeight: '600',
   },
   body: {
+    fontFamily: fonts.medium,
     fontSize: 14,
     lineHeight: 20,
   },
   metadata: {
+    fontFamily: fonts.medium,
     fontSize: 12,
   },
   statusBadgeText: {
+    fontFamily: fonts.bold,
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   }
 };
+

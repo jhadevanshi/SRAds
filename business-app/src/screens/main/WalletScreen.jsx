@@ -13,6 +13,7 @@ import {
   Wallet, Info, Plus, X, ArrowUpRight, ArrowDownRight, Tag, 
   Megaphone, Calendar, Receipt, PlayCircle, ShieldCheck, Zap, Sparkles
 } from 'lucide-react-native';
+import { fonts } from '../../theme/designTokens';
 
 const aggregateTransactions = (transactions) => {
   if (!transactions) return [];
@@ -510,22 +511,22 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   screenTitle: {
+    fontFamily: fonts.displayBold,
     fontSize: 22,
-    fontWeight: '800',
     letterSpacing: -0.4,
   },
   listContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 110,
+    paddingHorizontal: 18,
+    paddingBottom: 30,
   },
   headerSection: {
-    paddingTop: 16,
-    paddingBottom: 6,
+    paddingTop: 12,
+    paddingBottom: 4,
   },
 
   // Hero Card
   heroCardWrapper: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   heroCardGlow: {
     shadowColor: '#A855F7',
@@ -535,8 +536,8 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   heroCard: {
-    borderRadius: 24,
-    padding: 20,
+    borderRadius: 22,
+    padding: 18,
     position: 'relative',
     overflow: 'hidden',
   },
@@ -547,8 +548,8 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   heroLabel: {
+    fontFamily: fonts.bold,
     fontSize: 10,
-    fontWeight: '800',
     color: '#E9D5FF',
     letterSpacing: 0.8,
   },
@@ -568,20 +569,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#34D399',
   },
   liveChipText: {
+    fontFamily: fonts.bold,
     fontSize: 10,
-    fontWeight: '700',
     color: '#34D399',
   },
   heroBalance: {
+    fontFamily: fonts.displayExtraBold,
     fontSize: 34,
-    fontWeight: '900',
     color: '#FFFFFF',
     letterSpacing: -0.5,
     marginVertical: 4,
   },
   addFundsCTA: {
-    marginTop: 12,
-    marginBottom: 14,
+    marginTop: 10,
+    marginBottom: 12,
     borderRadius: 14,
     overflow: 'hidden',
   },
@@ -589,14 +590,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 46,
+    height: 44,
     borderRadius: 14,
     gap: 6,
   },
   addFundsCTAText: {
+    fontFamily: fonts.bold,
     color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: '800',
     letterSpacing: -0.2,
   },
 
@@ -604,7 +605,7 @@ const styles = StyleSheet.create({
   presetChipsRow: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 14,
   },
   presetChip: {
     flex: 1,
@@ -620,8 +621,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
   },
   presetChipText: {
+    fontFamily: fonts.bold,
     fontSize: 12,
-    fontWeight: '800',
   },
   presetChipTextActive: {
     color: '#6D28D9',
@@ -635,22 +636,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.18)',
-    paddingTop: 12,
+    paddingTop: 10,
   },
   totalItem: {
     flex: 1,
     alignItems: 'center',
   },
   totalLabel: {
+    fontFamily: fonts.bold,
     fontSize: 9,
-    fontWeight: '800',
     color: '#DDD6FE',
     letterSpacing: 0.6,
     marginBottom: 2,
   },
   totalVal: {
+    fontFamily: fonts.displayBold,
     fontSize: 15,
-    fontWeight: '800',
     color: '#FFFFFF',
   },
   totalsDivider: {
@@ -666,32 +667,33 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     gap: 10,
-    marginBottom: 18,
+    marginBottom: 16,
   },
   warningTitle: {
+    fontFamily: fonts.bold,
     fontSize: 12,
-    fontWeight: '800',
     marginBottom: 2,
   },
   warningSub: {
+    fontFamily: fonts.medium,
     fontSize: 11,
     lineHeight: 16,
   },
 
   // Activity Header
   activityHeading: {
+    fontFamily: fonts.displayBold,
     fontSize: 16,
-    fontWeight: '800',
     letterSpacing: -0.3,
     marginBottom: 8,
   },
   sectionHeaderBox: {
-    paddingTop: 16,
+    paddingTop: 14,
     paddingBottom: 6,
   },
   sectionHeaderText: {
+    fontFamily: fonts.bold,
     fontSize: 10,
-    fontWeight: '800',
     letterSpacing: 0.8,
   },
 
@@ -700,7 +702,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 11,
     borderBottomWidth: 1,
   },
   txnLeft: {
@@ -721,30 +723,30 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   txnTitle: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontFamily: fonts.semiBold,
+    fontSize: 13,
     marginBottom: 1,
   },
   txnSubtitle: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontFamily: fonts.medium,
+    fontSize: 11,
     marginBottom: 2,
   },
   txnTime: {
+    fontFamily: fonts.medium,
     fontSize: 10,
-    fontWeight: '600',
   },
   txnRight: {
     alignItems: 'flex-end',
   },
   txnAmountPill: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 9,
     paddingVertical: 4,
-    borderRadius: 10,
+    borderRadius: 9,
   },
   txnAmountText: {
+    fontFamily: fonts.displayBold,
     fontSize: 13,
-    fontWeight: '800',
   },
 
   // Empty State
