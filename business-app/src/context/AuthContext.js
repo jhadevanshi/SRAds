@@ -34,22 +34,23 @@ export const AuthProvider = ({ children }) => {
 
     let socket;
     let reconnectTimeout;
+    let retryCount = 0;
+    let isCancelled = false;
 
     const connect = () => {
+      if (isCancelled) return;
       try {
         const { WS_URL } = require('../services/api');
-        console.log('[WebSocket] Connecting to:', `${WS_URL}?advertiserId=${user.id}`);
         
         socket = new WebSocket(`${WS_URL}?advertiserId=${user.id}`);
 
         socket.onopen = () => {
-          console.log('[WebSocket] Connected successfully');
+          retryCount = 0;
         };
 
         socket.onmessage = (e) => {
           try {
             const event = JSON.parse(e.data);
-            console.log('[WebSocket] Received event:', event.type, event.data);
             
             // Auto refresh profile/wallet balance on billing events
             if (event.type === 'AD_PLAYBACK_COMPLETED' || event.type === 'AD_SPEND_UPDATED') {
@@ -60,28 +61,36 @@ export const AuthProvider = ({ children }) => {
             const { DeviceEventEmitter } = require('react-native');
             DeviceEventEmitter.emit(event.type, event.data);
           } catch (err) {
-            console.error('[WebSocket] Event parse error:', err.message);
+            // Ignore parse errors
           }
         };
 
-        socket.onerror = (e) => {
-          console.warn('[WebSocket] Error occurred:', e.message);
+        socket.onerror = () => {
+          // Handled silently to prevent Expo LogBox banner
         };
 
         socket.onclose = () => {
-          console.log('[WebSocket] Connection closed. Retrying in 5 seconds...');
-          reconnectTimeout = setTimeout(connect, 5000);
+          if (isCancelled) return;
+          retryCount++;
+          // Exponential backoff up to 30s
+          const delay = Math.min(5000 * Math.pow(1.5, Math.min(retryCount, 4)), 30000);
+          reconnectTimeout = setTimeout(connect, delay);
         };
       } catch (err) {
-        console.error('[WebSocket] Setup failed:', err.message);
+        // Handled silently
       }
     };
 
     connect();
 
     return () => {
+      isCancelled = true;
       if (socket) {
-        socket.close();
+        try {
+          socket.close();
+        } catch (e) {
+          // Ignore close errors on unmount
+        }
       }
       if (reconnectTimeout) {
         clearTimeout(reconnectTimeout);

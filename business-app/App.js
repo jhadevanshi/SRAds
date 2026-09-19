@@ -1,9 +1,12 @@
 import React from 'react';
+import { LogBox } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from './src/context/AuthContext';
 import { ThemeProvider } from './src/context/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
+
+LogBox.ignoreLogs(['[WebSocket]', 'WebSocket Error']);
 
 // Required for NativeWind
 import { NativeWindStyleSheet } from "nativewind";
