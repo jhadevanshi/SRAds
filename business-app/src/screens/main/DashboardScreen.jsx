@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   View, Text, ScrollView, RefreshControl, ActivityIndicator, 
-  TouchableOpacity, StyleSheet, Image, Platform 
+  TouchableOpacity, StyleSheet, Dimensions, Platform 
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { businessService } from '../../services/business';
 import { useAuth } from '../../context/AuthContext';
@@ -15,9 +15,13 @@ import {
   Activity, Radio, ShieldCheck, Zap
 } from 'lucide-react-native';
 
+const { width } = Dimensions.get('window');
+
 export default function DashboardScreen({ navigation }) {
   const { user } = useAuth();
-  const { isDarkMode } = useTheme();
+  const theme = useTheme();
+  const isDarkMode = theme?.isDark ?? theme?.isDarkMode ?? true;
+  const insets = useSafeAreaInsets();
 
   const [stats, setStats] = useState(null);
   const [liveFleet, setLiveFleet] = useState([]);
@@ -81,11 +85,11 @@ export default function DashboardScreen({ navigation }) {
     };
   }, [fetchData]);
 
-  const formatCurrency = (val) => `₹${parseFloat(val || 0).toFixed(2)}`;
+  const formatCurrency = (val) => `₹${parseFloat(val || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   if (loading && !stats) {
     return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: isDarkMode ? '#090614' : '#F8F7FF', justifyContent: 'center', alignItems: 'center' }]}>
+      <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safeArea, { backgroundColor: isDarkMode ? '#090614' : '#F8F7FF', justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color="#A855F7" />
       </SafeAreaView>
     );
@@ -125,7 +129,7 @@ export default function DashboardScreen({ navigation }) {
   const balance = stats?.wallet_balance || user?.wallet_balance || 0;
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: isDarkMode ? '#090614' : '#F8F7FF' }]}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safeArea, { backgroundColor: isDarkMode ? '#090614' : '#F8F7FF' }]}>
       
       {/* ── Top App Bar ────────────────────────────────────────────── */}
       <View style={[
@@ -144,9 +148,9 @@ export default function DashboardScreen({ navigation }) {
               <Building2 size={20} color="#FFFFFF" />
             </LinearGradient>
           </View>
-          <View>
+          <View style={styles.headerTextBox}>
             <View style={styles.tagRow}>
-              <Text style={[styles.welcomeTag, { color: isDarkMode ? '#A78BFA' : '#7C3AED' }]}>
+              <Text style={[styles.welcomeTag, { color: isDarkMode ? '#C084FC' : '#7C3AED' }]}>
                 ADVERTISER PORTAL
               </Text>
               <View style={styles.onlineDot} />
@@ -172,7 +176,7 @@ export default function DashboardScreen({ navigation }) {
       <ScrollView 
         style={styles.flex1}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#A855F7" />}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 110 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.contentContainer}>
@@ -191,16 +195,16 @@ export default function DashboardScreen({ navigation }) {
 
               <View style={styles.walletTopRow}>
                 <View style={styles.walletLabelBox}>
-                  <Wallet size={16} color="#E9D5FF" />
+                  <Wallet size={15} color="#E9D5FF" />
                   <Text style={styles.walletLabelText}>AVAILABLE CAMPAIGN BUDGET</Text>
                 </View>
                 <View style={styles.liveIndicatorPill}>
-                  <Activity size={12} color="#10B981" />
+                  <Activity size={12} color="#34D399" />
                   <Text style={styles.liveIndicatorText}>Live Wallet</Text>
                 </View>
               </View>
 
-              <Text style={styles.walletBalanceText}>
+              <Text style={styles.walletBalanceText} numberOfLines={1} adjustsFontSizeToFit>
                 {formatCurrency(balance)}
               </Text>
 
@@ -209,15 +213,15 @@ export default function DashboardScreen({ navigation }) {
               <View style={styles.walletBottomRow}>
                 <View style={styles.walletStatItem}>
                   <Text style={styles.walletStatLabel}>Today's Spend</Text>
-                  <Text style={styles.walletStatValue}>
+                  <Text style={styles.walletStatValue} numberOfLines={1}>
                     {formatCurrency(stats?.stats?.total_spent || 0)}
                   </Text>
                 </View>
 
                 <View style={styles.walletStatItem}>
                   <Text style={styles.walletStatLabel}>Plays Today</Text>
-                  <Text style={styles.walletStatValue}>
-                    {stats?.today_plays || 0}
+                  <Text style={styles.walletStatValue} numberOfLines={1}>
+                    {stats?.today_plays || 0} Plays
                   </Text>
                 </View>
 
@@ -226,14 +230,14 @@ export default function DashboardScreen({ navigation }) {
                   style={styles.addFundsBtn}
                   activeOpacity={0.85}
                 >
-                  <Plus size={15} color="#6D28D9" strokeWidth={3} />
+                  <Plus size={14} color="#6D28D9" strokeWidth={3} />
                   <Text style={styles.addFundsBtnText}>Top Up</Text>
                 </TouchableOpacity>
               </View>
             </LinearGradient>
           </View>
 
-          {/* ── Quick Action Tiles ─────────────────────────────────────── */}
+          {/* ── Quick Action Tiles (4 Symmetrical Buttons) ─────────────── */}
           <View style={styles.quickActionsGrid}>
             <TouchableOpacity 
               onPress={() => navigation.navigate('CreateCampaign')}
@@ -246,8 +250,12 @@ export default function DashboardScreen({ navigation }) {
               <LinearGradient colors={['#8B5CF6', '#6D28D9']} style={styles.actionIconBox}>
                 <Megaphone size={18} color="#FFFFFF" />
               </LinearGradient>
-              <Text style={[styles.actionTileTitle, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]}>New Campaign</Text>
-              <Text style={[styles.actionTileDesc, { color: isDarkMode ? '#94A3B8' : '#6B7280' }]}>Target by area & route</Text>
+              <Text style={[styles.actionTileTitle, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]} numberOfLines={1}>
+                New Campaign
+              </Text>
+              <Text style={[styles.actionTileDesc, { color: isDarkMode ? '#94A3B8' : '#6B7280' }]} numberOfLines={1}>
+                Target area & routes
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -261,8 +269,12 @@ export default function DashboardScreen({ navigation }) {
               <LinearGradient colors={['#EC4899', '#BE185D']} style={styles.actionIconBox}>
                 <Video size={18} color="#FFFFFF" />
               </LinearGradient>
-              <Text style={[styles.actionTileTitle, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]}>Upload Media</Text>
-              <Text style={[styles.actionTileDesc, { color: isDarkMode ? '#94A3B8' : '#6B7280' }]}>Videos & creatives</Text>
+              <Text style={[styles.actionTileTitle, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]} numberOfLines={1}>
+                Upload Media
+              </Text>
+              <Text style={[styles.actionTileDesc, { color: isDarkMode ? '#94A3B8' : '#6B7280' }]} numberOfLines={1}>
+                Videos & creatives
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -276,8 +288,12 @@ export default function DashboardScreen({ navigation }) {
               <LinearGradient colors={['#06B6D4', '#0E7490']} style={styles.actionIconBox}>
                 <Navigation size={18} color="#FFFFFF" />
               </LinearGradient>
-              <Text style={[styles.actionTileTitle, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]}>Fleet Tracker</Text>
-              <Text style={[styles.actionTileDesc, { color: isDarkMode ? '#94A3B8' : '#6B7280' }]}>Live transit screens</Text>
+              <Text style={[styles.actionTileTitle, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]} numberOfLines={1}>
+                Fleet Tracker
+              </Text>
+              <Text style={[styles.actionTileDesc, { color: isDarkMode ? '#94A3B8' : '#6B7280' }]} numberOfLines={1}>
+                Live transit screens
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -291,8 +307,12 @@ export default function DashboardScreen({ navigation }) {
               <LinearGradient colors={['#10B981', '#047857']} style={styles.actionIconBox}>
                 <BarChart3 size={18} color="#FFFFFF" />
               </LinearGradient>
-              <Text style={[styles.actionTileTitle, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]}>Analytics</Text>
-              <Text style={[styles.actionTileDesc, { color: isDarkMode ? '#94A3B8' : '#6B7280' }]}>Impressions & ROI</Text>
+              <Text style={[styles.actionTileTitle, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]} numberOfLines={1}>
+                Analytics
+              </Text>
+              <Text style={[styles.actionTileDesc, { color: isDarkMode ? '#94A3B8' : '#6B7280' }]} numberOfLines={1}>
+                Impressions & ROI
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -371,14 +391,14 @@ export default function DashboardScreen({ navigation }) {
                   <View style={[styles.campaignCardStats, { backgroundColor: isDarkMode ? '#090614' : '#F8F7FF', borderColor: isDarkMode ? '#1E153D' : '#EDE9FE' }]}>
                     <View style={styles.campStatBox}>
                       <Text style={styles.campStatSub}>TOTAL SPEND</Text>
-                      <Text style={[styles.campStatVal, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]}>
+                      <Text style={[styles.campStatVal, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]} numberOfLines={1}>
                         {formatCurrency(camp.total_spend || 0)}
                       </Text>
                     </View>
                     <View style={[styles.campStatDivider, { backgroundColor: isDarkMode ? '#281B4B' : '#E2E8F0' }]} />
                     <View style={styles.campStatBox}>
                       <Text style={styles.campStatSub}>TOTAL PLAYS</Text>
-                      <Text style={[styles.campStatVal, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]}>
+                      <Text style={[styles.campStatVal, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]} numberOfLines={1}>
                         {camp.total_plays || 0}
                       </Text>
                     </View>
@@ -407,12 +427,12 @@ export default function DashboardScreen({ navigation }) {
                 <View style={[styles.fleetIconContainer, { backgroundColor: isDarkMode ? 'rgba(6, 182, 212, 0.15)' : '#E0F2FE' }]}>
                   <MonitorSmartphone size={22} color="#06B6D4" />
                 </View>
-                <View>
-                  <Text style={[styles.fleetHeaderTitle, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]}>
+                <View style={styles.fleetHeaderTextContainer}>
+                  <Text style={[styles.fleetHeaderTitle, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]} numberOfLines={1}>
                     {liveFleet.length} Screens Active in Fleet
                   </Text>
-                  <Text style={[styles.fleetHeaderSub, { color: isDarkMode ? '#94A3B8' : '#64748B' }]}>
-                    Auto-rickshaws & transit buses broadcasting ads
+                  <Text style={[styles.fleetHeaderSub, { color: isDarkMode ? '#94A3B8' : '#64748B' }]} numberOfLines={1}>
+                    Auto-rickshaws & transit displays
                   </Text>
                 </View>
               </View>
@@ -441,13 +461,13 @@ export default function DashboardScreen({ navigation }) {
                   >
                     <View style={styles.fleetItemLeft}>
                       <View style={styles.liveVehicleDot} />
-                      <Text style={[styles.fleetVehicleNumber, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]}>
+                      <Text style={[styles.fleetVehicleNumber, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]} numberOfLines={1}>
                         {vehicle.vehicle_number || `ADSD-${vehicle.id}`}
                       </Text>
                     </View>
                     <View style={styles.fleetItemRight}>
                       <MapPin size={12} color={isDarkMode ? '#A78BFA' : '#6B7280'} />
-                      <Text style={[styles.fleetVehicleArea, { color: isDarkMode ? '#94A3B8' : '#6B7280' }]}>
+                      <Text style={[styles.fleetVehicleArea, { color: isDarkMode ? '#94A3B8' : '#6B7280' }]} numberOfLines={1}>
                         {vehicle.area || 'Active Zone'}
                       </Text>
                     </View>
@@ -497,6 +517,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    marginRight: 10,
   },
   avatarBox: {
     width: 44,
@@ -517,6 +538,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 4,
+  },
+  headerTextBox: {
+    flex: 1,
+    justifyContent: 'center',
   },
   tagRow: {
     flexDirection: 'row',
@@ -631,6 +656,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 8,
   },
   walletStatItem: {
     flex: 1,
@@ -642,7 +668,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   walletStatValue: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
     color: '#FFFFFF',
   },
@@ -650,7 +676,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 9,
     borderRadius: 14,
     gap: 4,
@@ -666,18 +692,21 @@ const styles = StyleSheet.create({
     color: '#6D28D9',
   },
 
-  // Quick Actions Grid
+  // Quick Actions Grid (4 Symmetrical Tiles)
   quickActionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    justifyContent: 'space-between',
+    rowGap: 12,
     marginBottom: 24,
   },
   actionTile: {
     width: '48%',
+    minHeight: 114,
     padding: 14,
     borderRadius: 20,
     borderWidth: 1.2,
+    justifyContent: 'center',
   },
   actionIconBox: {
     width: 36,
@@ -691,10 +720,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     marginBottom: 2,
+    letterSpacing: -0.2,
   },
   actionTileDesc: {
     fontSize: 11,
     fontWeight: '500',
+    lineHeight: 15,
   },
 
   // Section Headers
@@ -778,7 +809,7 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   campaignCard: {
-    width: 250,
+    width: 260,
     padding: 16,
     borderRadius: 22,
     borderWidth: 1.2,
@@ -870,6 +901,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     flex: 1,
+    marginRight: 8,
   },
   fleetIconContainer: {
     width: 44,
@@ -877,6 +909,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  fleetHeaderTextContainer: {
+    flex: 1,
   },
   fleetHeaderTitle: {
     fontSize: 15,
@@ -910,6 +945,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flex: 1,
   },
   liveVehicleDot: {
     width: 7,
@@ -929,6 +965,7 @@ const styles = StyleSheet.create({
   fleetVehicleArea: {
     fontSize: 12,
     fontWeight: '500',
+    maxWidth: 130,
   },
   noFleetBox: {
     paddingVertical: 6,

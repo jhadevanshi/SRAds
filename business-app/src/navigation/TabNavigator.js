@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LayoutDashboard, Megaphone, Clapperboard, BarChart3, WalletCards } from 'lucide-react-native';
 
 import DashboardScreen from '../screens/main/DashboardScreen';
@@ -14,20 +15,27 @@ import { useTheme } from '../context/ThemeContext';
 const Tab = createBottomTabNavigator();
 
 export default function TabNavigator() {
-  const { isDarkMode } = useTheme();
+  const theme = useTheme();
+  const isDarkMode = theme?.isDark ?? theme?.isDarkMode ?? true;
+  const insets = useSafeAreaInsets();
+
+  // Ensure bottom padding accounts for Android 3-button nav / gesture pill and iOS home indicator
+  const bottomInset = insets.bottom > 0 ? insets.bottom : (Platform.OS === 'android' ? 14 : 20);
+  const tabHeight = 60 + bottomInset;
 
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
+        tabBarHideOnKeyboard: true,
         tabBarStyle: {
           backgroundColor: isDarkMode ? '#100A24' : '#FFFFFF',
           borderTopColor: isDarkMode ? '#241747' : '#EDE9FE',
           borderTopWidth: 1.2,
-          paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+          paddingBottom: bottomInset,
           paddingTop: 8,
-          height: Platform.OS === 'ios' ? 86 : 68,
-          elevation: 16,
+          height: tabHeight,
+          elevation: 20,
           shadowColor: isDarkMode ? '#A855F7' : '#7C3AED',
           shadowOffset: { width: 0, height: -6 },
           shadowOpacity: isDarkMode ? 0.18 : 0.08,
