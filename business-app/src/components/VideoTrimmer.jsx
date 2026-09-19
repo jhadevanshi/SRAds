@@ -36,6 +36,8 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
 
+  const videoSource = typeof uri === 'string' ? uri : (uri?.uri || uri);
+
   // References for smooth dragging & timer loops
   const startLeftRef = useRef(0);
   const startRightRef = useRef(MAX_TRACK_WIDTH);
@@ -46,7 +48,6 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
 
   useEffect(() => {
     durationRef.current = duration;
-    // Check initial min duration
     if (duration > 0 && duration < MIN_TRIM_DURATION_SEC) {
       Alert.alert(
         'Video Under 30 Seconds',
@@ -64,7 +65,7 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
   }, [rightPos]);
 
   // Video Player instance via expo-video
-  const player = useVideoPlayer(uri, (p) => {
+  const player = useVideoPlayer(videoSource, (p) => {
     p.loop = false;
     p.muted = false;
   });
@@ -96,9 +97,15 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
       }
     });
 
+    const playToEndSub = player.addListener('playToEnd', () => {
+      setIsPlaying(false);
+      isPlayingRef.current = false;
+    });
+
     return () => {
       timeUpdateSub?.remove();
       statusSub?.remove();
+      playToEndSub?.remove();
     };
   }, [player, originalDurationSec]);
 
@@ -224,11 +231,11 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
     <View style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-      {/* ── Full-Screen Immersive Video Display Area ────────────────── */}
+      {/* ── Full-Screen Video Display Area ────────────────── */}
       <View style={styles.videoArea}>
         <VideoView
           player={player}
-          style={StyleSheet.absoluteFillObject}
+          style={styles.videoPlayer}
           contentFit="contain"
           nativeControls={false}
         />
@@ -248,7 +255,7 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
           </View>
         </TouchableOpacity>
 
-        {/* Floating Top Controls: Back Button | Timestamp | Reset Button */}
+        {/* Floating Top Controls: Only Back & Reset (No top-center timestamp to overlap play button) */}
         <View style={[styles.floatingTopBar, { top: Math.max(insets.top, 14) + 6 }]}>
           <TouchableOpacity 
             onPress={onCancel} 
@@ -257,13 +264,6 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
           >
             <ArrowLeft size={20} color="#F8FAFC" />
           </TouchableOpacity>
-
-          <View style={styles.floatingTimeBadge}>
-            <View style={[styles.liveDot, { backgroundColor: isPlaying ? '#10B981' : '#A855F7' }]} />
-            <Text style={styles.floatingTimeText}>
-              {formatTimeCode(currentTime)} / {formatTimeCode(duration)}
-            </Text>
-          </View>
 
           <TouchableOpacity 
             onPress={() => applyPreset('full')} 
@@ -292,7 +292,7 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
         { paddingBottom: Math.max(insets.bottom, 12) + 8 }
       ]}>
         
-        {/* Metric Overview Row (Start / Selected Duration / End) */}
+        {/* Metric Overview Row (Start / Live Time & Duration / End) */}
         <View style={styles.metricRow}>
           <View style={styles.metricItem}>
             <Text style={styles.metricLabel}>START TIME</Text>
@@ -308,7 +308,7 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
               styles.durationBadgeText, 
               !isValidDuration ? styles.durationBadgeTextInvalid : null
             ]}>
-              {selectedDuration.toFixed(1)}s Duration {isValidDuration ? '✓' : '(Min 30s)'}
+              {formatTimeCode(currentTime)} • {selectedDuration.toFixed(1)}s {isValidDuration ? '✓' : '(Min 30s)'}
             </Text>
           </View>
 
@@ -446,12 +446,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
   },
 
-  /* ── Video Display Area (occupies full screen space above card) ── */
+  /* ── Video Display Area ── */
   videoArea: {
     flex: 1,
     position: 'relative',
     backgroundColor: '#000000',
-    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  videoPlayer: {
+    width: '100%',
+    height: '100%',
   },
   playOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -524,28 +529,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 11.5,
     color: '#C084FC',
-  },
-  floatingTimeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(9, 6, 20, 0.85)',
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(168, 85, 247, 0.35)',
-  },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  floatingTimeText: {
-    fontFamily: fonts.bold,
-    fontSize: 11,
-    color: '#F8FAFC',
-    letterSpacing: 0.3,
   },
   warningBanner: {
     position: 'absolute',
