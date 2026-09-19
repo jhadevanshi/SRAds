@@ -185,6 +185,17 @@ router.get('/dashboard', businessAuth, async (req, res) => {
 
     const activeDisplays = await pool.query("SELECT COUNT(*) FROM devices WHERE status = 'Online'");
 
+    const biz = await pool.query('SELECT wallet_balance FROM advertisers WHERE id = $1', [req.businessId]);
+    const totalBalance = parseFloat(biz.rows[0]?.wallet_balance) || 0;
+
+    const onHoldRes = await pool.query(`
+      SELECT COALESCE(SUM(budget), 0) as on_hold
+      FROM campaigns
+      WHERE advertiser_id = $1 AND approval_status = 'Pending'
+    `, [req.businessId]);
+    const onHold = parseFloat(onHoldRes.rows[0]?.on_hold) || 0;
+    const activeBalance = Math.max(0, totalBalance - onHold);
+
     res.json({
       success: true,
       stats: {
@@ -192,9 +203,18 @@ router.get('/dashboard', businessAuth, async (req, res) => {
         total_plays: parseInt(playsRes.rows[0].total_plays) || 0,
         total_spend: parseFloat(playsRes.rows[0].total_spend) || 0,
         active_screens: parseInt(activeDisplays.rows[0].count) || 0,
-        wallet_balance: parseFloat(req.advertiser.wallet_balance) || 0
+        wallet_balance: totalBalance,
+        total_balance: totalBalance,
+        on_hold: onHold,
+        active_balance: activeBalance
       },
-      business: req.advertiser
+      business: {
+        ...req.advertiser,
+        wallet_balance: totalBalance,
+        total_balance: totalBalance,
+        on_hold: onHold,
+        active_balance: activeBalance
+      }
     });
   } catch (error) {
     console.error('[Business Dashboard] Error:', error);
@@ -395,29 +415,97 @@ router.get('/campaigns', businessAuth, async (req, res) => {
 });
 
 router.post('/campaigns', businessAuth, async (req, res) => {
+  const client = await pool.connect();
   try {
-    const { campaign_name, start_date, end_date, area, ad_ids } = req.body;
-    const result = await pool.query(`
-      INSERT INTO campaigns (campaign_name, start_date, end_date, advertiser_id, area, status)
-      VALUES ($1, $2, $3, $4, $5, 'Active')
+    await client.query('BEGIN');
+    const { campaign_name, start_date, end_date, start_time, end_time, budget, daily_budget, area, ad_ids } = req.body;
+
+    const numBudget = parseFloat(budget) || 0;
+
+    // 1. Fetch current advertiser total wallet balance with row lock
+    const bizRes = await client.query('SELECT wallet_balance FROM advertisers WHERE id = $1 FOR UPDATE', [req.businessId]);
+    const totalBalance = parseFloat(bizRes.rows[0]?.wallet_balance) || 0;
+
+    // 2. Fetch existing on-hold funds for pending campaigns
+    const onHoldRes = await client.query(`
+      SELECT COALESCE(SUM(budget), 0) as on_hold
+      FROM campaigns
+      WHERE advertiser_id = $1 AND approval_status = 'Pending'
+    `, [req.businessId]);
+    const onHold = parseFloat(onHoldRes.rows[0]?.on_hold) || 0;
+    const activeBalance = Math.max(0, totalBalance - onHold);
+
+    // 3. Validation: Verify active unreserved balance covers the new campaign budget
+    if (numBudget > activeBalance) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        success: false,
+        code: 'INSUFFICIENT_ACTIVE_BALANCE',
+        message: 'Campaign budget exceeds available active balance after accounting for funds on hold.',
+        wallet: {
+          active_balance: activeBalance,
+          on_hold: onHold,
+          total_balance: totalBalance,
+          required: numBudget,
+          shortfall: numBudget - activeBalance
+        }
+      });
+    }
+
+    // 4. Create Campaign in Pending approval state with allocated budget
+    const result = await client.query(`
+      INSERT INTO campaigns (
+        campaign_name, start_date, end_date, advertiser_id, area,
+        budget, daily_budget, status, approval_status
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 'Active', 'Pending')
       RETURNING *
-    `, [campaign_name, start_date || new Date(), end_date || null, req.businessId, area || 'General']);
+    `, [
+      campaign_name,
+      start_date || new Date(),
+      end_date || null,
+      req.businessId,
+      area || 'General',
+      numBudget,
+      parseFloat(daily_budget) || 0
+    ]);
 
     const campaign = result.rows[0];
 
+    // 5. Link Ads and set their budget & status
     if (Array.isArray(ad_ids) && ad_ids.length > 0) {
       for (let i = 0; i < ad_ids.length; i++) {
-        await pool.query(
-          'INSERT INTO campaign_ads (campaign_id, ad_id, play_order, duration) VALUES ($1, $2, $3, 15)',
+        await client.query(
+          'INSERT INTO campaign_ads (campaign_id, ad_id, play_order, duration) VALUES ($1, $2, $3, 15) ON CONFLICT DO NOTHING',
           [campaign.id, ad_ids[i], i + 1]
+        );
+        await client.query(
+          'UPDATE ads SET budget = $1, remaining_budget = $1, approval_status = $2 WHERE id = $3 AND advertiser_id = $4',
+          [numBudget, 'Pending', ad_ids[i], req.businessId]
         );
       }
     }
 
-    res.json({ success: true, campaign });
+    await client.query('COMMIT');
+
+    const newOnHold = onHold + numBudget;
+    const newActive = Math.max(0, totalBalance - newOnHold);
+
+    res.json({
+      success: true,
+      campaign,
+      wallet: {
+        active_balance: newActive,
+        on_hold: newOnHold,
+        total_balance: totalBalance
+      }
+    });
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('[Business Create Campaign] Error:', error);
-    res.status(500).json({ success: false, message: 'Could not create campaign' });
+    res.status(500).json({ success: false, message: 'Could not create campaign: ' + error.message });
+  } finally {
+    client.release();
   }
 });
 
@@ -490,13 +578,37 @@ router.get('/wallet', businessAuth, async (req, res) => {
     `, [req.businessId]);
 
     const biz = await pool.query('SELECT wallet_balance FROM advertisers WHERE id = $1', [req.businessId]);
+    const totalBalance = parseFloat(biz.rows[0]?.wallet_balance) || 0;
+
+    const onHoldRes = await pool.query(`
+      SELECT COALESCE(SUM(budget), 0) as on_hold 
+      FROM campaigns 
+      WHERE advertiser_id = $1 AND approval_status = 'Pending'
+    `, [req.businessId]);
+    const onHold = parseFloat(onHoldRes.rows[0]?.on_hold) || 0;
+    const activeBalance = Math.max(0, totalBalance - onHold);
+
+    const statsRes = await pool.query(`
+      SELECT 
+        COALESCE(SUM(CASE WHEN type = 'Credit' THEN amount ELSE 0 END), 0) as total_added,
+        COALESCE(SUM(CASE WHEN type = 'Debit' THEN amount ELSE 0 END), 0) as total_spent
+      FROM wallet_transactions
+      WHERE advertiser_id = $1
+    `, [req.businessId]);
 
     res.json({
       success: true,
-      balance: parseFloat(biz.rows[0]?.wallet_balance) || 0,
+      balance: totalBalance,
+      wallet_balance: totalBalance,
+      total_balance: totalBalance,
+      on_hold: onHold,
+      active_balance: activeBalance,
+      total_added: parseFloat(statsRes.rows[0]?.total_added) || 0,
+      total_spent: parseFloat(statsRes.rows[0]?.total_spent) || 0,
       transactions: txns.rows
     });
   } catch (error) {
+    console.error('[Business Wallet] Error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });

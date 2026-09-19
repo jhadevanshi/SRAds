@@ -11,7 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { 
   Wallet, Info, Plus, X, ArrowUpRight, ArrowDownRight, Tag, 
-  Megaphone, Calendar, Receipt, PlayCircle, ShieldCheck, Zap, Sparkles
+  Megaphone, Calendar, Receipt, PlayCircle, ShieldCheck, Zap, Sparkles, Lock
 } from 'lucide-react-native';
 import { fonts } from '../../theme/designTokens';
 
@@ -105,6 +105,9 @@ export default function WalletScreen({ navigation }) {
   
   const [walletData, setWalletData] = useState({
     balance: 0,
+    totalBalance: 0,
+    onHold: 0,
+    activeBalance: 0,
     totalSpent: 0,
     totalAdded: 0,
     transactions: []
@@ -114,11 +117,17 @@ export default function WalletScreen({ navigation }) {
     try {
       const res = await businessService.getWallet();
       if (res.success) {
+        const total = parseFloat(res.total_balance !== undefined ? res.total_balance : (res.wallet_balance || 0));
+        const onHold = parseFloat(res.on_hold || 0);
+        const active = parseFloat(res.active_balance !== undefined ? res.active_balance : Math.max(0, total - onHold));
         setWalletData({
           transactions: res.transactions || [],
           totalSpent: parseFloat(res.total_spent || 0),
           totalAdded: parseFloat(res.total_added || 0),
-          balance: parseFloat(res.wallet_balance || 0)
+          balance: total,
+          totalBalance: total,
+          onHold: onHold,
+          activeBalance: active
         });
       }
     } catch (err) {
@@ -296,7 +305,7 @@ export default function WalletScreen({ navigation }) {
                 style={styles.heroCard}
               >
                 <View style={styles.heroTopRow}>
-                  <Text style={styles.heroLabel}>CURRENT WALLET BALANCE</Text>
+                  <Text style={styles.heroLabel}>AVAILABLE ACTIVE BALANCE</Text>
                   <View style={styles.liveChip}>
                     <View style={styles.activeDot} />
                     <Text style={styles.liveChipText}>Ready to Run Ads</Text>
@@ -304,8 +313,34 @@ export default function WalletScreen({ navigation }) {
                 </View>
 
                 <Text style={styles.heroBalance}>
-                  ₹{walletData.balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ₹{walletData.activeBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </Text>
+
+                {/* 3-Column Balance Breakdown Inside Card */}
+                <View style={styles.breakdownRow}>
+                  <View style={styles.breakdownItem}>
+                    <Text style={styles.breakdownLabel}>ACTIVE</Text>
+                    <Text style={styles.breakdownVal}>
+                      ₹{walletData.activeBalance.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                    </Text>
+                  </View>
+                  <View style={styles.breakdownDivider} />
+                  <View style={styles.breakdownItem}>
+                    <Text style={[styles.breakdownLabel, walletData.onHold > 0 ? { color: '#FDE68A' } : null]}>
+                      ON HOLD {walletData.onHold > 0 ? '🔒' : ''}
+                    </Text>
+                    <Text style={[styles.breakdownVal, walletData.onHold > 0 ? { color: '#FDE68A' } : null]}>
+                      ₹{walletData.onHold.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                    </Text>
+                  </View>
+                  <View style={styles.breakdownDivider} />
+                  <View style={styles.breakdownItem}>
+                    <Text style={styles.breakdownLabel}>TOTAL</Text>
+                    <Text style={styles.breakdownVal}>
+                      ₹{walletData.totalBalance.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                    </Text>
+                  </View>
+                </View>
 
                 {/* Quick Add Funds CTA */}
                 <TouchableOpacity 
@@ -380,8 +415,26 @@ export default function WalletScreen({ navigation }) {
               </LinearGradient>
             </View>
 
+            {/* On Hold Informational Banner if campaigns pending */}
+            {walletData.onHold > 0 && (
+              <View style={[
+                styles.warningBanner,
+                { backgroundColor: isDarkMode ? '#1E1530' : '#FFFBEB', borderColor: isDarkMode ? '#4C2D66' : '#FDE68A' }
+              ]}>
+                <Lock size={16} color="#F59E0B" style={{ marginTop: 2 }} />
+                <View style={styles.flex1}>
+                  <Text style={[styles.warningTitle, { color: isDarkMode ? '#FDE68A' : '#92400E' }]}>
+                    ₹{walletData.onHold.toLocaleString('en-IN', { minimumFractionDigits: 2 })} Temporarily On Hold
+                  </Text>
+                  <Text style={[styles.warningSub, { color: isDarkMode ? '#CBD5E1' : '#B45309' }]}>
+                    Funds are reserved for campaigns awaiting admin compliance approval and cannot be used for other campaigns.
+                  </Text>
+                </View>
+              </View>
+            )}
+
             {/* Low Balance Warning Banner */}
-            {walletData.balance < 500 && (
+            {walletData.activeBalance < 500 && (
               <View style={[
                 styles.warningBanner,
                 { backgroundColor: isDarkMode ? '#1E153D' : '#FEF3C7', borderColor: isDarkMode ? '#4C3B78' : '#FDE68A' }
@@ -580,8 +633,38 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
     marginVertical: 4,
   },
+  breakdownRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.22)',
+    borderRadius: 14,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    marginVertical: 8,
+  },
+  breakdownItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  breakdownLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 9,
+    color: '#E9D5FF',
+    letterSpacing: 0.6,
+    marginBottom: 2,
+  },
+  breakdownVal: {
+    fontFamily: fonts.displayBold,
+    fontSize: 14,
+    color: '#FFFFFF',
+  },
+  breakdownDivider: {
+    width: 1,
+    height: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+  },
   addFundsCTA: {
-    marginTop: 10,
+    marginTop: 6,
     marginBottom: 12,
     borderRadius: 14,
     overflow: 'hidden',

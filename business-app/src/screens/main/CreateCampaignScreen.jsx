@@ -20,7 +20,10 @@ import {
   Zap,
   Layers,
   ChevronRight,
-  ShieldCheck
+  ShieldCheck,
+  Lock,
+  AlertTriangle,
+  Wallet
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -104,7 +107,19 @@ export default function CreateCampaignScreen({ route, navigation }) {
   const [ads, setAds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
-  const [walletBalance, setWalletBalance] = useState(0);
+  const [walletData, setWalletData] = useState({
+    total: 0,
+    onHold: 0,
+    active: 0,
+  });
+  const [holdModalVisible, setHoldModalVisible] = useState(false);
+  const [holdModalData, setHoldModalData] = useState({
+    active: 0,
+    onHold: 0,
+    total: 0,
+    required: 0,
+    shortfall: 0,
+  });
 
   // New Ad Upload State (Step 1 Inline Upload)
   const [uploadMode, setUploadMode] = useState(false);
@@ -142,7 +157,10 @@ export default function CreateCampaignScreen({ route, navigation }) {
       }
       
       if (walletRes.success) {
-        setWalletBalance(parseFloat(walletRes.wallet_balance || 0));
+        const total = parseFloat(walletRes.total_balance !== undefined ? walletRes.total_balance : (walletRes.wallet_balance || 0));
+        const onHold = parseFloat(walletRes.on_hold || 0);
+        const active = parseFloat(walletRes.active_balance !== undefined ? walletRes.active_balance : Math.max(0, total - onHold));
+        setWalletData({ total, onHold, active });
       }
 
       if (route.params?.preselectedAdId) {
@@ -333,7 +351,9 @@ export default function CreateCampaignScreen({ route, navigation }) {
 
   const safeDuration = Number(adDurationSeconds) || 0;
   const safeCost = Number(estimatedCost) || 0;
-  const safeWalletBalance = Number(walletBalance) || 0;
+  const safeWalletBalance = Number(walletData.active) || 0; // Active available balance to launch new campaigns
+  const safeTotalBalance = Number(walletData.total) || 0;
+  const safeOnHoldBalance = Number(walletData.onHold) || 0;
   const safePlaysPerDay = Number(playsPerDay) || 0;
   const safeTotalPlays = Number(totalPlays) || 0;
   const safeScheduledDays = Number(scheduledDays) || 0;
@@ -357,7 +377,16 @@ export default function CreateCampaignScreen({ route, navigation }) {
     }
     if (step === 4) {
       if (safeCost > safeWalletBalance) {
-        return Alert.alert('Insufficient Balance', 'Your estimated campaign budget exceeds available wallet funds. Please recharge to launch.');
+        const shortfall = safeCost - safeWalletBalance;
+        setHoldModalData({
+          active: safeWalletBalance,
+          onHold: safeOnHoldBalance,
+          total: safeTotalBalance,
+          required: safeCost,
+          shortfall: shortfall,
+        });
+        setHoldModalVisible(true);
+        return;
       }
       handleLaunch();
       return;
@@ -366,6 +395,19 @@ export default function CreateCampaignScreen({ route, navigation }) {
   };
 
   const handleLaunch = async () => {
+    if (safeCost > safeWalletBalance) {
+      const shortfall = safeCost - safeWalletBalance;
+      setHoldModalData({
+        active: safeWalletBalance,
+        onHold: safeOnHoldBalance,
+        total: safeTotalBalance,
+        required: safeCost,
+        shortfall: shortfall,
+      });
+      setHoldModalVisible(true);
+      return;
+    }
+
     setCreating(true);
     try {
       const selectedAreas = whereMode === 'everywhere' ? 'all' : form.routes.map(r => r.area).join(', ');
@@ -389,7 +431,26 @@ export default function CreateCampaignScreen({ route, navigation }) {
         Alert.alert('Error', res.message);
       }
     } catch (err) {
-      Alert.alert('Failed', err.response?.data?.message || 'Failed to launch advertisement');
+      if (err.response?.data?.code === 'INSUFFICIENT_ACTIVE_BALANCE' || err.response?.data?.wallet) {
+        const w = err.response?.data?.wallet || {};
+        const total = parseFloat(w.total_balance !== undefined ? w.total_balance : safeTotalBalance);
+        const onHold = parseFloat(w.on_hold !== undefined ? w.on_hold : safeOnHoldBalance);
+        const active = parseFloat(w.active_balance !== undefined ? w.active_balance : safeWalletBalance);
+        const req = parseFloat(w.required || safeCost);
+        const shortfall = parseFloat(w.shortfall || Math.max(0, req - active));
+
+        setWalletData({ total, onHold, active });
+        setHoldModalData({
+          active,
+          onHold,
+          total,
+          required: req,
+          shortfall,
+        });
+        setHoldModalVisible(true);
+      } else {
+        Alert.alert('Failed', err.response?.data?.message || 'Failed to launch advertisement');
+      }
     } finally {
       setCreating(false);
     }
@@ -1243,24 +1304,50 @@ export default function CreateCampaignScreen({ route, navigation }) {
 
               <View style={{ backgroundColor: isDark ? '#281B4B' : '#EDE9FE' }} className="h-px w-full mb-4" />
 
-              <View className="flex-row justify-between items-center mb-2">
-                <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold">Available Wallet Balance</Text>
-                <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-xs font-bold">₹{safeWalletBalance.toFixed(2)}</Text>
+              {/* 3-Part Wallet Balance Status */}
+              <View className="flex-row justify-between items-center mb-2.5">
+                <View className="flex-row items-center">
+                  <View className="w-2 h-2 rounded-full bg-emerald-400 mr-2" />
+                  <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold">Active Balance</Text>
+                </View>
+                <Text style={{ color: isDark ? '#34D399' : '#059669' }} className="text-xs font-extrabold">₹{safeWalletBalance.toFixed(2)}</Text>
+              </View>
+
+              {safeOnHoldBalance > 0 && (
+                <View className="flex-row justify-between items-center mb-2.5">
+                  <View className="flex-row items-center">
+                    <View className="w-2 h-2 rounded-full bg-amber-400 mr-2" />
+                    <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold">On Hold (Pending)</Text>
+                  </View>
+                  <Text style={{ color: isDark ? '#FBBF24' : '#D97706' }} className="text-xs font-extrabold">₹{safeOnHoldBalance.toFixed(2)}</Text>
+                </View>
+              )}
+
+              <View className="flex-row justify-between items-center mb-3">
+                <View className="flex-row items-center">
+                  <View className="w-2 h-2 rounded-full bg-purple-400 mr-2" />
+                  <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold">Total Wallet Balance</Text>
+                </View>
+                <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-xs font-bold">₹{safeTotalBalance.toFixed(2)}</Text>
               </View>
               
               {safeCost > safeWalletBalance ? (
-                <View className="flex-row justify-between items-center">
-                  <Text className="text-xs text-rose-500 font-extrabold">Top-Up Needed</Text>
-                  <Text className="text-sm font-black text-rose-500">
-                    ₹{(safeCost - safeWalletBalance).toFixed(2)}
-                  </Text>
+                <View className="pt-2 border-t" style={{ borderTopColor: isDark ? '#281B4B' : '#EDE9FE' }}>
+                  <View className="flex-row justify-between items-center">
+                    <Text className="text-xs text-rose-500 font-extrabold">Top-Up Needed</Text>
+                    <Text className="text-sm font-black text-rose-500">
+                      ₹{(safeCost - safeWalletBalance).toFixed(2)}
+                    </Text>
+                  </View>
                 </View>
               ) : (
-                <View className="flex-row justify-between items-center">
-                  <Text style={{ color: isDark ? '#CBD5E1' : '#475569' }} className="text-xs font-semibold">Balance Post-Flight</Text>
-                  <Text className="text-sm font-black text-emerald-500">
-                    ₹{(safeWalletBalance - safeCost).toFixed(2)}
-                  </Text>
+                <View className="pt-2 border-t" style={{ borderTopColor: isDark ? '#281B4B' : '#EDE9FE' }}>
+                  <View className="flex-row justify-between items-center">
+                    <Text style={{ color: isDark ? '#CBD5E1' : '#475569' }} className="text-xs font-semibold">Active Post-Flight</Text>
+                    <Text className="text-sm font-black text-emerald-500">
+                      ₹{(safeWalletBalance - safeCost).toFixed(2)}
+                    </Text>
+                  </View>
                 </View>
               )}
             </View>
@@ -1273,22 +1360,42 @@ export default function CreateCampaignScreen({ route, navigation }) {
                 }}
                 className="border rounded-2xl p-4 mb-4"
               >
-                <View className="flex-row items-center mb-3">
+                <View className="flex-row items-center mb-1.5">
                   <Text className="text-base mr-2">⚠️</Text>
-                  <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-extrabold text-xs">Wallet Recharge Required</Text>
+                  <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-extrabold text-xs">
+                    Insufficient Active Balance
+                  </Text>
                 </View>
+                <Text style={{ color: isDark ? '#FDA4AF' : '#E11D48' }} className="text-xs font-medium mb-3 leading-relaxed">
+                  {safeOnHoldBalance > 0 
+                    ? `₹${safeOnHoldBalance.toFixed(0)} is on hold for pending campaigns. You need ₹${Math.ceil(safeCost - safeWalletBalance)} more active funds to launch.`
+                    : `You need ₹${Math.ceil(safeCost - safeWalletBalance)} more in your wallet to launch this campaign.`
+                  }
+                </Text>
                 
                 <TouchableOpacity 
-                  onPress={() => setAddFundsVisible(true)}
+                  onPress={() => {
+                    setHoldModalData({
+                      active: safeWalletBalance,
+                      onHold: safeOnHoldBalance,
+                      total: safeTotalBalance,
+                      required: safeCost,
+                      shortfall: safeCost - safeWalletBalance,
+                    });
+                    setHoldModalVisible(true);
+                  }}
                   className="rounded-xl overflow-hidden shadow-md"
                   style={{ shadowColor: '#9333EA', shadowRadius: 6 }}
                   activeOpacity={0.8}
                 >
                   <LinearGradient
                     colors={['#7C3AED', '#9333EA', '#C084FC']}
-                    className="py-3 items-center justify-center"
+                    className="py-3 items-center justify-center flex-row"
                   >
-                    <Text className="text-white font-extrabold text-xs tracking-wider uppercase">+ Top Up ₹{Math.ceil(safeCost - safeWalletBalance)}</Text>
+                    <Plus size={16} color="#FFFFFF" strokeWidth={3} className="mr-1" />
+                    <Text className="text-white font-extrabold text-xs tracking-wider uppercase">
+                      + Add ₹{Math.ceil(safeCost - safeWalletBalance)} to Wallet
+                    </Text>
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
@@ -1322,18 +1429,18 @@ export default function CreateCampaignScreen({ route, navigation }) {
         {step === 4 ? (
           <TouchableOpacity 
             onPress={handleLaunch} 
-            disabled={creating || safeCost > safeWalletBalance}
+            disabled={creating}
             className="rounded-2xl overflow-hidden shadow-lg"
             style={{ 
               shadowColor: '#9333EA', 
               shadowRadius: 10, 
               shadowOpacity: 0.35,
-              opacity: (creating || safeCost > safeWalletBalance) ? 0.5 : 1 
+              opacity: creating ? 0.5 : 1 
             }}
             activeOpacity={0.8}
           >
             <LinearGradient
-              colors={['#7C3AED', '#9333EA', '#C084FC']}
+              colors={safeCost > safeWalletBalance ? ['#7C3AED', '#9333EA', '#C084FC'] : ['#7C3AED', '#9333EA', '#C084FC']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               className="py-4 items-center justify-center flex-row"
@@ -1392,6 +1499,142 @@ export default function CreateCampaignScreen({ route, navigation }) {
         )}
       </Modal>
 
+      {/* Funds On Hold / Insufficient Balance Breakdown Modal */}
+      <Modal
+        visible={holdModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setHoldModalVisible(false)}
+      >
+        <View className="flex-1 justify-center items-center bg-black/80 px-5">
+          <View 
+            style={{ 
+              backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+              borderColor: isDark ? '#382260' : '#EDE9FE',
+              shadowColor: '#9333EA',
+              shadowOffset: { width: 0, height: 10 },
+              shadowOpacity: 0.35,
+              shadowRadius: 20,
+              elevation: 12,
+              width: '100%',
+              maxWidth: 400
+            }}
+            className="border rounded-[28px] p-6 overflow-hidden"
+          >
+            {/* Header Icon + Title */}
+            <View className="items-center mb-5">
+              <LinearGradient
+                colors={['#F59E0B', '#D97706']}
+                className="w-14 h-14 rounded-2xl items-center justify-center mb-3 shadow-md"
+                style={{ shadowColor: '#F59E0B', shadowRadius: 8 }}
+              >
+                <Lock size={26} color="#FFFFFF" strokeWidth={2.5} />
+              </LinearGradient>
+              <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-xl font-black text-center tracking-tight">
+                Funds On Hold
+              </Text>
+              <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-medium text-center mt-1 px-2">
+                Previous campaigns awaiting admin approval have reserved funds from your total wallet balance.
+              </Text>
+            </View>
+
+            {/* Breakdown Card */}
+            <View 
+              style={{ 
+                backgroundColor: isDark ? '#0D0818' : '#F8F7FF',
+                borderColor: isDark ? '#281B4B' : '#E9E3FF' 
+              }}
+              className="border rounded-2xl p-4 mb-5"
+            >
+              {/* Active Balance */}
+              <View className="flex-row justify-between items-center py-2.5 border-b" style={{ borderBottomColor: isDark ? '#1E1535' : '#EDE9FE' }}>
+                <View className="flex-row items-center">
+                  <View className="w-2.5 h-2.5 rounded-full bg-emerald-400 mr-2" />
+                  <Text style={{ color: isDark ? '#E2E8F0' : '#334155' }} className="text-sm font-bold">
+                    Active Balance
+                  </Text>
+                </View>
+                <Text style={{ color: isDark ? '#34D399' : '#059669' }} className="text-sm font-black">
+                  ₹{Number(holdModalData.active || safeWalletBalance).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </Text>
+              </View>
+
+              {/* On Hold */}
+              <View className="flex-row justify-between items-center py-2.5 border-b" style={{ borderBottomColor: isDark ? '#1E1535' : '#EDE9FE' }}>
+                <View className="flex-row items-center">
+                  <View className="w-2.5 h-2.5 rounded-full bg-amber-400 mr-2" />
+                  <Text style={{ color: isDark ? '#E2E8F0' : '#334155' }} className="text-sm font-bold">
+                    On Hold
+                  </Text>
+                </View>
+                <Text style={{ color: isDark ? '#FBBF24' : '#D97706' }} className="text-sm font-black">
+                  ₹{Number(holdModalData.onHold || safeOnHoldBalance).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </Text>
+              </View>
+
+              {/* Total Balance */}
+              <View className="flex-row justify-between items-center py-2.5 border-b" style={{ borderBottomColor: isDark ? '#1E1535' : '#EDE9FE' }}>
+                <View className="flex-row items-center">
+                  <View className="w-2.5 h-2.5 rounded-full bg-purple-400 mr-2" />
+                  <Text style={{ color: isDark ? '#E2E8F0' : '#334155' }} className="text-sm font-bold">
+                    Total
+                  </Text>
+                </View>
+                <Text style={{ color: isDark ? '#CBD5E1' : '#475569' }} className="text-sm font-black">
+                  ₹{Number(holdModalData.total || safeTotalBalance).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </Text>
+              </View>
+
+              {/* You Need More Highlight */}
+              <View className="flex-row justify-between items-center pt-3 mt-1">
+                <Text style={{ color: isDark ? '#F43F5E' : '#E11D48' }} className="text-sm font-black uppercase tracking-wide">
+                  You Need More
+                </Text>
+                <Text style={{ color: isDark ? '#F43F5E' : '#E11D48' }} className="text-base font-black">
+                  ₹{Number(holdModalData.shortfall || Math.max(0, safeCost - safeWalletBalance)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </Text>
+              </View>
+            </View>
+
+            {/* Action Buttons */}
+            <View className="gap-2.5">
+              <TouchableOpacity
+                onPress={() => {
+                  setHoldModalVisible(false);
+                  setAddFundsVisible(true);
+                }}
+                className="rounded-2xl overflow-hidden shadow-md"
+                style={{ shadowColor: '#9333EA', shadowRadius: 8 }}
+                activeOpacity={0.85}
+              >
+                <LinearGradient
+                  colors={['#7C3AED', '#9333EA', '#C084FC']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  className="py-3.5 items-center justify-center flex-row"
+                >
+                  <Plus size={18} color="#FFFFFF" strokeWidth={3} className="mr-1.5" />
+                  <Text className="text-white font-black text-sm tracking-wide uppercase">
+                    + Add ₹{Math.ceil(holdModalData.shortfall || Math.max(0, safeCost - safeWalletBalance))} to Wallet
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => setHoldModalVisible(false)}
+                style={{ backgroundColor: isDark ? '#1F1735' : '#F1F5F9' }}
+                className="py-3 rounded-2xl items-center justify-center"
+                activeOpacity={0.7}
+              >
+                <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="font-bold text-xs">
+                  Adjust Campaign
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Add Funds Bottom Sheet */}
       <AddFundsBottomSheet
         visible={addFundsVisible}
@@ -1402,7 +1645,10 @@ export default function CreateCampaignScreen({ route, navigation }) {
           setAddFundsVisible(false);
           const walletRes = await businessService.getWallet().catch(() => ({ success: false }));
           if (walletRes.success) {
-            setWalletBalance(parseFloat(walletRes.wallet_balance || 0));
+            const total = parseFloat(walletRes.total_balance !== undefined ? walletRes.total_balance : (walletRes.wallet_balance || 0));
+            const onHold = parseFloat(walletRes.on_hold || 0);
+            const active = parseFloat(walletRes.active_balance !== undefined ? walletRes.active_balance : Math.max(0, total - onHold));
+            setWalletData({ total, onHold, active });
           }
         }}
       />

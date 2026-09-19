@@ -234,4 +234,55 @@ router.delete('/:id', adminAuth, async (req, res) => {
   }
 });
 
+// Approve ad
+router.put('/:id/approve', adminAuth, async (req, res) => {
+  try {
+    const result = await pool.query(
+      "UPDATE ads SET approval_status = 'Approved', status = 'Active', approved_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING *",
+      [req.params.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Ad not found' });
+    }
+
+    // Also approve linked campaigns
+    await pool.query(
+      "UPDATE campaigns SET approval_status = 'Approved', status = 'Active', approved_at = CURRENT_TIMESTAMP WHERE id IN (SELECT campaign_id FROM campaign_ads WHERE ad_id = $1)",
+      [req.params.id]
+    );
+
+    res.json({ success: true, message: 'Ad approved successfully', ad: result.rows[0] });
+  } catch (error) {
+    console.error('Approve ad error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Reject ad
+router.put('/:id/reject', adminAuth, async (req, res) => {
+  try {
+    const { rejection_reason } = req.body || {};
+    const result = await pool.query(
+      "UPDATE ads SET approval_status = 'Rejected', status = 'Inactive', rejection_reason = $2 WHERE id = $1 RETURNING *",
+      [req.params.id, rejection_reason || 'Rejected by Admin']
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Ad not found' });
+    }
+
+    // Also mark linked campaigns as rejected
+    await pool.query(
+      "UPDATE campaigns SET approval_status = 'Rejected', status = 'Paused', rejection_reason = $2 WHERE id IN (SELECT campaign_id FROM campaign_ads WHERE ad_id = $1)",
+      [req.params.id, rejection_reason || 'Rejected by Admin']
+    );
+
+    res.json({ success: true, message: 'Ad rejected', ad: result.rows[0] });
+  } catch (error) {
+    console.error('Reject ad error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 module.exports = router;

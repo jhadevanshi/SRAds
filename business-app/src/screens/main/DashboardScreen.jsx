@@ -128,7 +128,9 @@ export default function DashboardScreen({ navigation }) {
   };
 
   const totalAds = stats?.stats?.total_ads || 0;
-  const balance = stats?.wallet_balance || user?.wallet_balance || 0;
+  const activeBalance = stats?.stats?.active_balance !== undefined ? stats.stats.active_balance : (stats?.wallet_balance || user?.wallet_balance || 0);
+  const onHoldBalance = stats?.stats?.on_hold || 0;
+  const totalBalance = stats?.stats?.total_balance !== undefined ? stats.stats.total_balance : (stats?.wallet_balance || user?.wallet_balance || 0);
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safeArea, { backgroundColor: isDarkMode ? '#090614' : '#F8F7FF' }]}>
@@ -214,16 +216,25 @@ export default function DashboardScreen({ navigation }) {
               <View style={styles.walletTopRow}>
                 <View style={styles.walletLabelBox}>
                   <Wallet size={16} color="#E9D5FF" />
-                  <Text style={styles.walletLabelText}>Wallet</Text>
+                  <Text style={styles.walletLabelText}>Active Balance</Text>
                 </View>
-                <View style={styles.liveIndicatorPill}>
-                  <Activity size={12} color="#34D399" />
-                  <Text style={styles.liveIndicatorText}>Live Wallet</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  {onHoldBalance > 0 && (
+                    <View style={[styles.liveIndicatorPill, { backgroundColor: 'rgba(245, 158, 11, 0.25)' }]}>
+                      <Text style={[styles.liveIndicatorText, { color: '#FDE68A' }]}>
+                        ₹{Math.round(onHoldBalance)} Hold
+                      </Text>
+                    </View>
+                  )}
+                  <View style={styles.liveIndicatorPill}>
+                    <Activity size={12} color="#34D399" />
+                    <Text style={styles.liveIndicatorText}>Live Wallet</Text>
+                  </View>
                 </View>
               </View>
 
               <Text style={styles.walletBalanceText} numberOfLines={1} adjustsFontSizeToFit>
-                {formatCurrency(balance)}
+                {formatCurrency(activeBalance)}
               </Text>
 
               <View style={styles.walletDivider} />
