@@ -70,22 +70,22 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
     p.muted = false;
   });
 
-  // Listen to video player updates
+  // Listen to video player status & events
   useEffect(() => {
     if (!player) return;
 
     const timeUpdateSub = player.addListener('timeUpdate', (event) => {
-      const current = event.currentTime || 0;
-      setCurrentTime(current);
+      const cur = event.currentTime ?? player.currentTime ?? 0;
+      setCurrentTime(cur);
 
       const currentStartSec = (leftPosRef.current / MAX_TRACK_WIDTH) * durationRef.current;
       const currentEndSec = (rightPosRef.current / MAX_TRACK_WIDTH) * durationRef.current;
 
-      // Loop back to start when playback reaches trimmed end
-      if (isPlayingRef.current && current >= currentEndSec) {
+      if (isPlayingRef.current && cur >= currentEndSec) {
         player.pause();
         player.currentTime = currentStartSec;
         player.play();
+        setCurrentTime(currentStartSec);
       }
     });
 
@@ -98,6 +98,9 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
     });
 
     const playToEndSub = player.addListener('playToEnd', () => {
+      const currentStartSec = (leftPosRef.current / MAX_TRACK_WIDTH) * durationRef.current;
+      player.currentTime = currentStartSec;
+      setCurrentTime(currentStartSec);
       setIsPlaying(false);
       isPlayingRef.current = false;
     });
@@ -108,6 +111,35 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
       playToEndSub?.remove();
     };
   }, [player, originalDurationSec]);
+
+  // Active Timer Interval while playing to guarantee live timestamp updates on all Android devices
+  useEffect(() => {
+    let timer = null;
+    if (isPlaying && player) {
+      timer = setInterval(() => {
+        try {
+          if (player) {
+            const cur = typeof player.currentTime === 'number' ? player.currentTime : 0;
+            setCurrentTime(cur);
+
+            const currentStartSec = (leftPosRef.current / MAX_TRACK_WIDTH) * durationRef.current;
+            const currentEndSec = (rightPosRef.current / MAX_TRACK_WIDTH) * durationRef.current;
+
+            // Loop back within the trim boundary
+            if (cur >= currentEndSec) {
+              player.currentTime = currentStartSec;
+              setCurrentTime(currentStartSec);
+            }
+          }
+        } catch (e) {
+          // Ignore
+        }
+      }, 50); // 50ms smooth tick rate
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isPlaying, player]);
 
   // Calculate pixel span required for 30s minimum duration
   const getMinSelectionPx = () => {
@@ -131,11 +163,16 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
         const maxAllowedLeft = Math.max(0, rightPosRef.current - minSelectionPx);
         const boundedPos = Math.max(0, Math.min(maxAllowedLeft, rawNewPos));
         setLeftPos(boundedPos);
+        const targetSec = (boundedPos / MAX_TRACK_WIDTH) * durationRef.current;
         seekToRatio(boundedPos / MAX_TRACK_WIDTH);
+        setCurrentTime(targetSec);
       },
       onPanResponderRelease: () => {
         const startSec = (leftPosRef.current / MAX_TRACK_WIDTH) * durationRef.current;
-        if (player) player.currentTime = startSec;
+        if (player) {
+          player.currentTime = startSec;
+          setCurrentTime(startSec);
+        }
       }
     })
   ).current;
@@ -154,18 +191,25 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
         const minAllowedRight = Math.min(MAX_TRACK_WIDTH, leftPosRef.current + minSelectionPx);
         const boundedPos = Math.max(minAllowedRight, Math.min(MAX_TRACK_WIDTH, rawNewPos));
         setRightPos(boundedPos);
+        const targetSec = (boundedPos / MAX_TRACK_WIDTH) * durationRef.current;
         seekToRatio(boundedPos / MAX_TRACK_WIDTH);
+        setCurrentTime(targetSec);
       },
       onPanResponderRelease: () => {
         const startSec = (leftPosRef.current / MAX_TRACK_WIDTH) * durationRef.current;
-        if (player) player.currentTime = startSec;
+        if (player) {
+          player.currentTime = startSec;
+          setCurrentTime(startSec);
+        }
       }
     })
   ).current;
 
   const seekToRatio = (ratio) => {
     if (player && durationRef.current > 0) {
-      player.currentTime = Math.max(0, Math.min(durationRef.current, ratio * durationRef.current));
+      const targetTime = Math.max(0, Math.min(durationRef.current, ratio * durationRef.current));
+      player.currentTime = targetTime;
+      setCurrentTime(targetTime);
     }
   };
 
@@ -182,7 +226,9 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
       setIsPlaying(false);
       isPlayingRef.current = false;
     } else {
-      player.currentTime = startSec;
+      const currentStartSec = (leftPosRef.current / MAX_TRACK_WIDTH) * durationRef.current;
+      player.currentTime = currentStartSec;
+      setCurrentTime(currentStartSec);
       player.play();
       setIsPlaying(true);
       isPlayingRef.current = true;
@@ -240,22 +286,14 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
           nativeControls={false}
         />
 
-        {/* Center Play/Pause Touch Overlay */}
+        {/* Full area tap to toggle playback */}
         <TouchableOpacity 
-          style={styles.playOverlay} 
+          style={StyleSheet.absoluteFillObject} 
           onPress={togglePreview}
-          activeOpacity={0.85}
-        >
-          <View style={[styles.playBtnCircle, isPlaying ? styles.playBtnCirclePlaying : null]}>
-            {isPlaying ? (
-              <Pause size={30} color="#FFFFFF" />
-            ) : (
-              <Play size={30} color="#FFFFFF" style={{ marginLeft: 4 }} />
-            )}
-          </View>
-        </TouchableOpacity>
+          activeOpacity={1}
+        />
 
-        {/* Floating Top Controls: Only Back & Reset (No top-center timestamp to overlap play button) */}
+        {/* Floating Top Controls: Only Back & Reset */}
         <View style={[styles.floatingTopBar, { top: Math.max(insets.top, 14) + 6 }]}>
           <TouchableOpacity 
             onPress={onCancel} 
@@ -272,6 +310,21 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
           >
             <RotateCcw size={14} color="#C084FC" />
             <Text style={styles.floatingResetText}>Reset</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Floating Play/Pause Button - Positioned in Center-Bottom of Video with 28px separation above the bottom card */}
+        <View style={styles.playButtonContainer} pointerEvents="box-none">
+          <TouchableOpacity 
+            style={[styles.playBtnCircle, isPlaying ? styles.playBtnCirclePlaying : null]} 
+            onPress={togglePreview}
+            activeOpacity={0.85}
+          >
+            {isPlaying ? (
+              <Pause size={28} color="#FFFFFF" />
+            ) : (
+              <Play size={28} color="#FFFFFF" style={{ marginLeft: 3 }} />
+            )}
           </TouchableOpacity>
         </View>
 
@@ -451,37 +504,41 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
     backgroundColor: '#000000',
-    justifyContent: 'center',
-    alignItems: 'center',
+    overflow: 'hidden',
   },
   videoPlayer: {
     width: '100%',
     height: '100%',
   },
-  playOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
+
+  /* ── Center-Bottom Floating Play/Pause Button Container ── */
+  playButtonContainer: {
+    position: 'absolute',
+    bottom: 24,
+    left: 0,
+    right: 0,
     alignItems: 'center',
-    zIndex: 10,
+    justifyContent: 'center',
+    zIndex: 30,
   },
   playBtnCircle: {
-    width: 66,
-    height: 66,
-    borderRadius: 33,
-    backgroundColor: 'rgba(124, 58, 237, 0.9)',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(124, 58, 237, 0.92)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.6)',
+    borderColor: 'rgba(255, 255, 255, 0.7)',
     shadowColor: '#A855F7',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.5,
-    shadowRadius: 14,
+    shadowRadius: 12,
     elevation: 10,
   },
   playBtnCirclePlaying: {
-    backgroundColor: 'rgba(18, 12, 38, 0.65)',
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(18, 12, 38, 0.75)',
+    borderColor: 'rgba(255, 255, 255, 0.35)',
   },
 
   /* ── Floating Top Header Over Video ── */
@@ -532,7 +589,7 @@ const styles = StyleSheet.create({
   },
   warningBanner: {
     position: 'absolute',
-    bottom: 12,
+    top: 70,
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
