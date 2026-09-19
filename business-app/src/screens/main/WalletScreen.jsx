@@ -294,8 +294,6 @@ export default function WalletScreen({ navigation }) {
                 end={{ x: 1, y: 1 }}
                 style={styles.heroCard}
               >
-                <View style={styles.ambientCircle} />
-
                 <View style={styles.heroTopRow}>
                   <Text style={styles.heroLabel}>CURRENT WALLET BALANCE</Text>
                   <View style={styles.liveChip}>
@@ -541,15 +539,6 @@ const styles = StyleSheet.create({
     padding: 20,
     position: 'relative',
     overflow: 'hidden',
-  },
-  ambientCircle: {
-    position: 'absolute',
-    top: -40,
-    right: -30,
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
   },
   heroTopRow: {
     flexDirection: 'row',

@@ -210,14 +210,10 @@ export default function DashboardScreen({ navigation }) {
               end={{ x: 1, y: 1 }}
               style={styles.walletCard}
             >
-              {/* Background Ambient Circles */}
-              <View style={styles.ambientCircle1} />
-              <View style={styles.ambientCircle2} />
-
               <View style={styles.walletTopRow}>
                 <View style={styles.walletLabelBox}>
-                  <Wallet size={15} color="#E9D5FF" />
-                  <Text style={styles.walletLabelText}>AVAILABLE CAMPAIGN BUDGET</Text>
+                  <Wallet size={16} color="#E9D5FF" />
+                  <Text style={styles.walletLabelText}>Wallet</Text>
                 </View>
                 <View style={styles.liveIndicatorPill}>
                   <Activity size={12} color="#34D399" />
@@ -625,40 +621,22 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
   },
-  ambientCircle1: {
-    position: 'absolute',
-    top: -30,
-    right: -30,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-  },
-  ambientCircle2: {
-    position: 'absolute',
-    bottom: -40,
-    left: -20,
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(0, 0, 0, 0.15)',
-  },
   walletTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   walletLabelBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 7,
   },
   walletLabelText: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '800',
     color: '#E9D5FF',
-    letterSpacing: 0.6,
+    letterSpacing: 0.2,
   },
   liveIndicatorPill: {
     flexDirection: 'row',
