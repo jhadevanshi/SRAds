@@ -5,14 +5,39 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Path } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Mail, Lock, Eye, EyeOff, Check, Sparkles, MonitorSmartphone } from 'lucide-react-native';
 
+// Authentic Google 4-Color Vector Icon
+function GoogleIcon({ size = 20 }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path
+        fill="#4285F4"
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+      />
+      <Path
+        fill="#34A853"
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+      />
+      <Path
+        fill="#FBBC05"
+        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+      />
+      <Path
+        fill="#EA4335"
+        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+      />
+    </Svg>
+  );
+}
+
 export default function LoginScreen({ navigation }) {
   const { login } = useAuth();
-  const { isDarkMode } = useTheme();
+  const { isDark } = useTheme();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,7 +47,6 @@ export default function LoginScreen({ navigation }) {
   const [focusedField, setFocusedField] = useState(null);
 
   useEffect(() => {
-    // Load remembered email
     const loadRememberedEmail = async () => {
       try {
         const savedEmail = await AsyncStorage.getItem('remembered_email');
@@ -39,7 +63,7 @@ export default function LoginScreen({ navigation }) {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Missing Details', 'Please enter your email and password.');
+      Alert.alert('Missing Details', 'Please enter your work email and password.');
       return;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -70,20 +94,22 @@ export default function LoginScreen({ navigation }) {
   const handleForgotPassword = () => {
     Alert.alert(
       'Reset Password',
-      'Please contact administrator at support@srads.com or your account manager to reset your password.'
+      'Please contact support at support@srads.com or your account manager to reset your business portal password.'
     );
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: isDarkMode ? '#090614' : '#F8F7FF' }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? '#090614' : '#F8F7FF' }]}>
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
         style={styles.flex1}
+        enabled={Platform.OS === 'ios'}
       >
         <ScrollView 
           contentContainerStyle={styles.scrollContent} 
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+          keyboardShouldPersistTaps="always"
+          keyboardDismissMode="none"
         >
           <View style={styles.container}>
             
@@ -96,7 +122,7 @@ export default function LoginScreen({ navigation }) {
                   end={{ x: 1, y: 1 }}
                   style={[
                     styles.logoGradient,
-                    isDarkMode ? styles.neonGlowDark : styles.neonGlowLight
+                    isDark ? styles.neonGlowDark : styles.neonGlowLight
                   ]}
                 >
                   <View style={styles.logoInner}>
@@ -105,21 +131,21 @@ export default function LoginScreen({ navigation }) {
                 </LinearGradient>
               </View>
 
-              <Text style={[styles.brandTitle, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]}>
+              <Text style={[styles.brandTitle, { color: isDark ? '#F8FAFC' : '#1E1B4B' }]}>
                 Adsnetvo
               </Text>
-              <Text style={[styles.brandSubtitle, { color: isDarkMode ? '#A78BFA' : '#6B7280' }]}>
+              <Text style={[styles.brandSubtitle, { color: isDark ? '#C084FC' : '#6D28D9' }]}>
                 Smart Display Advertising on the Go
               </Text>
             </View>
 
             {/* ── Welcome Heading ────────────────────────────────────────── */}
             <View style={styles.welcomeSection}>
-              <Text style={[styles.welcomeTitle, { color: isDarkMode ? '#FFFFFF' : '#111827' }]}>
+              <Text style={[styles.welcomeTitle, { color: isDark ? '#FFFFFF' : '#111827' }]}>
                 Welcome Back
               </Text>
-              <Text style={[styles.welcomeSubtitle, { color: isDarkMode ? '#94A3B8' : '#64748B' }]}>
-                Log in to manage your digital transit ad campaigns
+              <Text style={[styles.welcomeSubtitle, { color: isDark ? '#94A3B8' : '#64748B' }]}>
+                Sign in to manage your digital transit campaigns
               </Text>
             </View>
 
@@ -128,29 +154,33 @@ export default function LoginScreen({ navigation }) {
               
               {/* Email Input */}
               <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: isDarkMode ? '#CBD5E1' : '#374151' }]}>
+                <Text style={[styles.inputLabel, { color: isDark ? '#CBD5E1' : '#374151' }]}>
                   Work Email
                 </Text>
                 <View 
                   style={[
                     styles.inputWrapper,
                     { 
-                      backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF',
+                      backgroundColor: isDark ? '#140F24' : '#FFFFFF',
                       borderColor: focusedField === 'email' 
                         ? '#A855F7' 
-                        : (isDarkMode ? '#281B4B' : '#E2E8F0'),
+                        : (isDark ? '#281B4B' : '#E2E8F0'),
                     },
-                    focusedField === 'email' && (isDarkMode ? styles.inputFocusedDark : styles.inputFocusedLight)
+                    focusedField === 'email' && (isDark ? styles.inputFocusedDark : styles.inputFocusedLight)
                   ]}
                 >
-                  <Mail size={19} color={focusedField === 'email' ? '#A855F7' : (isDarkMode ? '#64748B' : '#94A3B8')} style={styles.inputIcon} />
+                  <Mail size={19} color={focusedField === 'email' ? '#A855F7' : (isDark ? '#64748B' : '#94A3B8')} style={styles.inputIcon} />
                   <TextInput
-                    style={[styles.inputField, { color: isDarkMode ? '#F8FAFC' : '#111827' }]}
+                    style={[styles.inputField, { color: isDark ? '#F8FAFC' : '#111827' }]}
                     placeholder="name@company.com"
-                    placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
+                    placeholderTextColor={isDark ? '#64748B' : '#9CA3AF'}
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoCorrect={false}
+                    textContentType="emailAddress"
+                    autoComplete="email"
+                    importantForAutofill="yes"
+                    returnKeyType="next"
                     value={email}
                     onChangeText={setEmail}
                     onFocus={() => setFocusedField('email')}
@@ -161,27 +191,32 @@ export default function LoginScreen({ navigation }) {
 
               {/* Password Input */}
               <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: isDarkMode ? '#CBD5E1' : '#374151' }]}>
+                <Text style={[styles.inputLabel, { color: isDark ? '#CBD5E1' : '#374151' }]}>
                   Password
                 </Text>
                 <View 
                   style={[
                     styles.inputWrapper,
                     { 
-                      backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF',
+                      backgroundColor: isDark ? '#140F24' : '#FFFFFF',
                       borderColor: focusedField === 'password' 
                         ? '#A855F7' 
-                        : (isDarkMode ? '#281B4B' : '#E2E8F0'),
+                        : (isDark ? '#281B4B' : '#E2E8F0'),
                     },
-                    focusedField === 'password' && (isDarkMode ? styles.inputFocusedDark : styles.inputFocusedLight)
+                    focusedField === 'password' && (isDark ? styles.inputFocusedDark : styles.inputFocusedLight)
                   ]}
                 >
-                  <Lock size={19} color={focusedField === 'password' ? '#A855F7' : (isDarkMode ? '#64748B' : '#94A3B8')} style={styles.inputIcon} />
+                  <Lock size={19} color={focusedField === 'password' ? '#A855F7' : (isDark ? '#64748B' : '#94A3B8')} style={styles.inputIcon} />
                   <TextInput
-                    style={[styles.inputField, { color: isDarkMode ? '#F8FAFC' : '#111827' }]}
+                    style={[styles.inputField, { color: isDark ? '#F8FAFC' : '#111827' }]}
                     placeholder="••••••••"
-                    placeholderTextColor={isDarkMode ? '#64748B' : '#9CA3AF'}
+                    placeholderTextColor={isDark ? '#64748B' : '#9CA3AF'}
                     secureTextEntry={!showPassword}
+                    textContentType="password"
+                    autoComplete="password"
+                    importantForAutofill="yes"
+                    returnKeyType="done"
+                    onSubmitEditing={handleLogin}
                     value={password}
                     onChangeText={setPassword}
                     onFocus={() => setFocusedField('password')}
@@ -194,13 +229,13 @@ export default function LoginScreen({ navigation }) {
                   >
                     {showPassword ? (
                       <View style={styles.showPasswordInner}>
-                        <EyeOff size={16} color={isDarkMode ? '#A78BFA' : '#6B7280'} />
-                        <Text style={[styles.showPasswordText, { color: isDarkMode ? '#A78BFA' : '#6B7280' }]}>Hide</Text>
+                        <EyeOff size={16} color={isDark ? '#C084FC' : '#7C3AED'} />
+                        <Text style={[styles.showPasswordText, { color: isDark ? '#C084FC' : '#7C3AED' }]}>Hide</Text>
                       </View>
                     ) : (
                       <View style={styles.showPasswordInner}>
-                        <Eye size={16} color={isDarkMode ? '#A78BFA' : '#6B7280'} />
-                        <Text style={[styles.showPasswordText, { color: isDarkMode ? '#A78BFA' : '#6B7280' }]}>Show</Text>
+                        <Eye size={16} color={isDark ? '#C084FC' : '#7C3AED'} />
+                        <Text style={[styles.showPasswordText, { color: isDark ? '#C084FC' : '#7C3AED' }]}>Show</Text>
                       </View>
                     )}
                   </TouchableOpacity>
@@ -216,17 +251,17 @@ export default function LoginScreen({ navigation }) {
                 >
                   <View style={[
                     styles.checkbox,
-                    rememberMe ? styles.checkboxActive : (isDarkMode ? styles.checkboxInactiveDark : styles.checkboxInactiveLight)
+                    rememberMe ? styles.checkboxActive : (isDark ? styles.checkboxInactiveDark : styles.checkboxInactiveLight)
                   ]}>
                     {rememberMe && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
                   </View>
-                  <Text style={[styles.rememberMeText, { color: isDarkMode ? '#94A3B8' : '#4B5563' }]}>
+                  <Text style={[styles.rememberMeText, { color: isDark ? '#CBD5E1' : '#4B5563' }]}>
                     Remember me
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity onPress={handleForgotPassword} activeOpacity={0.7}>
-                  <Text style={[styles.forgotPasswordText, { color: isDarkMode ? '#C084FC' : '#7C3AED' }]}>
+                  <Text style={[styles.forgotPasswordText, { color: isDark ? '#C084FC' : '#7C3AED' }]}>
                     Forgot Password?
                   </Text>
                 </TouchableOpacity>
@@ -245,7 +280,7 @@ export default function LoginScreen({ navigation }) {
                   end={{ x: 1, y: 0 }}
                   style={[
                     styles.ctaGradient,
-                    isDarkMode ? styles.ctaGlowDark : styles.ctaGlowLight
+                    isDark ? styles.ctaGlowDark : styles.ctaGlowLight
                   ]}
                 >
                   {loading ? (
@@ -258,59 +293,42 @@ export default function LoginScreen({ navigation }) {
 
               {/* ── Or continue with Divider ─────────────────────────────── */}
               <View style={styles.dividerRow}>
-                <View style={[styles.dividerLine, { backgroundColor: isDarkMode ? '#281B4B' : '#E5E7EB' }]} />
-                <Text style={[styles.dividerText, { color: isDarkMode ? '#64748B' : '#9CA3AF' }]}>
+                <View style={[styles.dividerLine, { backgroundColor: isDark ? '#281B4B' : '#E5E7EB' }]} />
+                <Text style={[styles.dividerText, { color: isDark ? '#64748B' : '#9CA3AF' }]}>
                   Or continue with
                 </Text>
-                <View style={[styles.dividerLine, { backgroundColor: isDarkMode ? '#281B4B' : '#E5E7EB' }]} />
+                <View style={[styles.dividerLine, { backgroundColor: isDark ? '#281B4B' : '#E5E7EB' }]} />
               </View>
 
-              {/* ── Social Login Pill Buttons ────────────────────────────── */}
-              <View style={styles.socialButtonsRow}>
-                <TouchableOpacity 
-                  style={[
-                    styles.socialButton,
-                    { 
-                      backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF',
-                      borderColor: isDarkMode ? '#281B4B' : '#E2E8F0'
-                    }
-                  ]}
-                  activeOpacity={0.75}
-                  onPress={() => Alert.alert('Google Sign-In', 'Google corporate sign-in is enabled for enterprise accounts.')}
-                >
-                  <Text style={styles.socialIconG}>G</Text>
-                  <Text style={[styles.socialButtonText, { color: isDarkMode ? '#F8FAFC' : '#374151' }]}>
-                    Google
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity 
-                  style={[
-                    styles.socialButton,
-                    { 
-                      backgroundColor: isDarkMode ? '#140F24' : '#FFFFFF',
-                      borderColor: isDarkMode ? '#281B4B' : '#E2E8F0'
-                    }
-                  ]}
-                  activeOpacity={0.75}
-                  onPress={() => Alert.alert('Apple Sign-In', 'Apple ID corporate sign-in is enabled for enterprise accounts.')}
-                >
-                  <Text style={[styles.socialIconApple, { color: isDarkMode ? '#FFFFFF' : '#000000' }]}></Text>
-                  <Text style={[styles.socialButtonText, { color: isDarkMode ? '#F8FAFC' : '#374151' }]}>
-                    Apple
-                  </Text>
-                </TouchableOpacity>
-              </View>
+              {/* ── Full-Width Google Sign-In Button (Android Optimized) ───── */}
+              <TouchableOpacity 
+                style={[
+                  styles.googleButton,
+                  { 
+                    backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+                    borderColor: isDark ? '#281B4B' : '#E2E8F0',
+                    shadowColor: isDark ? '#7C3AED' : '#000000',
+                    shadowOpacity: isDark ? 0.2 : 0.06,
+                  }
+                ]}
+                activeOpacity={0.8}
+                onPress={() => Alert.alert('Google Sign-In', 'Google Corporate Single Sign-On is available for verified merchant domains.')}
+              >
+                <GoogleIcon size={20} />
+                <Text style={[styles.googleButtonText, { color: isDark ? '#F8FAFC' : '#1E1B4B' }]}>
+                  Continue with Google
+                </Text>
+              </TouchableOpacity>
 
             </View>
 
             {/* ── Footer ─────────────────────────────────────────────────── */}
             <View style={styles.footerSection}>
-              <Text style={[styles.footerText, { color: isDarkMode ? '#94A3B8' : '#6B7280' }]}>
+              <Text style={[styles.footerText, { color: isDark ? '#94A3B8' : '#6B7280' }]}>
                 Don't have an account?{' '}
               </Text>
               <TouchableOpacity onPress={() => navigation.navigate('Register')} activeOpacity={0.7}>
-                <Text style={[styles.signUpText, { color: isDarkMode ? '#C084FC' : '#7C3AED' }]}>
+                <Text style={[styles.signUpText, { color: isDark ? '#C084FC' : '#7C3AED' }]}>
                   Sign Up
                 </Text>
               </TouchableOpacity>
@@ -333,9 +351,8 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 28,
-    justifyContent: 'center',
+    paddingTop: 28,
+    paddingBottom: 44,
   },
   container: {
     maxWidth: 420,
@@ -346,15 +363,15 @@ const styles = StyleSheet.create({
   // Header / Logo
   headerSection: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   logoContainer: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   logoGradient: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
+    width: 68,
+    height: 68,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 2,
@@ -362,52 +379,53 @@ const styles = StyleSheet.create({
   logoInner: {
     width: '100%',
     height: '100%',
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.14)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   neonGlowDark: {
     shadowColor: '#A855F7',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 18,
-    elevation: 12,
+    shadowOpacity: 0.6,
+    shadowRadius: 20,
+    elevation: 14,
   },
   neonGlowLight: {
     shadowColor: '#7C3AED',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
+    shadowOpacity: 0.3,
+    shadowRadius: 14,
     elevation: 8,
   },
   brandTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-    marginBottom: 2,
+    fontSize: 26,
+    fontWeight: '900',
+    letterSpacing: -0.8,
+    marginBottom: 3,
   },
   brandSubtitle: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
 
   // Welcome Section
   welcomeSection: {
     alignItems: 'center',
-    marginBottom: 26,
+    marginBottom: 24,
   },
   welcomeTitle: {
-    fontSize: 26,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-    marginBottom: 6,
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: -0.6,
+    marginBottom: 4,
   },
   welcomeSubtitle: {
-    fontSize: 14,
-    fontWeight: '400',
+    fontSize: 13,
+    fontWeight: '500',
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 19,
     paddingHorizontal: 12,
   },
 
@@ -420,16 +438,17 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.2,
     marginBottom: 6,
     marginLeft: 2,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1.2,
+    borderWidth: 1.5,
     borderRadius: 16,
-    height: 52,
+    height: 54,
     paddingHorizontal: 14,
   },
   inputIcon: {
@@ -439,24 +458,26 @@ const styles = StyleSheet.create({
     flex: 1,
     height: '100%',
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: '600',
+    letterSpacing: 0.2,
+    paddingVertical: 0,
   },
   inputFocusedDark: {
     borderColor: '#C084FC',
     shadowColor: '#A855F7',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
+    shadowOpacity: 0.45,
+    shadowRadius: 10,
   },
   inputFocusedLight: {
     borderColor: '#7C3AED',
     shadowColor: '#7C3AED',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
   showPasswordBtn: {
-    paddingVertical: 6,
+    paddingVertical: 8,
     paddingHorizontal: 8,
   },
   showPasswordInner: {
@@ -466,7 +487,8 @@ const styles = StyleSheet.create({
   },
   showPasswordText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
 
   // Options Row
@@ -483,9 +505,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   checkbox: {
-    width: 18,
-    height: 18,
-    borderRadius: 5,
+    width: 19,
+    height: 19,
+    borderRadius: 6,
     borderWidth: 1.5,
     justifyContent: 'center',
     alignItems: 'center',
@@ -496,7 +518,7 @@ const styles = StyleSheet.create({
     borderColor: '#9333EA',
   },
   checkboxInactiveDark: {
-    borderColor: '#4C3B78',
+    borderColor: '#3B2A68',
     backgroundColor: '#140F24',
   },
   checkboxInactiveLight: {
@@ -505,20 +527,21 @@ const styles = StyleSheet.create({
   },
   rememberMeText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   forgotPasswordText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: 0.1,
   },
 
   // CTA Button
   ctaButtonWrapper: {
     width: '100%',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   ctaGradient: {
-    height: 52,
+    height: 54,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
@@ -540,15 +563,16 @@ const styles = StyleSheet.create({
   ctaButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: -0.2,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
   },
 
   // Divider
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 18,
   },
   dividerLine: {
     flex: 1,
@@ -556,39 +580,30 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
+    letterSpacing: 0.3,
     paddingHorizontal: 12,
   },
 
-  // Social Buttons
-  socialButtonsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
-  },
-  socialButton: {
-    flex: 1,
+  // Google Full-Width Button
+  googleButton: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 48,
-    borderRadius: 14,
-    borderWidth: 1.2,
-    gap: 8,
+    height: 52,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    gap: 10,
+    marginBottom: 24,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 2,
   },
-  socialIconG: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#EA4335',
-  },
-  socialIconApple: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: -2,
-  },
-  socialButtonText: {
+  googleButtonText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '800',
+    letterSpacing: 0.2,
   },
 
   // Footer
@@ -596,7 +611,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 4,
   },
   footerText: {
     fontSize: 14,
@@ -604,6 +619,7 @@ const styles = StyleSheet.create({
   },
   signUpText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: 0.2,
   },
 });
