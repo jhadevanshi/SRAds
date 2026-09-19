@@ -7,7 +7,7 @@ import { AuthProvider } from './src/context/AuthContext';
 import { ThemeProvider } from './src/context/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
 
-LogBox.ignoreLogs(['[WebSocket]', 'WebSocket Error']);
+LogBox.ignoreLogs(['[WebSocket]', 'WebSocket Error', 'SafeAreaView has been deprecated']);
 
 // Required for NativeWind
 import { NativeWindStyleSheet } from "nativewind";
