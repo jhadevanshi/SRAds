@@ -1,23 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   View, Text, TouchableOpacity, PanResponder, Dimensions, 
-  StyleSheet, Platform, ScrollView 
+  StyleSheet, Alert 
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
 import { 
-  ArrowLeft, X, Play, Pause, Check, Scissors, RotateCcw, 
-  Sparkles, Clock, CheckCircle2 
+  ArrowLeft, Play, Pause, Check, RotateCcw, 
+  Clock, AlertTriangle 
 } from 'lucide-react-native';
 import { fonts } from '../theme/designTokens';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const TIMELINE_HORIZONTAL_PADDING = 18;
-const TRACK_WIDTH = SCREEN_WIDTH - (TIMELINE_HORIZONTAL_PADDING * 2);
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const TIMELINE_HORIZONTAL_PADDING = 16;
+const TRACK_WIDTH = SCREEN_WIDTH - (TIMELINE_HORIZONTAL_PADDING * 2) - 32; // subtracting card padding
 const THUMB_WIDTH = 22;
-const MIN_SELECTION_WIDTH = 32;
+const MIN_SELECTION_WIDTH = 28;
 const MAX_TRACK_WIDTH = TRACK_WIDTH - (THUMB_WIDTH * 2);
+const MIN_TRIM_DURATION_SEC = 30;
 
 const formatTimeCode = (seconds) => {
   if (isNaN(seconds) || seconds < 0) return '00:00.0';
@@ -45,6 +46,13 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
 
   useEffect(() => {
     durationRef.current = duration;
+    // Check initial min duration
+    if (duration > 0 && duration < MIN_TRIM_DURATION_SEC) {
+      Alert.alert(
+        'Video Under 30 Seconds',
+        `Transit commercial videos must be at least 30 seconds long. This video is only ${duration.toFixed(1)}s.`
+      );
+    }
   }, [duration]);
 
   useEffect(() => {
@@ -94,7 +102,15 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
     };
   }, [player, originalDurationSec]);
 
-  // Pan Responder for Left Trim Handle
+  // Calculate pixel span required for 30s minimum duration
+  const getMinSelectionPx = () => {
+    const dur = durationRef.current;
+    if (!dur || dur <= 0) return MIN_SELECTION_WIDTH;
+    const ratio = Math.min(1, MIN_TRIM_DURATION_SEC / dur);
+    return Math.max(MIN_SELECTION_WIDTH, ratio * MAX_TRACK_WIDTH);
+  };
+
+  // Pan Responder for Left Trim Handle (enforcing min 30s duration)
   const leftPanResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -103,8 +119,10 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
         startLeftRef.current = leftPosRef.current;
       },
       onPanResponderMove: (evt, gestureState) => {
+        const minSelectionPx = getMinSelectionPx();
         const rawNewPos = startLeftRef.current + gestureState.dx;
-        const boundedPos = Math.max(0, Math.min(rightPosRef.current - MIN_SELECTION_WIDTH, rawNewPos));
+        const maxAllowedLeft = Math.max(0, rightPosRef.current - minSelectionPx);
+        const boundedPos = Math.max(0, Math.min(maxAllowedLeft, rawNewPos));
         setLeftPos(boundedPos);
         seekToRatio(boundedPos / MAX_TRACK_WIDTH);
       },
@@ -115,7 +133,7 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
     })
   ).current;
 
-  // Pan Responder for Right Trim Handle
+  // Pan Responder for Right Trim Handle (enforcing min 30s duration)
   const rightPanResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -124,8 +142,10 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
         startRightRef.current = rightPosRef.current;
       },
       onPanResponderMove: (evt, gestureState) => {
+        const minSelectionPx = getMinSelectionPx();
         const rawNewPos = startRightRef.current + gestureState.dx;
-        const boundedPos = Math.max(leftPosRef.current + MIN_SELECTION_WIDTH, Math.min(MAX_TRACK_WIDTH, rawNewPos));
+        const minAllowedRight = Math.min(MAX_TRACK_WIDTH, leftPosRef.current + minSelectionPx);
+        const boundedPos = Math.max(minAllowedRight, Math.min(MAX_TRACK_WIDTH, rawNewPos));
         setRightPos(boundedPos);
         seekToRatio(boundedPos / MAX_TRACK_WIDTH);
       },
@@ -145,6 +165,7 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
   const startSec = (leftPos / MAX_TRACK_WIDTH) * duration;
   const endSec = (rightPos / MAX_TRACK_WIDTH) * duration;
   const selectedDuration = Math.max(0.1, endSec - startSec);
+  const isValidDuration = selectedDuration >= (MIN_TRIM_DURATION_SEC - 0.1);
 
   const togglePreview = () => {
     if (!player) return;
@@ -170,7 +191,7 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
       return;
     }
 
-    const targetSec = Math.min(presetSeconds, duration);
+    const targetSec = Math.max(MIN_TRIM_DURATION_SEC, Math.min(presetSeconds, duration));
     const newRightRatio = targetSec / duration;
     setLeftPos(0);
     setRightPos(newRightRatio * MAX_TRACK_WIDTH);
@@ -178,6 +199,14 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
   };
 
   const handleSave = () => {
+    if (selectedDuration < (MIN_TRIM_DURATION_SEC - 0.1)) {
+      Alert.alert(
+        'Minimum Duration Required',
+        `Transit campaign commercial videos must be at least 30 seconds long. Current selection is ${selectedDuration.toFixed(1)}s.`
+      );
+      return;
+    }
+
     if (player) {
       player.pause();
     }
@@ -191,9 +220,6 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
   const progressRatio = duration > 0 ? Math.max(0, Math.min(1, currentTime / duration)) : 0;
   const playheadPos = progressRatio * MAX_TRACK_WIDTH + THUMB_WIDTH;
 
-  // Adaptive video height to ensure all controls fit nicely on small or large devices
-  const videoHeight = Math.min(260, Math.max(200, SCREEN_HEIGHT * 0.28));
-
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {/* ── Top Header ────────────────────────────────────────────── */}
@@ -204,186 +230,207 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
 
         <View style={styles.headerTitleBox}>
           <Text style={styles.headerTitle}>Video Trimmer</Text>
-          <Text style={styles.headerSubtitle}>Set Transit Ad Playback Range</Text>
+          <Text style={styles.headerSubtitle}>Min 30s Playback Required</Text>
         </View>
 
         <TouchableOpacity onPress={() => applyPreset('full')} style={styles.headerResetBtn} activeOpacity={0.7}>
-          <RotateCcw size={15} color="#C084FC" />
+          <RotateCcw size={14} color="#C084FC" />
           <Text style={styles.headerResetText}>Reset</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView 
-        style={styles.scrollArea} 
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-      >
-        {/* ── Video Player Preview ───────────────────────────────────── */}
-        <View style={[styles.previewContainer, { height: videoHeight }]}>
-          <VideoView
-            player={player}
-            style={styles.video}
-            contentFit="contain"
-            nativeControls={false}
-          />
+      {/* ── 3/4 Video Player Preview Area (Dedicated screen portion) ── */}
+      <View style={styles.videoSection}>
+        <VideoView
+          player={player}
+          style={styles.video}
+          contentFit="contain"
+          nativeControls={false}
+        />
 
-          {/* Center Play/Pause Touch Overlay */}
-          <TouchableOpacity 
-            style={styles.playOverlay} 
-            onPress={togglePreview}
-            activeOpacity={0.85}
-          >
-            <View style={[styles.playBtnCircle, isPlaying ? styles.playBtnCirclePlaying : null]}>
-              {isPlaying ? (
-                <Pause size={24} color="#FFFFFF" />
-              ) : (
-                <Play size={24} color="#FFFFFF" style={{ marginLeft: 3 }} />
-              )}
-            </View>
-          </TouchableOpacity>
+        {/* Center Play/Pause Touch Overlay */}
+        <TouchableOpacity 
+          style={styles.playOverlay} 
+          onPress={togglePreview}
+          activeOpacity={0.85}
+        >
+          <View style={[styles.playBtnCircle, isPlaying ? styles.playBtnCirclePlaying : null]}>
+            {isPlaying ? (
+              <Pause size={28} color="#FFFFFF" />
+            ) : (
+              <Play size={28} color="#FFFFFF" style={{ marginLeft: 4 }} />
+            )}
+          </View>
+        </TouchableOpacity>
 
-          {/* Live Timestamp Pill Overlay */}
-          <View style={styles.currentPositionBadge}>
-            <View style={[styles.liveDot, { backgroundColor: isPlaying ? '#10B981' : '#A855F7' }]} />
-            <Text style={styles.currentPositionText}>
-              {formatTimeCode(currentTime)} / {formatTimeCode(duration)}
+        {/* Live Timestamp Badge Overlay */}
+        <View style={styles.currentPositionBadge}>
+          <View style={[styles.liveDot, { backgroundColor: isPlaying ? '#10B981' : '#A855F7' }]} />
+          <Text style={styles.currentPositionText}>
+            {formatTimeCode(currentTime)} / {formatTimeCode(duration)}
+          </Text>
+        </View>
+
+        {/* Duration Warning banner if video < 30s */}
+        {duration < MIN_TRIM_DURATION_SEC && (
+          <View style={styles.warningBanner}>
+            <AlertTriangle size={14} color="#F59E0B" />
+            <Text style={styles.warningBannerText}>
+              Video is {duration.toFixed(1)}s (Must be ≥ 30s)
             </Text>
           </View>
-        </View>
+        )}
+      </View>
 
-        {/* ── Trimmer Control Card ──────────────────────────────────── */}
-        <View style={styles.editorCard}>
-          
-          {/* Metric Overview Row */}
-          <View style={styles.metricRow}>
-            <View style={styles.metricItem}>
-              <Text style={styles.metricLabel}>START TIME</Text>
-              <Text style={styles.metricValue}>{formatTimeCode(startSec)}</Text>
-            </View>
-
-            <View style={styles.selectedDurationPill}>
-              <Scissors size={13} color="#C084FC" />
-              <Text style={styles.selectedDurationText}>
-                {selectedDuration.toFixed(1)}s Flight
-              </Text>
-            </View>
-
-            <View style={[styles.metricItem, { alignItems: 'flex-end' }]}>
-              <Text style={styles.metricLabel}>END TIME</Text>
-              <Text style={styles.metricValue}>{formatTimeCode(endSec)}</Text>
-            </View>
-          </View>
-
-          {/* Timeline Track with Visual Drag Handles */}
-          <View style={styles.timelineWrapper}>
-            {/* Base Inactive Track */}
-            <View style={styles.trackBackground} />
-
-            {/* Active Highlighted Region */}
-            <LinearGradient
-              colors={['#7C3AED', '#9333EA', '#A855F7']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={[
-                styles.trackActive,
-                {
-                  left: leftPos + THUMB_WIDTH,
-                  width: Math.max(0, rightPos - leftPos),
-                }
-              ]}
-            />
-
-            {/* Playhead Line */}
-            {playheadPos >= leftPos + THUMB_WIDTH && playheadPos <= rightPos + THUMB_WIDTH && (
-              <View style={[styles.playheadLine, { left: playheadPos }]} />
-            )}
-
-            {/* Left Handle */}
-            <View 
-              style={[styles.handle, { left: leftPos }]} 
-              {...leftPanResponder.panHandlers}
-            >
-              <View style={styles.handleGrip} />
-            </View>
-
-            {/* Right Handle */}
-            <View 
-              style={[styles.handle, { left: rightPos + THUMB_WIDTH }]} 
-              {...rightPanResponder.panHandlers}
-            >
-              <View style={styles.handleGrip} />
-            </View>
-          </View>
-
-          {/* Quick Trim Preset Chips */}
-          <View style={styles.presetSection}>
-            <Text style={styles.presetHeading}>QUICK PRESETS</Text>
-            <View style={styles.presetChipsRow}>
-              <TouchableOpacity 
-                style={styles.presetChip} 
-                onPress={() => applyPreset(15)}
-                activeOpacity={0.75}
-              >
-                <Text style={styles.presetChipText}>15s Short</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={styles.presetChip} 
-                onPress={() => applyPreset(30)}
-                activeOpacity={0.75}
-              >
-                <Text style={styles.presetChipText}>30s Standard</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={styles.presetChip} 
-                onPress={() => applyPreset('full')}
-                activeOpacity={0.75}
-              >
-                <Text style={styles.presetChipText}>Full Video</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-        </View>
-      </ScrollView>
-
-      {/* ── Bottom Action Footer (Elevated above system navigation) ── */}
+      {/* ── 1/4 Trimmer Control Section & Bottom Actions ───────────── */}
       <View style={[
-        styles.footer, 
-        { paddingBottom: Math.max(insets.bottom, 14) + 6 }
+        styles.trimmerSection, 
+        { paddingBottom: Math.max(insets.bottom, 12) + 6 }
       ]}>
-        <TouchableOpacity 
-          style={styles.previewBtn} 
-          onPress={togglePreview}
-          activeOpacity={0.8}
-        >
-          {isPlaying ? (
-            <Pause size={17} color="#C084FC" />
-          ) : (
-            <Play size={17} color="#C084FC" style={{ marginLeft: 2 }} />
-          )}
-          <Text style={styles.previewBtnText}>
-            {isPlaying ? 'Pause Preview' : 'Preview Trim'}
-          </Text>
-        </TouchableOpacity>
+        
+        {/* Metric Overview Row (Start / Selected Duration / End) */}
+        <View style={styles.metricRow}>
+          <View style={styles.metricItem}>
+            <Text style={styles.metricLabel}>START TIME</Text>
+            <Text style={styles.metricValue}>{formatTimeCode(startSec)}</Text>
+          </View>
 
-        <TouchableOpacity 
-          style={styles.saveBtn} 
-          onPress={handleSave}
-          activeOpacity={0.88}
-        >
+          <View style={[
+            styles.durationBadge, 
+            !isValidDuration ? styles.durationBadgeInvalid : null
+          ]}>
+            <Clock size={13} color={isValidDuration ? '#C084FC' : '#F59E0B'} />
+            <Text style={[
+              styles.durationBadgeText, 
+              !isValidDuration ? styles.durationBadgeTextInvalid : null
+            ]}>
+              {selectedDuration.toFixed(1)}s Duration {isValidDuration ? '✓' : '(Min 30s)'}
+            </Text>
+          </View>
+
+          <View style={[styles.metricItem, { alignItems: 'flex-end' }]}>
+            <Text style={styles.metricLabel}>END TIME</Text>
+            <Text style={styles.metricValue}>{formatTimeCode(endSec)}</Text>
+          </View>
+        </View>
+
+        {/* Timeline Track with Visual Drag Handles */}
+        <View style={styles.timelineWrapper}>
+          {/* Base Inactive Track */}
+          <View style={styles.trackBackground} />
+
+          {/* Active Highlighted Region */}
           <LinearGradient
-            colors={['#7C3AED', '#9333EA', '#A855F7']}
+            colors={isValidDuration ? ['#7C3AED', '#9333EA', '#A855F7'] : ['#D97706', '#F59E0B', '#FBBF24']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            style={styles.saveBtnGradient}
+            style={[
+              styles.trackActive,
+              {
+                left: leftPos + THUMB_WIDTH,
+                width: Math.max(0, rightPos - leftPos),
+              }
+            ]}
+          />
+
+          {/* Playhead Line */}
+          {playheadPos >= leftPos + THUMB_WIDTH && playheadPos <= rightPos + THUMB_WIDTH && (
+            <View style={[styles.playheadLine, { left: playheadPos }]} />
+          )}
+
+          {/* Left Handle */}
+          <View 
+            style={[styles.handle, { left: leftPos }]} 
+            {...leftPanResponder.panHandlers}
           >
-            <Check size={18} color="#FFFFFF" strokeWidth={3} />
-            <Text style={styles.saveBtnText}>Apply & Use Video</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+            <View style={styles.handleGrip} />
+          </View>
+
+          {/* Right Handle */}
+          <View 
+            style={[styles.handle, { left: rightPos + THUMB_WIDTH }]} 
+            {...rightPanResponder.panHandlers}
+          >
+            <View style={styles.handleGrip} />
+          </View>
+        </View>
+
+        {/* Quick Trim Preset Chips */}
+        <View style={styles.presetSection}>
+          <Text style={styles.presetHeading}>QUICK PRESETS</Text>
+          <View style={styles.presetChipsRow}>
+            <TouchableOpacity 
+              style={styles.presetChip} 
+              onPress={() => applyPreset(30)}
+              activeOpacity={0.75}
+            >
+              <Text style={styles.presetChipText}>30s (Min)</Text>
+            </TouchableOpacity>
+
+            {duration >= 45 && (
+              <TouchableOpacity 
+                style={styles.presetChip} 
+                onPress={() => applyPreset(45)}
+                activeOpacity={0.75}
+              >
+                <Text style={styles.presetChipText}>45s</Text>
+              </TouchableOpacity>
+            )}
+
+            {duration >= 60 && (
+              <TouchableOpacity 
+                style={styles.presetChip} 
+                onPress={() => applyPreset(60)}
+                activeOpacity={0.75}
+              >
+                <Text style={styles.presetChipText}>60s</Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity 
+              style={styles.presetChip} 
+              onPress={() => applyPreset('full')}
+              activeOpacity={0.75}
+            >
+              <Text style={styles.presetChipText}>Full Video</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Bottom Action Buttons */}
+        <View style={styles.actionsRow}>
+          <TouchableOpacity 
+            style={styles.previewBtn} 
+            onPress={togglePreview}
+            activeOpacity={0.8}
+          >
+            {isPlaying ? (
+              <Pause size={17} color="#C084FC" />
+            ) : (
+              <Play size={17} color="#C084FC" style={{ marginLeft: 2 }} />
+            )}
+            <Text style={styles.previewBtnText}>
+              {isPlaying ? 'Pause' : 'Preview'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.saveBtn, !isValidDuration ? styles.saveBtnDisabled : null]} 
+            onPress={handleSave}
+            activeOpacity={0.88}
+          >
+            <LinearGradient
+              colors={isValidDuration ? ['#7C3AED', '#9333EA', '#A855F7'] : ['#475569', '#334155']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.saveBtnGradient}
+            >
+              <Check size={18} color="#FFFFFF" strokeWidth={3} />
+              <Text style={styles.saveBtnText}>Apply Trim</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+
       </View>
     </SafeAreaView>
   );
@@ -399,14 +446,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#1E153D',
   },
   headerIconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 11,
     backgroundColor: '#181033',
     justifyContent: 'center',
     alignItems: 'center',
@@ -433,7 +480,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     paddingHorizontal: 10,
-    paddingVertical: 7,
+    paddingVertical: 6,
     borderRadius: 10,
     backgroundColor: '#181033',
     borderWidth: 1,
@@ -444,23 +491,14 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#C084FC',
   },
-  scrollArea: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingTop: 12,
-    paddingBottom: 16,
-  },
-  previewContainer: {
-    marginHorizontal: 16,
+
+  /* 3/4 Video Display Section */
+  videoSection: {
+    flex: 3,
     backgroundColor: '#000000',
-    borderRadius: 18,
-    overflow: 'hidden',
     position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1.2,
-    borderColor: '#1E153D',
   },
   video: {
     width: '100%',
@@ -472,36 +510,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   playBtnCircle: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: 'rgba(124, 58, 237, 0.85)',
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    backgroundColor: 'rgba(124, 58, 237, 0.88)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+    borderColor: 'rgba(255, 255, 255, 0.5)',
     shadowColor: '#A855F7',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.5,
-    shadowRadius: 10,
+    shadowRadius: 12,
     elevation: 8,
   },
   playBtnCirclePlaying: {
     backgroundColor: 'rgba(18, 12, 38, 0.65)',
+    borderColor: 'rgba(255, 255, 255, 0.25)',
   },
   currentPositionBadge: {
     position: 'absolute',
-    top: 10,
-    left: 10,
+    top: 12,
+    left: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
     backgroundColor: 'rgba(9, 6, 20, 0.88)',
-    paddingHorizontal: 9,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(168, 85, 247, 0.3)',
+    borderColor: 'rgba(168, 85, 247, 0.35)',
   },
   liveDot: {
     width: 6,
@@ -510,24 +549,42 @@ const styles = StyleSheet.create({
   },
   currentPositionText: {
     fontFamily: fonts.bold,
-    fontSize: 10,
+    fontSize: 10.5,
     color: '#F8FAFC',
     letterSpacing: 0.3,
   },
-  editorCard: {
+  warningBanner: {
+    position: 'absolute',
+    bottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+  },
+  warningBannerText: {
+    fontFamily: fonts.bold,
+    fontSize: 11,
+    color: '#FDE68A',
+  },
+
+  /* 1/4 Trimmer Controls Card & Action Section */
+  trimmerSection: {
     backgroundColor: '#120C26',
-    borderWidth: 1.2,
-    borderColor: '#281B4B',
-    borderRadius: 20,
-    marginHorizontal: 16,
-    marginTop: 14,
-    padding: 16,
+    borderTopWidth: 1.5,
+    borderTopColor: '#281B4B',
+    paddingHorizontal: 16,
+    paddingTop: 12,
   },
   metricRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 10,
   },
   metricItem: {
     minWidth: 70,
@@ -544,46 +601,53 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#F8FAFC',
   },
-  selectedDurationPill: {
+  durationBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(168, 85, 247, 0.18)',
-    borderWidth: 1.2,
-    borderColor: 'rgba(168, 85, 247, 0.4)',
-    paddingHorizontal: 11,
-    paddingVertical: 5,
-    borderRadius: 12,
+    backgroundColor: 'rgba(168, 85, 247, 0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(168, 85, 247, 0.35)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
   },
-  selectedDurationText: {
+  durationBadgeInvalid: {
+    backgroundColor: 'rgba(245, 158, 11, 0.16)',
+    borderColor: 'rgba(245, 158, 11, 0.4)',
+  },
+  durationBadgeText: {
     fontFamily: fonts.bold,
-    fontSize: 12,
+    fontSize: 11.5,
     color: '#C084FC',
   },
+  durationBadgeTextInvalid: {
+    color: '#F59E0B',
+  },
   timelineWrapper: {
-    height: 44,
+    height: 38,
     position: 'relative',
     justifyContent: 'center',
-    marginBottom: 14,
+    marginBottom: 10,
   },
   trackBackground: {
-    height: 30,
+    height: 26,
     backgroundColor: '#1E153D',
-    borderRadius: 8,
+    borderRadius: 7,
     marginHorizontal: THUMB_WIDTH,
     borderWidth: 1,
     borderColor: '#3B2A68',
   },
   trackActive: {
     position: 'absolute',
-    height: 30,
-    borderRadius: 7,
-    opacity: 0.88,
+    height: 26,
+    borderRadius: 6,
+    opacity: 0.9,
   },
   playheadLine: {
     position: 'absolute',
     width: 2,
-    height: 36,
+    height: 32,
     backgroundColor: '#FFFFFF',
     zIndex: 5,
     borderRadius: 1,
@@ -591,9 +655,9 @@ const styles = StyleSheet.create({
   handle: {
     position: 'absolute',
     width: THUMB_WIDTH,
-    height: 44,
+    height: 38,
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 7,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
@@ -607,29 +671,29 @@ const styles = StyleSheet.create({
   },
   handleGrip: {
     width: 3,
-    height: 16,
+    height: 14,
     backgroundColor: '#7C3AED',
     borderRadius: 1.5,
   },
   presetSection: {
-    marginTop: 2,
+    marginBottom: 10,
   },
   presetHeading: {
     fontFamily: fonts.bold,
     fontSize: 9,
     color: '#94A3B8',
     letterSpacing: 0.6,
-    marginBottom: 7,
+    marginBottom: 5,
   },
   presetChipsRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 7,
   },
   presetChip: {
     flex: 1,
-    paddingVertical: 7,
+    paddingVertical: 6,
     backgroundColor: '#181033',
-    borderRadius: 10,
+    borderRadius: 9,
     borderWidth: 1,
     borderColor: '#281B4B',
     alignItems: 'center',
@@ -637,22 +701,18 @@ const styles = StyleSheet.create({
   },
   presetChipText: {
     fontFamily: fonts.bold,
-    fontSize: 11,
+    fontSize: 10.5,
     color: '#E2E8F0',
   },
-  footer: {
-    backgroundColor: '#090614',
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#1E153D',
+  actionsRow: {
     flexDirection: 'row',
     gap: 10,
+    marginTop: 2,
   },
   previewBtn: {
     flex: 1,
-    height: 46,
-    borderRadius: 13,
+    height: 44,
+    borderRadius: 12,
     backgroundColor: '#181033',
     borderWidth: 1.2,
     borderColor: '#3B2A68',
@@ -663,19 +723,23 @@ const styles = StyleSheet.create({
   },
   previewBtnText: {
     fontFamily: fonts.bold,
-    fontSize: 13,
+    fontSize: 12.5,
     color: '#C084FC',
   },
   saveBtn: {
     flex: 1.4,
-    height: 46,
-    borderRadius: 13,
+    height: 44,
+    borderRadius: 12,
     overflow: 'hidden',
     shadowColor: '#9333EA',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 8,
     elevation: 4,
+  },
+  saveBtnDisabled: {
+    opacity: 0.6,
+    shadowOpacity: 0,
   },
   saveBtnGradient: {
     flex: 1,
@@ -686,7 +750,7 @@ const styles = StyleSheet.create({
   },
   saveBtnText: {
     fontFamily: fonts.extraBold,
-    fontSize: 13,
+    fontSize: 12.5,
     color: '#FFFFFF',
     letterSpacing: 0.2,
   },

@@ -41,9 +41,19 @@ export default function UploadAdScreen({ navigation }) {
       
       if (asset.type === 'video') {
         const rawDur = asset.duration || 0;
-        const durationSec = rawDur > 1000 ? rawDur / 1000 : (rawDur > 0 ? rawDur : 30);
-        setMedia({ ...asset, calculatedDuration: durationSec });
-        setTrimData({ start: 0, end: Math.min(30, durationSec), duration: Math.min(30, durationSec) });
+        const durationSec = rawDur > 1000 ? rawDur / 1000 : (rawDur > 0 ? rawDur : 0);
+        
+        if (durationSec > 0 && durationSec < 30) {
+          Alert.alert(
+            'Video Too Short',
+            `Transit campaign videos must be at least 30 seconds long. The selected video is only ${durationSec.toFixed(1)} seconds. Please choose a video of 30 seconds or longer.`
+          );
+          return;
+        }
+
+        const validDur = durationSec > 0 ? durationSec : 30;
+        setMedia({ ...asset, calculatedDuration: validDur });
+        setTrimData({ start: 0, end: Math.max(30, validDur), duration: Math.max(30, validDur) });
         setShowTrimmer(true);
       } else {
         setMedia(asset);
@@ -56,6 +66,14 @@ export default function UploadAdScreen({ navigation }) {
     if (!form.title || !media) {
       Alert.alert('Incomplete', 'Please provide a title and select a media file.');
       return;
+    }
+
+    if (media.type === 'video') {
+      const playDur = trimData ? (trimData.end - trimData.start) : (media.calculatedDuration || 30);
+      if (playDur < 29.9) {
+        Alert.alert('Invalid Duration', 'Transit campaign videos must be at least 30 seconds long.');
+        return;
+      }
     }
 
     setLoading(true);
@@ -288,7 +306,7 @@ export default function UploadAdScreen({ navigation }) {
                     <View style={{ backgroundColor: isDark ? 'rgba(168, 85, 247, 0.18)' : '#EDE9FE', borderColor: isDark ? 'rgba(168, 85, 247, 0.4)' : '#DDD6FE' }} className="border px-3 py-1.5 rounded-full flex-row items-center gap-1.5 mt-1 mb-3">
                       <Scissors size={13} color={isDark ? '#C084FC' : '#7C3AED'} />
                       <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="text-xs font-black">
-                        Playback Range: {trimData.start.toFixed(1)}s – {trimData.end.toFixed(1)}s ({trimData.duration.toFixed(1)}s flight)
+                        Playback Range: {trimData.start.toFixed(1)}s – {trimData.end.toFixed(1)}s ({trimData.duration.toFixed(1)}s duration)
                       </Text>
                     </View>
                   ) : (
