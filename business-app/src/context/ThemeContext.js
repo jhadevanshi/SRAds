@@ -60,8 +60,12 @@ export const ThemeProvider = ({ children }) => {
     return () => subscription.remove();
   }, []);
 
+  const toggleTheme = useCallback(() => {
+    setThemePreference(isDarkMode ? 'light' : 'dark');
+  }, [isDarkMode, setThemePreference]);
+
   return (
-    <ThemeContext.Provider value={{ themePreference, resolvedTheme, isDark: isDarkMode, isDarkMode, setThemePreference }}>
+    <ThemeContext.Provider value={{ themePreference, resolvedTheme, isDark: isDarkMode, isDarkMode, setThemePreference, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

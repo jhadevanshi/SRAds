@@ -12,7 +12,7 @@ import {
   Wallet, PlayCircle, IndianRupee, Video, Image as ImageIcon, 
   MapPin, Clock, Settings, Plus, Building2, Navigation, Megaphone, 
   MonitorSmartphone, ChevronRight, ArrowRight, BarChart3, Sparkles, 
-  Activity, Radio, ShieldCheck, Zap
+  Activity, Radio, ShieldCheck, Zap, Moon, Sun
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -21,6 +21,7 @@ export default function DashboardScreen({ navigation }) {
   const { user } = useAuth();
   const theme = useTheme();
   const isDarkMode = theme?.isDark ?? theme?.isDarkMode ?? true;
+  const toggleTheme = theme?.toggleTheme;
   const insets = useSafeAreaInsets();
 
   const [stats, setStats] = useState(null);
@@ -161,16 +162,36 @@ export default function DashboardScreen({ navigation }) {
           </View>
         </View>
 
-        <TouchableOpacity 
-          onPress={() => navigation.navigate('Settings')}
-          style={[
-            styles.settingsBtn,
-            { backgroundColor: isDarkMode ? '#181033' : '#FFFFFF', borderColor: isDarkMode ? '#281B4B' : '#E2E8F0' }
-          ]}
-          activeOpacity={0.7}
-        >
-          <Settings size={19} color={isDarkMode ? '#C084FC' : '#6B7280'} />
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <TouchableOpacity 
+            onPress={toggleTheme}
+            style={[
+              styles.themeToggleBtn,
+              { 
+                backgroundColor: isDarkMode ? '#181033' : '#FFFFFF', 
+                borderColor: isDarkMode ? '#281B4B' : '#E2E8F0' 
+              }
+            ]}
+            activeOpacity={0.7}
+          >
+            {isDarkMode ? (
+              <Sun size={19} color="#FBBF24" />
+            ) : (
+              <Moon size={19} color="#7C3AED" />
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('Settings')}
+            style={[
+              styles.settingsBtn,
+              { backgroundColor: isDarkMode ? '#181033' : '#FFFFFF', borderColor: isDarkMode ? '#281B4B' : '#E2E8F0' }
+            ]}
+            activeOpacity={0.7}
+          >
+            <Settings size={19} color={isDarkMode ? '#C084FC' : '#6B7280'} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView 
@@ -564,6 +585,19 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     letterSpacing: -0.3,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  themeToggleBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    borderWidth: 1.2,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   settingsBtn: {
     width: 42,
