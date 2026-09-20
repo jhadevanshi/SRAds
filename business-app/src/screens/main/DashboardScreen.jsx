@@ -16,6 +16,7 @@ import {
 } from 'lucide-react-native';
 import { fonts } from '../../theme/designTokens';
 import AppLogo from '../../components/AppLogo';
+import CampaignStepsCarousel from '../../components/dashboard/CampaignStepsCarousel';
 
 const { width } = Dimensions.get('window');
 
@@ -201,61 +202,8 @@ export default function DashboardScreen({ navigation }) {
       >
         <View style={styles.contentContainer}>
 
-          {/* ── Hero Wallet Card with Violet/Purple Gradient ──────────── */}
-          <View style={[styles.walletCardWrapper, isDarkMode ? styles.walletCardGlow : null]}>
-            <LinearGradient
-              colors={['#6D28D9', '#7C3AED', '#9333EA']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.walletCard}
-            >
-              <View style={styles.walletTopRow}>
-                <View style={styles.walletLabelBox}>
-                  <Wallet size={16} color="#E9D5FF" />
-                  <Text style={styles.walletLabelText}>Active Balance</Text>
-                </View>
-                {onHoldBalance > 0 && (
-                  <View style={[styles.liveIndicatorPill, { backgroundColor: 'rgba(245, 158, 11, 0.25)', borderColor: 'rgba(245, 158, 11, 0.4)', borderWidth: 1 }]}>
-                    <Clock size={11} color="#FDE68A" />
-                    <Text style={[styles.liveIndicatorText, { color: '#FDE68A' }]}>
-                      On Hold ₹{Number(onHoldBalance).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                    </Text>
-                  </View>
-                )}
-              </View>
-
-              <Text style={styles.walletBalanceText} numberOfLines={1} adjustsFontSizeToFit>
-                {formatCurrency(activeBalance)}
-              </Text>
-
-              <View style={styles.walletDivider} />
-
-              <View style={styles.walletBottomRow}>
-                <View style={styles.walletStatItem}>
-                  <Text style={styles.walletStatLabel}>Today's Spend</Text>
-                  <Text style={styles.walletStatValue} numberOfLines={1}>
-                    {formatCurrency(stats?.stats?.total_spent || 0)}
-                  </Text>
-                </View>
-
-                <View style={styles.walletStatItem}>
-                  <Text style={styles.walletStatLabel}>Plays Today</Text>
-                  <Text style={styles.walletStatValue} numberOfLines={1}>
-                    {stats?.today_plays || 0} Plays
-                  </Text>
-                </View>
-
-                <TouchableOpacity 
-                  onPress={() => navigation.navigate('AddMoney')}
-                  style={styles.addFundsBtn}
-                  activeOpacity={0.85}
-                >
-                  <Plus size={14} color="#6D28D9" strokeWidth={3} />
-                  <Text style={styles.addFundsBtnText}>Top Up</Text>
-                </TouchableOpacity>
-              </View>
-            </LinearGradient>
-          </View>
+          {/* ── Top Campaign Launch Process Steps (Auto-Sliding Carousel) ── */}
+          <CampaignStepsCarousel navigation={navigation} isDarkMode={isDarkMode} />
 
           {/* ── Quick Action Tiles (4 Symmetrical Buttons) ─────────────── */}
           <View style={styles.quickActionsGrid}>
@@ -334,6 +282,62 @@ export default function DashboardScreen({ navigation }) {
                 Impressions & ROI
               </Text>
             </TouchableOpacity>
+          </View>
+
+          {/* ── Active Balance Card with Violet/Purple Gradient ──────────── */}
+          <View style={[styles.walletCardWrapper, isDarkMode ? styles.walletCardGlow : null]}>
+            <LinearGradient
+              colors={['#6D28D9', '#7C3AED', '#9333EA']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.walletCard}
+            >
+              <View style={styles.walletTopRow}>
+                <View style={styles.walletLabelBox}>
+                  <Wallet size={16} color="#E9D5FF" />
+                  <Text style={styles.walletLabelText}>Active Balance</Text>
+                </View>
+                {onHoldBalance > 0 && (
+                  <View style={[styles.liveIndicatorPill, { backgroundColor: 'rgba(245, 158, 11, 0.25)', borderColor: 'rgba(245, 158, 11, 0.4)', borderWidth: 1 }]}>
+                    <Clock size={11} color="#FDE68A" />
+                    <Text style={[styles.liveIndicatorText, { color: '#FDE68A' }]}>
+                      On Hold ₹{Number(onHoldBalance).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              <Text style={styles.walletBalanceText} numberOfLines={1} adjustsFontSizeToFit>
+                {formatCurrency(activeBalance)}
+              </Text>
+
+              <View style={styles.walletDivider} />
+
+              <View style={styles.walletBottomRow}>
+                <View style={styles.walletStatItem}>
+                  <Text style={styles.walletStatLabel}>Today's Spend</Text>
+                  <Text style={styles.walletStatValue} numberOfLines={1}>
+                    {formatCurrency(stats?.stats?.total_spent || 0)}
+                  </Text>
+                </View>
+
+                <View style={styles.walletStatItem}>
+                  <Text style={styles.walletStatLabel}>Plays Today</Text>
+                  <Text style={styles.walletStatValue} numberOfLines={1}>
+                    {stats?.today_plays || 0} Plays
+                  </Text>
+                </View>
+
+                <TouchableOpacity 
+                  onPress={() => navigation.navigate('AddMoney')}
+                  style={styles.addFundsBtn}
+                  activeOpacity={0.85}
+                >
+                  <Plus size={14} color="#6D28D9" strokeWidth={3} />
+                  <Text style={styles.addFundsBtnText}>Top Up</Text>
+                </TouchableOpacity>
+              </View>
+            </LinearGradient>
           </View>
 
           {/* ── Active Campaigns Section ──────────────────────────────── */}
