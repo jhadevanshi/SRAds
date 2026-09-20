@@ -332,14 +332,14 @@ router.post('/ads/upload', businessAuth, upload.single('media'), async (req, res
     ]);
     const media = mediaRes.rows[0];
 
-    // 2. Insert Ad
-    const numBudget = parseFloat(budget) || 1000;
+    // 2. Insert Ad into Media Library (Ready to be used in campaigns)
+    const numBudget = parseFloat(budget) || 0;
     const numCostPerPlay = parseFloat(cost_per_play) || 0.35;
     const adRes = await client.query(`
       INSERT INTO ads (
         advertiser_id, media_id, title, area, budget, remaining_budget,
         cost_per_play, approval_status, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'Pending', 'Active')
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'Approved', 'Active')
       RETURNING *
     `, [
       req.businessId,

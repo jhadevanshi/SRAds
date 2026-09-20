@@ -146,10 +146,10 @@ export default function UploadAdScreen({ navigation }) {
           </LinearGradient>
           
           <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-2xl font-black tracking-tight text-center mb-2">
-            Creative Uploaded!
+            Saved to Media Hub!
           </Text>
           <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-center text-sm font-medium mb-8 px-4 leading-relaxed">
-            "{uploadedAd?.title}" is stored in your library and ready to deploy into a live transit campaign.
+            "{uploadedAd?.title}" is safely stored in your library and ready to launch in a campaign whenever you're ready.
           </Text>
 
           <View 
@@ -160,7 +160,7 @@ export default function UploadAdScreen({ navigation }) {
             className="w-full border rounded-3xl p-5 mb-8 shadow-sm"
           >
             <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-extrabold text-base text-center mb-4">
-              Launch into Flight?
+              Next Steps
             </Text>
             
             <TouchableOpacity 
@@ -179,7 +179,7 @@ export default function UploadAdScreen({ navigation }) {
                 className="py-4 flex-row items-center justify-center"
               >
                 <Megaphone size={18} color="#FFF" style={{ marginRight: 8 }} />
-                <Text className="text-white font-black text-sm uppercase tracking-wide">Configure Campaign</Text>
+                <Text className="text-white font-black text-sm uppercase tracking-wide">Launch Campaign Now</Text>
               </LinearGradient>
             </TouchableOpacity>
 
@@ -196,7 +196,7 @@ export default function UploadAdScreen({ navigation }) {
               activeOpacity={0.8}
             >
               <Text style={{ color: isDark ? '#CBD5E1' : '#475569' }} className="font-bold text-xs uppercase tracking-wider">
-                Save & Back to Library
+                Back to Media Hub
               </Text>
             </TouchableOpacity>
           </View>

@@ -93,16 +93,13 @@ export default function AdsListScreen({ navigation }) {
   const getBaseUrl = () => process.env.EXPO_PUBLIC_API_URL || 'https://coxcred.com/srads/api';
 
   const getStatusInfo = (status, approvalStatus) => {
-    if (approvalStatus === 'Pending') {
-      return { text: 'Pending Approval', color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.15)', border: 'rgba(245, 158, 11, 0.35)', icon: Clock };
-    }
-    if (approvalStatus === 'Rejected') {
-      return { text: 'Rejected', color: '#EF4444', bg: 'rgba(239, 68, 68, 0.15)', border: 'rgba(239, 68, 68, 0.35)', icon: XCircle };
-    }
-    if (status === 'Active') {
-      return { text: 'Active & Verified', color: '#10B981', bg: 'rgba(16, 185, 129, 0.15)', border: 'rgba(16, 185, 129, 0.35)', icon: CheckCircle2 };
-    }
-    return { text: 'Ready to Deploy', color: '#8B5CF6', bg: 'rgba(139, 92, 246, 0.15)', border: 'rgba(139, 92, 246, 0.35)', icon: Play };
+    return { 
+      text: 'Ready to Launch', 
+      color: '#10B981', 
+      bg: 'rgba(16, 185, 129, 0.15)', 
+      border: 'rgba(16, 185, 129, 0.35)', 
+      icon: CheckCircle2 
+    };
   };
 
   const renderItem = ({ item }) => {
@@ -173,30 +170,6 @@ export default function AdsListScreen({ navigation }) {
             {item.title}
           </Text>
           
-          {item.approval_status === 'Pending' && (
-            <View 
-              style={{ backgroundColor: 'rgba(245, 158, 11, 0.08)', borderColor: 'rgba(245, 158, 11, 0.25)' }}
-              className="mb-4 p-3.5 rounded-2xl border flex-row items-center"
-            >
-              <Clock size={16} color="#F59E0B" style={{ marginRight: 8 }} />
-              <Text style={{ color: isDark ? '#CBD5E1' : '#475569' }} className="text-xs font-medium flex-1">
-                Awaiting transit safety verification by administrator.
-              </Text>
-            </View>
-          )}
-
-          {item.approval_status === 'Rejected' && (
-            <View 
-              style={{ backgroundColor: 'rgba(239, 68, 68, 0.08)', borderColor: 'rgba(239, 68, 68, 0.25)' }}
-              className="mb-4 p-3.5 rounded-2xl border flex-row items-center"
-            >
-              <XCircle size={16} color="#EF4444" style={{ marginRight: 8 }} />
-              <Text className="text-rose-500 text-xs font-medium flex-1">
-                Reason: {item.rejection_reason || 'Resolution/aspect ratio unsuitable.'}
-              </Text>
-            </View>
-          )}
-          
           {/* Performance Matrix */}
           <View 
             style={{ 
@@ -250,7 +223,7 @@ export default function AdsListScreen({ navigation }) {
                 className="py-3 items-center justify-center flex-row"
               >
                 <Rocket size={15} color="#FFFFFF" style={{ marginRight: 6 }} />
-                <Text className="text-white font-extrabold text-xs tracking-wide uppercase">Deploy in Campaign</Text>
+                <Text className="text-white font-extrabold text-xs tracking-wide uppercase">Launch Campaign</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -275,10 +248,10 @@ export default function AdsListScreen({ navigation }) {
       >
         <View>
           <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-2xl font-black tracking-tight">
-            Media Library
+            Media Hub
           </Text>
           <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold mt-0.5">
-            Manage Video & Graphic Assets
+            Uploaded Creative Assets
           </Text>
         </View>
 
