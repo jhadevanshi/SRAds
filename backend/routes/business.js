@@ -262,6 +262,9 @@ router.get('/ads', businessAuth, async (req, res) => {
         m.media_type as type,
         COALESCE(a.play_duration, m.duration, 15) as play_duration,
         m.duration,
+        m.duration as original_duration,
+        a.video_trim_start,
+        a.video_trim_end,
         a.approval_status,
         a.status,
         a.remaining_budget,
@@ -304,6 +307,55 @@ router.get('/ads', businessAuth, async (req, res) => {
   } catch (error) {
     console.error('[Business Get Ads] Error:', error);
     res.status(500).json({ success: false, message: 'Could not fetch ads' });
+  }
+});
+
+router.put('/ads/:id/trim', businessAuth, async (req, res) => {
+  try {
+    const { trim_start, trim_end } = req.body;
+    const trimStart = parseInt(trim_start) || 0;
+    const trimEnd = parseInt(trim_end);
+    
+    if (isNaN(trimEnd) || trimEnd <= trimStart) {
+      return res.status(400).json({ success: false, message: 'Invalid trim range. End time must be greater than start time.' });
+    }
+    
+    const newPlayDuration = trimEnd - trimStart;
+    if (newPlayDuration < 20) {
+      return res.status(400).json({ success: false, message: 'Transit video commercial duration must be at least 20 seconds.' });
+    }
+
+    // Verify ad belongs to advertiser
+    const adRes = await pool.query(
+      `SELECT * FROM ads WHERE id = $1 AND advertiser_id = $2`,
+      [req.params.id, req.businessId]
+    );
+
+    if (adRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Ad creative not found' });
+    }
+
+    const updatedAdRes = await pool.query(`
+      UPDATE ads 
+      SET 
+        video_trim_start = $1, 
+        video_trim_end = $2, 
+        play_duration = $3
+      WHERE id = $4 AND advertiser_id = $5
+      RETURNING *
+    `, [trimStart, trimEnd, newPlayDuration, req.params.id, req.businessId]);
+
+    res.json({
+      success: true,
+      message: 'Video creative trim updated successfully',
+      ad: updatedAdRes.rows[0],
+      play_duration: newPlayDuration,
+      video_trim_start: trimStart,
+      video_trim_end: trimEnd
+    });
+  } catch (error) {
+    console.error('[Business Trim Ad Video] Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update trim: ' + error.message });
   }
 });
 

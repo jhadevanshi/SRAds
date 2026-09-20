@@ -93,6 +93,10 @@ export const businessService = {
     const res = await api.delete(`/business/ads/${id}`);
     return res.data;
   },
+  trimAdVideo: async (id, data) => {
+    const res = await api.put(`/business/ads/${id}/trim`, data);
+    return res.data;
+  },
   toggleAdStatus: async (id, action) => {
     const res = await api.put(`/business/ads/${id}/status`, { action });
     return res.data;

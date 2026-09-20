@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Alert, RefreshControl, ActivityIndicator, Image, Dimensions } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Alert, RefreshControl, ActivityIndicator, Image, Dimensions, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { 
@@ -8,26 +8,30 @@ import {
   Image as ImageIcon, 
   Trash2, 
   Rocket,
-  Play,
-  Pause
+  Play, 
+  Maximize2,
+  Scissors,
+  Clock
 } from 'lucide-react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { businessService } from '../../services/business';
 import { useTheme } from '../../context/ThemeContext';
-import { colors } from '../../theme/designTokens';
 import AppLogo from '../../components/AppLogo';
+import VideoTrimmer from '../../components/VideoTrimmer';
+import FullscreenMediaViewer from '../../components/FullscreenMediaViewer';
 
 const { width } = Dimensions.get('window');
 
-// Dedicated Video Preview for Card
-const VideoCardPreview = memo(({ uri, isDark }) => {
+// Dedicated Video Preview for Media Card with Tap to Fullscreen
+const VideoCardPreview = memo(({ uri, isDark, onFullScreen }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const player = useVideoPlayer(uri, (p) => {
     p.loop = true;
     p.muted = true;
   });
 
-  const togglePlay = () => {
+  const togglePlay = (e) => {
+    e?.stopPropagation?.();
     if (!player) return;
     if (isPlaying) {
       player.pause();
@@ -39,28 +43,30 @@ const VideoCardPreview = memo(({ uri, isDark }) => {
   };
 
   return (
-    <TouchableOpacity 
-      activeOpacity={0.9} 
-      onPress={togglePlay}
-      className="w-full h-full items-center justify-center relative overflow-hidden"
-    >
+    <View className="w-full h-full items-center justify-center relative overflow-hidden">
       <VideoView 
         player={player} 
         style={{ width: '100%', height: '100%' }} 
         contentFit="contain" 
         nativeControls={false} 
       />
-      {!isPlaying && (
-        <View className="absolute inset-0 items-center justify-center bg-black/25">
+      
+      {/* Play/Pause Center Tap Button */}
+      <TouchableOpacity 
+        activeOpacity={0.8} 
+        onPress={togglePlay}
+        className="absolute inset-0 items-center justify-center bg-black/15"
+      >
+        {!isPlaying && (
           <View 
             style={{ backgroundColor: 'rgba(124, 58, 237, 0.85)' }} 
-            className="w-11 h-11 rounded-full items-center justify-center shadow-lg"
+            className="w-12 h-12 rounded-full items-center justify-center shadow-lg"
           >
-            <Play size={20} color="#FFFFFF" style={{ marginLeft: 2 }} />
+            <Play size={22} color="#FFFFFF" style={{ marginLeft: 2 }} />
           </View>
-        </View>
-      )}
-    </TouchableOpacity>
+        )}
+      </TouchableOpacity>
+    </View>
   );
 });
 
@@ -69,6 +75,8 @@ export default function AdsListScreen({ navigation }) {
   const [ads, setAds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [fullscreenMedia, setFullscreenMedia] = useState(null);
+  const [trimModal, setTrimModal] = useState({ visible: false, ad: null });
 
   const fetchAds = useCallback(async () => {
     try {
@@ -131,6 +139,22 @@ export default function AdsListScreen({ navigation }) {
     );
   };
 
+  const handleSaveTrim = async (trimData) => {
+    try {
+      if (!trimModal.ad) return;
+      const res = await businessService.trimAdVideo(trimModal.ad.id, trimData);
+      if (res.success) {
+        Alert.alert('Trim Saved 🎉', 'Video commercial duration updated successfully!');
+        setTrimModal({ visible: false, ad: null });
+        fetchAds();
+      } else {
+        Alert.alert('Trim Failed', res.message || 'Unable to save video trim.');
+      }
+    } catch (err) {
+      Alert.alert('Error', err.response?.data?.message || err.message || 'Failed to update video trim.');
+    }
+  };
+
   const getBaseUrl = () => process.env.EXPO_PUBLIC_API_URL || 'https://coxcred.com/srads/api';
 
   const renderItem = ({ item }) => {
@@ -150,33 +174,61 @@ export default function AdsListScreen({ navigation }) {
         }}
         className="border rounded-3xl mb-5 overflow-hidden"
       >
-        {/* Creative Preview Hero */}
+        {/* Creative Preview Hero with Full Mode Tap */}
         <View style={{ backgroundColor: isDark ? '#090614' : '#F1F5F9' }} className="h-48 relative items-center justify-center">
           {mediaUri ? (
             isVideo ? (
-              <VideoCardPreview uri={mediaUri} isDark={isDark} />
-            ) : (
-              <Image 
-                source={{ uri: mediaUri }} 
-                className="w-full h-full"
-                resizeMode="contain"
+              <VideoCardPreview 
+                uri={mediaUri} 
+                isDark={isDark} 
+                onFullScreen={() => setFullscreenMedia({
+                  ...item,
+                  canTrim: true
+                })} 
               />
+            ) : (
+              <TouchableOpacity 
+                activeOpacity={0.9}
+                onPress={() => setFullscreenMedia({
+                  ...item,
+                  canTrim: false
+                })}
+                className="w-full h-full"
+              >
+                <Image 
+                  source={{ uri: mediaUri }} 
+                  className="w-full h-full"
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
             )
           ) : (
             <View className="w-full h-full items-center justify-center">
               {isVideo ? <Video size={48} color={isDark ? '#38BDF8' : '#0284C7'} /> : <ImageIcon size={48} color="#A855F7" />}
             </View>
           )}
+
+          {/* Full View Tap Overlay Chip */}
+          <TouchableOpacity
+            onPress={() => setFullscreenMedia({
+              ...item,
+              canTrim: isVideo
+            })}
+            activeOpacity={0.8}
+            className="absolute top-3 right-3 px-3 py-1.5 rounded-full bg-black/60 border border-white/20 flex-row items-center"
+          >
+            <Maximize2 size={11} color="#FFFFFF" style={{ marginRight: 4 }} />
+            <Text className="text-white text-[10px] font-extrabold uppercase tracking-wider">Full View</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Ad Details Section */}
         <View className="p-5">
-          {/* Title and Media Type Chip Row */}
-          <View className="flex-row items-center justify-between mb-3.5">
+          {/* Title and Media Type Chip Row (Without Truncation, Multi-Line Vertically) */}
+          <View className="flex-row items-start justify-between mb-2">
             <Text 
               style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} 
-              className="font-extrabold text-lg tracking-tight flex-1 mr-3" 
-              numberOfLines={1}
+              className="font-black text-lg tracking-tight flex-1 mr-3 leading-snug" 
             >
               {item.title}
             </Text>
@@ -186,7 +238,7 @@ export default function AdsListScreen({ navigation }) {
                 backgroundColor: isDark ? (isVideo ? 'rgba(56, 189, 248, 0.12)' : 'rgba(192, 132, 252, 0.12)') : (isVideo ? '#E0F2FE' : '#F3E8FF'),
                 borderColor: isDark ? (isVideo ? 'rgba(56, 189, 248, 0.3)' : 'rgba(192, 132, 252, 0.3)') : (isVideo ? '#BAE6FD' : '#E9D5FF')
               }}
-              className="border px-2.5 py-1 rounded-full flex-row items-center shrink-0"
+              className="border px-2.5 py-1 rounded-full flex-row items-center shrink-0 mt-0.5"
             >
               {isVideo ? (
                 <Video size={11} color={isDark ? '#38BDF8' : '#0284C7'} />
@@ -200,6 +252,28 @@ export default function AdsListScreen({ navigation }) {
                 {isVideo ? 'Video' : 'Static Image'}
               </Text>
             </View>
+          </View>
+
+          {/* Duration & Trim Info Row */}
+          <View className="flex-row items-center gap-2 mb-3">
+            <View className="flex-row items-center">
+              <Clock size={12} color={isDark ? '#94A3B8' : '#64748B'} style={{ marginRight: 4 }} />
+              <Text style={{ color: isDark ? '#CBD5E1' : '#475569' }} className="text-xs font-bold">
+                {parseInt(item.play_duration || 20)}s commercial
+              </Text>
+            </View>
+
+            {isVideo && item.video_trim_end && parseInt(item.video_trim_end) > 0 && (
+              <View 
+                style={{ backgroundColor: isDark ? '#181033' : '#F8F7FF', borderColor: isDark ? '#281B4B' : '#EDE9FE' }} 
+                className="px-2.5 py-0.5 rounded-lg border flex-row items-center"
+              >
+                <Scissors size={10} color={isDark ? '#C084FC' : '#7C3AED'} style={{ marginRight: 4 }} />
+                <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="text-[10px] font-bold">
+                  {parseInt(item.video_trim_start || 0)}s–{parseInt(item.video_trim_end)}s
+                </Text>
+              </View>
+            )}
           </View>
           
           {/* Performance Matrix */}
@@ -230,6 +304,41 @@ export default function AdsListScreen({ navigation }) {
                 </Text>
               </View>
             </View>
+          </View>
+
+          {/* Media Actions: View Full Mode & Adjust Trim */}
+          <View className="flex-row gap-2 mb-3">
+            <TouchableOpacity
+              onPress={() => setFullscreenMedia({
+                ...item,
+                canTrim: isVideo
+              })}
+              style={{ backgroundColor: isDark ? '#1F1735' : '#EDE9FE', borderColor: isDark ? '#3B2A68' : '#DDD6FE' }}
+              className="flex-1 py-2.5 px-3 rounded-xl border flex-row items-center justify-center"
+              activeOpacity={0.8}
+            >
+              <Maximize2 size={13} color={isDark ? '#C084FC' : '#7C3AED'} />
+              <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="font-extrabold text-xs ml-1.5">
+                View Full Mode {isVideo ? '(Audio)' : ''}
+              </Text>
+            </TouchableOpacity>
+
+            {isVideo && (
+              <TouchableOpacity
+                onPress={() => setTrimModal({
+                  visible: true,
+                  ad: item,
+                })}
+                style={{ backgroundColor: isDark ? 'rgba(124, 58, 237, 0.18)' : '#F3E8FF', borderColor: isDark ? '#7C3AED' : '#C084FC' }}
+                className="py-2.5 px-3.5 rounded-xl border flex-row items-center justify-center"
+                activeOpacity={0.8}
+              >
+                <Scissors size={13} color={isDark ? '#C084FC' : '#7C3AED'} />
+                <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="font-extrabold text-xs ml-1.5 uppercase tracking-wider">
+                  Adjust Trim
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Quick Actions */}
@@ -394,6 +503,36 @@ export default function AdsListScreen({ navigation }) {
           }
         />
       )}
+
+      {/* Fullscreen Media Viewer Modal with Audio (Trim in Top Left, Audio in Top Centre, Close in Top Right, Play/Pause in Bottom Centre) */}
+      <FullscreenMediaViewer 
+        visible={!!fullscreenMedia}
+        media={fullscreenMedia}
+        onClose={() => setFullscreenMedia(null)}
+        onTrimPress={(media) => {
+          setTrimModal({
+            visible: true,
+            ad: media,
+          });
+        }}
+      />
+
+      {/* Video Trimmer Modal for Media Hub Creatives */}
+      <Modal 
+        visible={trimModal.visible} 
+        animationType="slide" 
+        onRequestClose={() => setTrimModal({ visible: false, ad: null })}
+      >
+        {trimModal.ad && (
+          <VideoTrimmer 
+            uri={trimModal.ad.file_url ? (trimModal.ad.file_url.startsWith('http') ? trimModal.ad.file_url : `${getBaseUrl().replace('/api', '')}${trimModal.ad.file_url.startsWith('/') ? '' : '/'}${trimModal.ad.file_url}`) : ''}
+            originalDurationSec={trimModal.ad.original_duration || trimModal.ad.duration || trimModal.ad.play_duration || 20}
+            onSave={handleSaveTrim}
+            onCancel={() => setTrimModal({ visible: false, ad: null })}
+          />
+        )}
+      </Modal>
+
     </SafeAreaView>
   );
 }

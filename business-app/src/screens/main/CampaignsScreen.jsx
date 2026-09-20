@@ -8,6 +8,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { colors } from '../../theme/designTokens';
 import AppLogo from '../../components/AppLogo';
 import VideoTrimmer from '../../components/VideoTrimmer';
+import FullscreenMediaViewer from '../../components/FullscreenMediaViewer';
 import { 
   Plus, 
   Megaphone, 
@@ -85,202 +86,6 @@ const VideoCardPreview = memo(({ uri, isDark, onFullScreen }) => {
         )}
       </TouchableOpacity>
     </View>
-  );
-});
-
-// Fullscreen Video Player with Audio controls
-const FullscreenVideoPlayer = memo(({ uri, title, duration, canTrim, onTrimPress, onClose }) => {
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [isMuted, setIsMuted] = useState(false);
-  const player = useVideoPlayer(uri, (p) => {
-    p.loop = true;
-    p.muted = false; // Audio enabled by default!
-    p.play();
-  });
-
-  const togglePlay = () => {
-    if (!player) return;
-    if (isPlaying) {
-      player.pause();
-      setIsPlaying(false);
-    } else {
-      player.play();
-      setIsPlaying(true);
-    }
-  };
-
-  const toggleMute = () => {
-    if (!player) return;
-    player.muted = !isMuted;
-    setIsMuted(!isMuted);
-  };
-
-  return (
-    <View style={{ flex: 1, backgroundColor: '#000000', justifyContent: 'space-between' }}>
-      {/* Top Controls Header */}
-      <SafeAreaView edges={['top']} style={{ zIndex: 20 }}>
-        <View className="flex-row items-center justify-between px-5 py-3">
-          <TouchableOpacity 
-            onPress={onClose}
-            className="w-10 h-10 rounded-full bg-black/60 items-center justify-center border border-white/20"
-            activeOpacity={0.7}
-          >
-            <X size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-
-          <View className="flex-row items-center gap-2">
-            <TouchableOpacity 
-              onPress={toggleMute}
-              className="px-3.5 py-2 rounded-full bg-black/60 border border-white/20 flex-row items-center"
-              activeOpacity={0.7}
-            >
-              {isMuted ? (
-                <>
-                  <VolumeX size={16} color="#F43F5E" />
-                  <Text className="text-white text-xs font-bold ml-1.5">Muted</Text>
-                </>
-              ) : (
-                <>
-                  <Volume2 size={16} color="#34D399" />
-                  <Text className="text-white text-xs font-bold ml-1.5">Audio On</Text>
-                </>
-              )}
-            </TouchableOpacity>
-
-            {canTrim && (
-              <TouchableOpacity 
-                onPress={onTrimPress}
-                className="px-3.5 py-2 rounded-full bg-purple-600 border border-purple-400/40 flex-row items-center"
-                activeOpacity={0.8}
-              >
-                <Scissors size={14} color="#FFFFFF" />
-                <Text className="text-white text-xs font-black ml-1.5 uppercase tracking-wide">Trim Video</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      </SafeAreaView>
-
-      {/* Main Video View with tap to play/pause */}
-      <TouchableOpacity 
-        activeOpacity={1} 
-        onPress={togglePlay}
-        style={{ flex: 1, alignItems: 'center', justifyContent: 'center', position: 'relative' }}
-      >
-        <VideoView 
-          player={player} 
-          style={{ width: '100%', height: '100%' }} 
-          contentFit="contain" 
-          nativeControls={false} 
-        />
-        {!isPlaying && (
-          <View className="absolute inset-0 items-center justify-center bg-black/35">
-            <View className="w-16 h-16 rounded-full bg-purple-600/90 items-center justify-center shadow-2xl">
-              <Play size={28} color="#FFFFFF" style={{ marginLeft: 3 }} />
-            </View>
-          </View>
-        )}
-      </TouchableOpacity>
-
-      {/* Bottom Info Banner */}
-      <SafeAreaView edges={['bottom']} style={{ zIndex: 20 }}>
-        <View className="px-6 py-4 bg-black/90 border-t border-white/10">
-          <View className="flex-row items-center justify-between mb-1.5">
-            <View className="flex-row items-center">
-              <View className="px-2 py-0.5 rounded-md bg-sky-500/20 border border-sky-400/40 mr-2">
-                <Text className="text-sky-400 font-bold text-[10px] uppercase">Transit Commercial</Text>
-              </View>
-              {duration ? (
-                <Text className="text-purple-300 text-xs font-black">{duration}s Duration</Text>
-              ) : null}
-            </View>
-            <TouchableOpacity onPress={togglePlay} className="p-1">
-              {isPlaying ? <Pause size={18} color="#CBD5E1" /> : <Play size={18} color="#CBD5E1" />}
-            </TouchableOpacity>
-          </View>
-          <Text className="text-white font-extrabold text-base tracking-tight leading-snug">
-            {title}
-          </Text>
-        </View>
-      </SafeAreaView>
-    </View>
-  );
-});
-
-// Fullscreen Image Viewer
-const FullscreenImageViewer = memo(({ uri, title, onClose }) => {
-  return (
-    <View style={{ flex: 1, backgroundColor: '#000000', justifyContent: 'space-between' }}>
-      <SafeAreaView edges={['top']} style={{ zIndex: 20 }}>
-        <View className="flex-row items-center justify-between px-5 py-3">
-          <TouchableOpacity 
-            onPress={onClose}
-            className="w-10 h-10 rounded-full bg-black/60 items-center justify-center border border-white/20"
-            activeOpacity={0.7}
-          >
-            <X size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-          <View className="px-3 py-1 rounded-full bg-purple-500/20 border border-purple-400/30">
-            <Text className="text-purple-300 text-xs font-bold uppercase">Static Graphic</Text>
-          </View>
-        </View>
-      </SafeAreaView>
-
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 12 }}>
-        <Image 
-          source={{ uri }} 
-          style={{ width: '100%', height: '100%' }} 
-          resizeMode="contain" 
-        />
-      </View>
-
-      <SafeAreaView edges={['bottom']} style={{ zIndex: 20 }}>
-        <View className="px-6 py-4 bg-black/90 border-t border-white/10">
-          <Text className="text-white font-extrabold text-base tracking-tight leading-snug">
-            {title}
-          </Text>
-        </View>
-      </SafeAreaView>
-    </View>
-  );
-});
-
-// Fullscreen Media Player Modal with Audio & Full Mode
-const FullscreenMediaModal = memo(({ visible, media, onClose, onTrimPress }) => {
-  if (!visible || !media) return null;
-  const isVideo = media.media_type === 'video' || media.type === 'video' || (media.file_url && media.file_url.toLowerCase().endsWith('.mp4'));
-  const mediaUri = media.file_url ? (media.file_url.startsWith('http') ? media.file_url : `${getBaseUrl().replace('/api', '')}${media.file_url.startsWith('/') ? '' : '/'}${media.file_url}`) : null;
-  
-  return (
-    <Modal
-      visible={visible}
-      transparent={false}
-      animationType="fade"
-      statusBarTranslucent={true}
-      onRequestClose={onClose}
-    >
-      <View style={{ flex: 1, backgroundColor: '#05030A' }}>
-        {isVideo ? (
-          <FullscreenVideoPlayer 
-            uri={mediaUri} 
-            title={media.ad_title || media.campaign_name}
-            duration={media.play_duration}
-            canTrim={media.canTrim}
-            onTrimPress={() => {
-              onClose();
-              onTrimPress(media);
-            }}
-            onClose={onClose} 
-          />
-        ) : (
-          <FullscreenImageViewer 
-            uri={mediaUri} 
-            title={media.ad_title || media.campaign_name}
-            onClose={onClose} 
-          />
-        )}
-      </View>
-    </Modal>
   );
 });
 
@@ -992,7 +797,7 @@ export default function CampaignsScreen({ navigation }) {
       )}
 
       {/* Fullscreen Media Viewer Modal with Audio */}
-      <FullscreenMediaModal 
+      <FullscreenMediaViewer 
         visible={!!fullscreenMedia}
         media={fullscreenMedia}
         onClose={() => setFullscreenMedia(null)}
