@@ -13,7 +13,7 @@ import { fonts } from '../../theme/designTokens';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 36; // Accounting for 18px padding on each side
 
-const STEP_DATA = [
+const REAL_STEPS = [
   {
     id: '1',
     stepNumber: 'STEP 1 OF 4',
@@ -56,41 +56,93 @@ const STEP_DATA = [
   }
 ];
 
+// Infinite Cloned Buffer for 100% seamless forward looping (Step 4 -> Step 1 without backwards reverse lag)
+const INFINITE_DATA = [
+  { ...REAL_STEPS[3], key: 'clone-start-step4' },
+  { ...REAL_STEPS[0], key: 'real-step1' },
+  { ...REAL_STEPS[1], key: 'real-step2' },
+  { ...REAL_STEPS[2], key: 'real-step3' },
+  { ...REAL_STEPS[3], key: 'real-step4' },
+  { ...REAL_STEPS[0], key: 'clone-end-step1' },
+];
+
 export default function CampaignStepsCarousel({ navigation, isDarkMode }) {
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(0); // 0, 1, 2, 3
   const flatListRef = useRef(null);
+  const currentIndexRef = useRef(1);
   const isInteracting = useRef(false);
 
-  // Auto slide timer (every 4.5 seconds)
+  // Auto-slide every 3.5 seconds (reduced by 1 second for brisk, responsive pacing)
   useEffect(() => {
     const timer = setInterval(() => {
       if (!isInteracting.current && flatListRef.current) {
-        const nextIndex = (activeIndex + 1) % STEP_DATA.length;
+        const nextVirtualIndex = currentIndexRef.current + 1;
+        currentIndexRef.current = nextVirtualIndex;
+        
         flatListRef.current.scrollToIndex({
-          index: nextIndex,
+          index: nextVirtualIndex,
           animated: true,
         });
-        setActiveIndex(nextIndex);
+
+        // Update active dot index
+        if (nextVirtualIndex === 5) {
+          setActiveIndex(0);
+        } else {
+          setActiveIndex(nextVirtualIndex - 1);
+        }
       }
-    }, 4500);
+    }, 3500);
 
     return () => clearInterval(timer);
-  }, [activeIndex]);
+  }, []);
 
-  const onScroll = useCallback((event) => {
-    const slideSize = event.nativeEvent.layoutMeasurement.width;
+  const handleMomentumScrollEnd = (event) => {
     const offset = event.nativeEvent.contentOffset.x;
-    const index = Math.round(offset / slideSize);
-    if (index >= 0 && index < STEP_DATA.length && index !== activeIndex) {
-      setActiveIndex(index);
-    }
-  }, [activeIndex]);
+    const virtualIndex = Math.round(offset / CARD_WIDTH);
 
-  const goToSlide = (index) => {
-    if (flatListRef.current) {
-      flatListRef.current.scrollToIndex({ index, animated: true });
-      setActiveIndex(index);
+    if (virtualIndex === 5) {
+      // Reached cloned Step 1 at the end -> silently snap back to real Step 1 (index 1)
+      currentIndexRef.current = 1;
+      flatListRef.current?.scrollToIndex({ index: 1, animated: false });
+      setActiveIndex(0);
+    } else if (virtualIndex === 0) {
+      // Reached cloned Step 4 at the beginning -> silently snap to real Step 4 (index 4)
+      currentIndexRef.current = 4;
+      flatListRef.current?.scrollToIndex({ index: 4, animated: false });
+      setActiveIndex(3);
+    } else {
+      currentIndexRef.current = virtualIndex;
+      setActiveIndex(virtualIndex - 1);
     }
+
+    // Release interaction lock after gesture
+    setTimeout(() => {
+      isInteracting.current = false;
+    }, 1000);
+  };
+
+  const handleScroll = (event) => {
+    const offset = event.nativeEvent.contentOffset.x;
+    const virtualIndex = Math.round(offset / CARD_WIDTH);
+    
+    let realIdx = 0;
+    if (virtualIndex === 0) realIdx = 3;
+    else if (virtualIndex === 5) realIdx = 0;
+    else realIdx = Math.max(0, Math.min(3, virtualIndex - 1));
+
+    if (realIdx !== activeIndex) {
+      setActiveIndex(realIdx);
+    }
+  };
+
+  const goToSlide = (targetStepIndex) => {
+    const targetVirtualIndex = targetStepIndex + 1;
+    currentIndexRef.current = targetVirtualIndex;
+    setActiveIndex(targetStepIndex);
+    flatListRef.current?.scrollToIndex({
+      index: targetVirtualIndex,
+      animated: true,
+    });
   };
 
   const handleCardPress = () => {
@@ -99,7 +151,13 @@ export default function CampaignStepsCarousel({ navigation, isDarkMode }) {
     }
   };
 
-  const renderItem = ({ item, index }) => {
+  const getItemLayout = (data, index) => ({
+    length: CARD_WIDTH,
+    offset: CARD_WIDTH * index,
+    index,
+  });
+
+  const renderItem = ({ item }) => {
     const TagIcon = item.tagIcon;
 
     return (
@@ -156,29 +214,31 @@ export default function CampaignStepsCarousel({ navigation, isDarkMode }) {
 
   return (
     <View style={[styles.container, isDarkMode ? styles.containerGlow : null]}>
-      {/* Horizontal Carousel */}
+      {/* Seamless Infinite Horizontal Carousel */}
       <FlatList
         ref={flatListRef}
-        data={STEP_DATA}
+        data={INFINITE_DATA}
         renderItem={renderItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.key}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        onScroll={onScroll}
-        scrollEventThrottle={16}
-        onScrollBeginDrag={() => { isInteracting.current = true; }}
-        onScrollEndDrag={() => { 
-          setTimeout(() => { isInteracting.current = false; }, 2000); 
-        }}
+        initialScrollIndex={1}
+        getItemLayout={getItemLayout}
         snapToInterval={CARD_WIDTH}
+        snapToAlignment="start"
         decelerationRate="fast"
+        disableIntervalMomentum={true}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        onMomentumScrollEnd={handleMomentumScrollEnd}
+        onScrollBeginDrag={() => { isInteracting.current = true; }}
         bounces={false}
       />
 
       {/* Pagination Indicator Dots Below Carousel */}
       <View style={styles.paginationContainer}>
-        {STEP_DATA.map((_, index) => {
+        {REAL_STEPS.map((_, index) => {
           const isActive = index === activeIndex;
           return (
             <TouchableOpacity
