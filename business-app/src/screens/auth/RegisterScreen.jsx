@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, 
-  KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Keyboard 
+  KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Keyboard, BackHandler 
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -16,6 +16,7 @@ import AppLogo from '../../components/AppLogo';
 export default function RegisterScreen({ navigation }) {
   const { isDark } = useTheme();
   const scrollViewRef = useRef(null);
+  const activeOffsetRef = useRef(100);
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -24,12 +25,23 @@ export default function RegisterScreen({ navigation }) {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
+  const scrollToOffset = (offset) => {
+    activeOffsetRef.current = offset;
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: offset, animated: true });
+    }, 100);
+  };
+
   useEffect(() => {
     const showSub = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
       (e) => {
+        const kHeight = e.endCoordinates?.height || 280;
         setKeyboardVisible(true);
-        setKeyboardHeight(e.endCoordinates?.height || 280);
+        setKeyboardHeight(kHeight);
+        setTimeout(() => {
+          scrollViewRef.current?.scrollTo({ y: activeOffsetRef.current, animated: true });
+        }, 120);
       }
     );
     const hideSub = Keyboard.addListener(
@@ -46,11 +58,21 @@ export default function RegisterScreen({ navigation }) {
     };
   }, []);
 
-  const handleInputFocus = (offset = 120) => {
-    setTimeout(() => {
-      scrollViewRef.current?.scrollTo({ y: offset, animated: true });
-    }, 120);
-  };
+  // Hardware back press on Android (allows returning from Step 2 to Step 1 smoothly)
+  useEffect(() => {
+    const backAction = () => {
+      if (step === 2) {
+        Keyboard.dismiss();
+        setStep(1);
+        setTimeout(() => scrollViewRef.current?.scrollTo({ y: 0, animated: true }), 100);
+        return true;
+      }
+      return false;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [step]);
   
   const [form, setForm] = useState({
     company_name: '',
@@ -142,7 +164,7 @@ export default function RegisterScreen({ navigation }) {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? '#090614' : '#F8F7FF' }]}>
       <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
         style={styles.flex1}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
       >
@@ -150,12 +172,12 @@ export default function RegisterScreen({ navigation }) {
           ref={scrollViewRef}
           contentContainerStyle={[
             styles.scrollContent,
-            { paddingBottom: keyboardVisible ? Math.max(keyboardHeight, 160) + 40 : 60 }
+            { paddingBottom: (keyboardVisible || keyboardHeight > 0) ? Math.max(keyboardHeight, 220) + 60 : 60 }
           ]} 
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
-          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+          automaticallyAdjustKeyboardInsets={true}
           bounces={true}
           overScrollMode="always"
         >
@@ -182,11 +204,24 @@ export default function RegisterScreen({ navigation }) {
                 <ArrowLeft size={18} color={isDark ? '#F8FAFC' : '#1E1B4B'} />
               </TouchableOpacity>
 
-              <View style={styles.stepBadge}>
+              <TouchableOpacity 
+                onPress={() => {
+                  if (step === 2) {
+                    Keyboard.dismiss();
+                    setStep(1);
+                    setTimeout(() => scrollViewRef.current?.scrollTo({ y: 0, animated: true }), 100);
+                  }
+                }}
+                activeOpacity={step === 2 ? 0.7 : 1}
+                style={[
+                  styles.stepBadge,
+                  step === 2 ? { backgroundColor: isDark ? 'rgba(192, 132, 252, 0.2)' : '#EDE9FE', borderWidth: 1, borderColor: isDark ? '#7C3AED' : '#C084FC' } : null
+                ]}
+              >
                 <Text style={[styles.stepBadgeText, { color: isDark ? '#C084FC' : '#7C3AED' }]}>
-                  Step {step} of 2
+                  {step === 2 ? '← Back to Step 1' : 'Step 1 of 2'}
                 </Text>
-              </View>
+              </TouchableOpacity>
             </View>
 
             {/* ── Heading & Brand ──────────────────────────────────────── */}
@@ -205,7 +240,17 @@ export default function RegisterScreen({ navigation }) {
             </View>
 
             {/* ── Step Progress Indicator ───────────────────────────────── */}
-            <View style={styles.progressRow}>
+            <TouchableOpacity 
+              activeOpacity={step === 2 ? 0.8 : 1}
+              onPress={() => {
+                if (step === 2) {
+                  Keyboard.dismiss();
+                  setStep(1);
+                  setTimeout(() => scrollViewRef.current?.scrollTo({ y: 0, animated: true }), 100);
+                }
+              }}
+              style={styles.progressRow}
+            >
               <View style={[styles.progressTrack, { backgroundColor: isDark ? '#281B4B' : '#E2E8F0' }]}>
                 <LinearGradient
                   colors={['#7C3AED', '#A855F7']}
@@ -214,7 +259,7 @@ export default function RegisterScreen({ navigation }) {
                   style={[styles.progressFill, { width: step === 1 ? '50%' : '100%' }]}
                 />
               </View>
-            </View>
+            </TouchableOpacity>
 
             {/* ── STEP 1: Business Details ─────────────────────────────── */}
             {step === 1 ? (
@@ -238,7 +283,8 @@ export default function RegisterScreen({ navigation }) {
                       cursorColor={isDark ? '#C084FC' : '#7C3AED'}
                       selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                       value={form.company_name}
-                      onFocus={() => handleInputFocus(0)}
+                      onFocus={() => scrollToOffset(40)}
+                      onTouchStart={() => { activeOffsetRef.current = 40; }}
                       onChangeText={(v) => setForm(f => ({ ...f, company_name: v }))}
                     />
                   </View>
@@ -262,7 +308,8 @@ export default function RegisterScreen({ navigation }) {
                       cursorColor={isDark ? '#C084FC' : '#7C3AED'}
                       selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                       value={form.owner_name}
-                      onFocus={() => handleInputFocus(60)}
+                      onFocus={() => scrollToOffset(120)}
+                      onTouchStart={() => { activeOffsetRef.current = 120; }}
                       onChangeText={(v) => setForm(f => ({ ...f, owner_name: v }))}
                     />
                   </View>
@@ -288,7 +335,8 @@ export default function RegisterScreen({ navigation }) {
                       cursorColor={isDark ? '#C084FC' : '#7C3AED'}
                       selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                       value={form.email}
-                      onFocus={() => handleInputFocus(140)}
+                      onFocus={() => scrollToOffset(200)}
+                      onTouchStart={() => { activeOffsetRef.current = 200; }}
                       onChangeText={(v) => setForm(f => ({ ...f, email: v }))}
                     />
                   </View>
@@ -313,7 +361,8 @@ export default function RegisterScreen({ navigation }) {
                       cursorColor={isDark ? '#C084FC' : '#7C3AED'}
                       selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                       value={form.phone}
-                      onFocus={() => handleInputFocus(220)}
+                      onFocus={() => scrollToOffset(280)}
+                      onTouchStart={() => { activeOffsetRef.current = 280; }}
                       onChangeText={(v) => setForm(f => ({ ...f, phone: v }))}
                     />
                   </View>
@@ -359,7 +408,8 @@ export default function RegisterScreen({ navigation }) {
                       cursorColor={isDark ? '#C084FC' : '#7C3AED'}
                       selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                       value={form.password}
-                      onFocus={() => handleInputFocus(0)}
+                      onFocus={() => scrollToOffset(60)}
+                      onTouchStart={() => { activeOffsetRef.current = 60; }}
                       onChangeText={(v) => setForm(f => ({ ...f, password: v }))}
                     />
                     <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.showPasswordBtn}>
@@ -407,7 +457,8 @@ export default function RegisterScreen({ navigation }) {
                       cursorColor={isDark ? '#C084FC' : '#7C3AED'}
                       selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                       value={form.confirm_password}
-                      onFocus={() => handleInputFocus(110)}
+                      onFocus={() => scrollToOffset(160)}
+                      onTouchStart={() => { activeOffsetRef.current = 160; }}
                       onChangeText={(v) => setForm(f => ({ ...f, confirm_password: v }))}
                     />
                   </View>
@@ -431,7 +482,8 @@ export default function RegisterScreen({ navigation }) {
                       cursorColor={isDark ? '#C084FC' : '#7C3AED'}
                       selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                       value={form.area}
-                      onFocus={() => handleInputFocus(200)}
+                      onFocus={() => scrollToOffset(260)}
+                      onTouchStart={() => { activeOffsetRef.current = 260; }}
                       onChangeText={(v) => setForm(f => ({ ...f, area: v }))}
                     />
                   </View>
@@ -473,6 +525,28 @@ export default function RegisterScreen({ navigation }) {
                       <Text style={styles.ctaButtonText}>Complete Registration 🎉</Text>
                     )}
                   </LinearGradient>
+                </TouchableOpacity>
+
+                {/* Secondary Back to Step 1 Button */}
+                <TouchableOpacity 
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    setStep(1);
+                    setTimeout(() => scrollViewRef.current?.scrollTo({ y: 0, animated: true }), 100);
+                  }}
+                  style={[
+                    styles.secondaryBackBtn,
+                    { 
+                      backgroundColor: isDark ? '#140F24' : '#FFFFFF', 
+                      borderColor: isDark ? 'rgba(168, 85, 247, 0.4)' : '#CBD5E1' 
+                    }
+                  ]}
+                  activeOpacity={0.75}
+                >
+                  <ArrowLeft size={16} color={isDark ? '#C084FC' : '#7C3AED'} style={{ marginRight: 8 }} />
+                  <Text style={[styles.secondaryBackText, { color: isDark ? '#F8FAFC' : '#1E1B4B' }]}>
+                    Back to Step 1 (Edit Details)
+                  </Text>
                 </TouchableOpacity>
 
               </View>
@@ -684,6 +758,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     letterSpacing: 0.8,
     textTransform: 'uppercase',
+  },
+  secondaryBackBtn: {
+    width: '100%',
+    height: 50,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  secondaryBackText: {
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   footerSection: {
     flexDirection: 'row',

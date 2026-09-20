@@ -40,6 +40,7 @@ export default function LoginScreen({ navigation }) {
   const { login } = useAuth();
   const { isDark } = useTheme();
   const scrollViewRef = useRef(null);
+  const activeOffsetRef = useRef(140);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -49,12 +50,23 @@ export default function LoginScreen({ navigation }) {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
+  const scrollToOffset = (offset) => {
+    activeOffsetRef.current = offset;
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: offset, animated: true });
+    }, 100);
+  };
+
   useEffect(() => {
     const showSub = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
       (e) => {
+        const kHeight = e.endCoordinates?.height || 280;
         setKeyboardVisible(true);
-        setKeyboardHeight(e.endCoordinates?.height || 280);
+        setKeyboardHeight(kHeight);
+        setTimeout(() => {
+          scrollViewRef.current?.scrollTo({ y: activeOffsetRef.current, animated: true });
+        }, 120);
       }
     );
     const hideSub = Keyboard.addListener(
@@ -70,12 +82,6 @@ export default function LoginScreen({ navigation }) {
       hideSub.remove();
     };
   }, []);
-
-  const handleInputFocus = (offset = 100) => {
-    setTimeout(() => {
-      scrollViewRef.current?.scrollTo({ y: offset, animated: true });
-    }, 120);
-  };
 
   useEffect(() => {
     const loadRememberedEmail = async () => {
@@ -133,7 +139,7 @@ export default function LoginScreen({ navigation }) {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? '#090614' : '#F8F7FF' }]}>
       <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
         style={styles.flex1}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
       >
@@ -141,12 +147,12 @@ export default function LoginScreen({ navigation }) {
           ref={scrollViewRef}
           contentContainerStyle={[
             styles.scrollContent,
-            { paddingBottom: keyboardVisible ? Math.max(keyboardHeight, 140) + 40 : 50 }
+            { paddingBottom: (keyboardVisible || keyboardHeight > 0) ? Math.max(keyboardHeight, 220) + 60 : 50 }
           ]} 
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
-          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+          automaticallyAdjustKeyboardInsets={true}
           bounces={true}
           overScrollMode="always"
         >
@@ -209,7 +215,8 @@ export default function LoginScreen({ navigation }) {
                     cursorColor={isDark ? '#C084FC' : '#7C3AED'}
                     selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                     value={email}
-                    onFocus={() => handleInputFocus(0)}
+                    onFocus={() => scrollToOffset(80)}
+                    onTouchStart={() => { activeOffsetRef.current = 80; }}
                     onChangeText={setEmail}
                   />
                 </View>
@@ -244,7 +251,8 @@ export default function LoginScreen({ navigation }) {
                     selectionColor={isDark ? 'rgba(192, 132, 252, 0.4)' : 'rgba(124, 58, 237, 0.3)'}
                     onSubmitEditing={handleLogin}
                     value={password}
-                    onFocus={() => handleInputFocus(100)}
+                    onFocus={() => scrollToOffset(180)}
+                    onTouchStart={() => { activeOffsetRef.current = 180; }}
                     onChangeText={setPassword}
                   />
                   <TouchableOpacity 
