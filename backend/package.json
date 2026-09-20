@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "deploy": "node -e \"const https = require('https'); https.get('https://coxcred.com/srads/api/deploy/webhook?secret=srads_auto_deploy_secret_2026', res => { console.log('Deploy triggered, status:', res.statusCode); });\""
   },
   "keywords": [
     "srads",

@@ -1,0 +1,17 @@
+name: Auto Deploy to Live Server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Live Server Auto-Deploy Webhook
+        run: |
+          curl -X POST "https://coxcred.com/srads/api/deploy/webhook?secret=srads_auto_deploy_secret_2026" \
+            -H "Content-Type: application/json" \
+            --max-time 15 \
+            --retry 2
