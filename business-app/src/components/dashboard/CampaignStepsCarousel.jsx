@@ -56,7 +56,7 @@ const REAL_STEPS = [
   }
 ];
 
-// Infinite Cloned Buffer for 100% seamless forward looping (Step 4 -> Step 1 without backwards reverse lag)
+// Infinite Cloned Buffer for seamless forward looping without backwards reverse lag
 const INFINITE_DATA = [
   { ...REAL_STEPS[3], key: 'clone-start-step4' },
   { ...REAL_STEPS[0], key: 'real-step1' },
@@ -67,12 +67,12 @@ const INFINITE_DATA = [
 ];
 
 export default function CampaignStepsCarousel({ navigation, isDarkMode }) {
-  const [activeIndex, setActiveIndex] = useState(0); // 0, 1, 2, 3
+  const [activeIndex, setActiveIndex] = useState(0); // Only 0, 1, 2, 3 corresponding to active step
   const flatListRef = useRef(null);
   const currentIndexRef = useRef(1);
   const isInteracting = useRef(false);
 
-  // Auto-slide every 3.5 seconds (reduced by 1 second for brisk, responsive pacing)
+  // Auto-slide every 3.5 seconds
   useEffect(() => {
     const timer = setInterval(() => {
       if (!isInteracting.current && flatListRef.current) {
@@ -84,12 +84,9 @@ export default function CampaignStepsCarousel({ navigation, isDarkMode }) {
           animated: true,
         });
 
-        // Update active dot index
-        if (nextVirtualIndex === 5) {
-          setActiveIndex(0);
-        } else {
-          setActiveIndex(nextVirtualIndex - 1);
-        }
+        // Strictly update only the current active step (0, 1, 2, or 3)
+        const realIdx = nextVirtualIndex === 5 ? 0 : (nextVirtualIndex - 1);
+        setActiveIndex(realIdx);
       }
     }, 3500);
 
@@ -119,20 +116,6 @@ export default function CampaignStepsCarousel({ navigation, isDarkMode }) {
     setTimeout(() => {
       isInteracting.current = false;
     }, 1000);
-  };
-
-  const handleScroll = (event) => {
-    const offset = event.nativeEvent.contentOffset.x;
-    const virtualIndex = Math.round(offset / CARD_WIDTH);
-    
-    let realIdx = 0;
-    if (virtualIndex === 0) realIdx = 3;
-    else if (virtualIndex === 5) realIdx = 0;
-    else realIdx = Math.max(0, Math.min(3, virtualIndex - 1));
-
-    if (realIdx !== activeIndex) {
-      setActiveIndex(realIdx);
-    }
   };
 
   const goToSlide = (targetStepIndex) => {
@@ -213,31 +196,31 @@ export default function CampaignStepsCarousel({ navigation, isDarkMode }) {
   };
 
   return (
-    <View style={[styles.container, isDarkMode ? styles.containerGlow : null]}>
-      {/* Seamless Infinite Horizontal Carousel */}
-      <FlatList
-        ref={flatListRef}
-        data={INFINITE_DATA}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.key}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        initialScrollIndex={1}
-        getItemLayout={getItemLayout}
-        snapToInterval={CARD_WIDTH}
-        snapToAlignment="start"
-        decelerationRate="fast"
-        disableIntervalMomentum={true}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        onMomentumScrollEnd={handleMomentumScrollEnd}
-        onScrollBeginDrag={() => { isInteracting.current = true; }}
-        bounces={false}
-      />
+    <View style={styles.rootWrapper}>
+      {/* 1. Main Card Carousel with its dedicated glow */}
+      <View style={[styles.carouselCardWrapper, isDarkMode ? styles.cardGlow : null]}>
+        <FlatList
+          ref={flatListRef}
+          data={INFINITE_DATA}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.key}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          initialScrollIndex={1}
+          getItemLayout={getItemLayout}
+          snapToInterval={CARD_WIDTH}
+          snapToAlignment="start"
+          decelerationRate="fast"
+          disableIntervalMomentum={true}
+          onMomentumScrollEnd={handleMomentumScrollEnd}
+          onScrollBeginDrag={() => { isInteracting.current = true; }}
+          bounces={false}
+        />
+      </View>
 
-      {/* Pagination Indicator Dots Below Carousel */}
-      <View style={styles.paginationContainer}>
+      {/* 2. Isolated Discrete Step Indicator Dots (Only active step is highlighted) */}
+      <View style={styles.dotsRow}>
         {REAL_STEPS.map((_, index) => {
           const isActive = index === activeIndex;
           return (
@@ -245,9 +228,12 @@ export default function CampaignStepsCarousel({ navigation, isDarkMode }) {
               key={index}
               onPress={() => goToSlide(index)}
               activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
               style={[
-                styles.dot,
-                isActive ? styles.activeDot : (isDarkMode ? styles.inactiveDotDark : styles.inactiveDotLight)
+                styles.dotBase,
+                isActive 
+                  ? styles.dotActive 
+                  : (isDarkMode ? styles.dotInactiveDark : styles.dotInactiveLight)
               ]}
             />
           );
@@ -258,17 +244,19 @@ export default function CampaignStepsCarousel({ navigation, isDarkMode }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  rootWrapper: {
     marginBottom: 16,
+  },
+  carouselCardWrapper: {
     borderRadius: 22,
     overflow: 'hidden',
   },
-  containerGlow: {
-    shadowColor: '#A855F7',
-    shadowOffset: { width: 0, height: 8 },
+  cardGlow: {
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
-    shadowRadius: 18,
-    elevation: 8,
+    shadowRadius: 14,
+    elevation: 6,
   },
   cardGradient: {
     borderRadius: 22,
@@ -361,28 +349,28 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: 'rgba(255, 255, 255, 0.22)',
   },
-  paginationContainer: {
+  dotsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     gap: 6,
-    paddingTop: 8,
-    paddingBottom: 2,
+    marginTop: 10,
+    marginBottom: 2,
   },
-  dot: {
+  dotBase: {
     height: 5,
     borderRadius: 3,
   },
-  activeDot: {
-    width: 22,
+  dotActive: {
+    width: 20,
     backgroundColor: '#C084FC',
   },
-  inactiveDotDark: {
+  dotInactiveDark: {
     width: 6,
-    backgroundColor: '#3B2A68',
+    backgroundColor: '#281B4B',
   },
-  inactiveDotLight: {
+  dotInactiveLight: {
     width: 6,
-    backgroundColor: '#DDD6FE',
+    backgroundColor: '#E2E8F0',
   },
 });
