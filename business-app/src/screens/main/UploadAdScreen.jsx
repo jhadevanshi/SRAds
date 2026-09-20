@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, ActivityIndicator, Alert, Modal, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, ActivityIndicator, Alert, Modal, Platform, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
@@ -229,35 +229,45 @@ export default function UploadAdScreen({ navigation }) {
 
   return (
     <SafeAreaView style={{ backgroundColor: isDark ? '#090614' : '#F8F7FF' }} className="flex-1" edges={['top']}>
-      {/* Top Header */}
-      <View 
-        style={{ 
-          backgroundColor: isDark ? '#120C26' : '#FFFFFF',
-          borderBottomColor: isDark ? '#281B4B' : '#EDE9FE' 
-        }}
-        className="flex-row items-center px-5 py-4 border-b z-10"
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <TouchableOpacity 
-          onPress={() => navigation.goBack()} 
+        {/* Top Header */}
+        <View 
           style={{ 
-            backgroundColor: isDark ? '#1F1735' : '#F8F7FF',
-            borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+            backgroundColor: isDark ? '#120C26' : '#FFFFFF',
+            borderBottomColor: isDark ? '#281B4B' : '#EDE9FE' 
           }}
-          className="p-2.5 rounded-full border mr-3"
+          className="flex-row items-center px-5 py-4 border-b z-10"
         >
-          <ArrowLeft size={18} color={isDark ? '#F8FAFC' : '#1E1B4B'} />
-        </TouchableOpacity>
-        <View>
-          <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-xl font-black tracking-tight">
-            Upload Creative
-          </Text>
-          <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold">
-            Add Assets for Transit Network
-          </Text>
+          <TouchableOpacity 
+            onPress={() => navigation.goBack()} 
+            style={{ 
+              backgroundColor: isDark ? '#1F1735' : '#F8F7FF',
+              borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+            }}
+            className="p-2.5 rounded-full border mr-3"
+          >
+            <ArrowLeft size={18} color={isDark ? '#F8FAFC' : '#1E1B4B'} />
+          </TouchableOpacity>
+          <View>
+            <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-xl font-black tracking-tight">
+              Upload Creative
+            </Text>
+            <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold">
+              Add Assets for Transit Network
+            </Text>
+          </View>
         </View>
-      </View>
 
-      <ScrollView className="flex-1 px-5 pt-6" contentContainerStyle={{ paddingBottom: 60 + bottomInset }}>
+        <ScrollView 
+          className="flex-1 px-5 pt-6" 
+          contentContainerStyle={{ paddingBottom: 160 + bottomInset }}
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets={true}
+          showsVerticalScrollIndicator={false}
+        >
         
         {/* Step 1: Media Format Selection */}
         <View className="mb-6">
@@ -514,7 +524,8 @@ export default function UploadAdScreen({ navigation }) {
           </LinearGradient>
         </TouchableOpacity>
 
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, Image, Modal, Dimensions, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, Image, Modal, Dimensions, Platform, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { 
@@ -201,6 +201,7 @@ export default function CreateCampaignScreen({ route, navigation }) {
   const [newAdTitle, setNewAdTitle] = useState('');
   const [newAdMedia, setNewAdMedia] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [campaignName, setCampaignName] = useState('');
   const [videoTrimmerVisible, setVideoTrimmerVisible] = useState(false);
   const [addFundsVisible, setAddFundsVisible] = useState(false);
 
@@ -520,8 +521,12 @@ export default function CreateCampaignScreen({ route, navigation }) {
     try {
       const selectedAreas = whereMode === 'everywhere' ? 'all' : form.routes.map(r => r.area).join(', ');
       
+      const finalCampaignName = (campaignName && campaignName.trim()) 
+        ? campaignName.trim() 
+        : `${form.ad.title} Transit Campaign`;
+
       const payload = {
-        campaign_name: `${form.ad.title} Transit Campaign`,
+        campaign_name: finalCampaignName,
         start_date: startDate ? formatDateString(startDate) : null,
         end_date: endDate ? formatDateString(endDate) : null,
         start_time: startTime ? `${String(startTime.getHours()).padStart(2, '0')}:${String(startTime.getMinutes()).padStart(2, '0')}` : null,
@@ -723,7 +728,11 @@ export default function CreateCampaignScreen({ route, navigation }) {
 
   return (
     <SafeAreaView style={{ backgroundColor: isDark ? '#090614' : '#F8F7FF' }} className="flex-1" edges={['top']}>
-      {/* Top Header */}
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        {/* Top Header */}
       <View 
         style={{ 
           backgroundColor: isDark ? '#120C26' : '#FFFFFF',
@@ -823,7 +832,13 @@ export default function CreateCampaignScreen({ route, navigation }) {
         })}
       </View>
 
-      <ScrollView className="flex-1" contentContainerStyle={{ padding: 18, paddingBottom: 140 + bottomInset }}>
+      <ScrollView 
+        className="flex-1" 
+        contentContainerStyle={{ padding: 18, paddingBottom: 180 + bottomInset }}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets={true}
+        showsVerticalScrollIndicator={false}
+      >
         
         {/* STEP 1: AD CREATIVE */}
         {step === 1 && (
@@ -1454,6 +1469,31 @@ export default function CreateCampaignScreen({ route, navigation }) {
               Verify your flight specifications, audience scope, and estimated budget.
             </Text>
 
+            {/* Campaign Name Input */}
+            <View 
+              style={{ 
+                backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+                borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+              }}
+              className="border rounded-2xl p-4 mb-4 shadow-sm"
+            >
+              <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="text-[11px] font-black uppercase tracking-widest mb-2.5">
+                Campaign Name
+              </Text>
+              <TextInput
+                value={campaignName}
+                onChangeText={setCampaignName}
+                placeholder={form.ad?.title ? `${form.ad.title} Transit Campaign` : 'e.g. Navratri Festival Mega Campaign'}
+                placeholderTextColor={isDark ? '#64748B' : '#94A3B8'}
+                style={{ 
+                  backgroundColor: isDark ? '#181033' : '#F8F7FF',
+                  borderColor: isDark ? '#281B4B' : '#EDE9FE',
+                  color: isDark ? '#F8FAFC' : '#1E1B4B' 
+                }}
+                className="border rounded-xl px-4 py-3 font-semibold text-sm"
+              />
+            </View>
+
             {/* SUMMARY CARD */}
             <View 
               style={{ 
@@ -1972,6 +2012,7 @@ export default function CreateCampaignScreen({ route, navigation }) {
         }}
       />
 
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
