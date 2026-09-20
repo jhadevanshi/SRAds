@@ -12,7 +12,7 @@ import {
   Wallet, PlayCircle, IndianRupee, Video, Image as ImageIcon, 
   MapPin, Clock, Settings, Plus, Building2, Navigation, Megaphone, 
   MonitorSmartphone, ChevronRight, ArrowRight, BarChart3, Sparkles, 
-  Activity, Radio, ShieldCheck, Zap, Moon, Sun
+  Radio, ShieldCheck, Zap, Moon, Sun
 } from 'lucide-react-native';
 import { fonts } from '../../theme/designTokens';
 
@@ -218,19 +218,14 @@ export default function DashboardScreen({ navigation }) {
                   <Wallet size={16} color="#E9D5FF" />
                   <Text style={styles.walletLabelText}>Active Balance</Text>
                 </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  {onHoldBalance > 0 && (
-                    <View style={[styles.liveIndicatorPill, { backgroundColor: 'rgba(245, 158, 11, 0.25)' }]}>
-                      <Text style={[styles.liveIndicatorText, { color: '#FDE68A' }]}>
-                        ₹{Math.round(onHoldBalance)} Hold
-                      </Text>
-                    </View>
-                  )}
-                  <View style={styles.liveIndicatorPill}>
-                    <Activity size={12} color="#34D399" />
-                    <Text style={styles.liveIndicatorText}>Live Wallet</Text>
+                {onHoldBalance > 0 && (
+                  <View style={[styles.liveIndicatorPill, { backgroundColor: 'rgba(245, 158, 11, 0.25)', borderColor: 'rgba(245, 158, 11, 0.4)', borderWidth: 1 }]}>
+                    <Clock size={11} color="#FDE68A" />
+                    <Text style={[styles.liveIndicatorText, { color: '#FDE68A' }]}>
+                      On Hold ₹{Number(onHoldBalance).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                    </Text>
                   </View>
-                </View>
+                )}
               </View>
 
               <Text style={styles.walletBalanceText} numberOfLines={1} adjustsFontSizeToFit>
