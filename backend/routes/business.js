@@ -258,8 +258,12 @@ router.get('/ads', businessAuth, async (req, res) => {
       SELECT 
         a.id,
         a.title,
+        m.media_type,
         m.media_type as type,
+        COALESCE(a.play_duration, m.duration, 15) as play_duration,
+        m.duration,
         a.approval_status,
+        a.status,
         a.remaining_budget,
         a.budget,
         a.cost_per_play,

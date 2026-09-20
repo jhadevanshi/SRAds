@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Alert, RefreshControl, ActivityIndicator, Image, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -7,13 +7,61 @@ import {
   Video, 
   Image as ImageIcon, 
   Trash2, 
-  Rocket
+  Rocket,
+  Play,
+  Pause
 } from 'lucide-react-native';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { businessService } from '../../services/business';
 import { useTheme } from '../../context/ThemeContext';
 import { colors } from '../../theme/designTokens';
 
 const { width } = Dimensions.get('window');
+
+// Dedicated Video Preview for Card
+const VideoCardPreview = memo(({ uri, isDark }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const player = useVideoPlayer(uri, (p) => {
+    p.loop = true;
+    p.muted = true;
+  });
+
+  const togglePlay = () => {
+    if (!player) return;
+    if (isPlaying) {
+      player.pause();
+      setIsPlaying(false);
+    } else {
+      player.play();
+      setIsPlaying(true);
+    }
+  };
+
+  return (
+    <TouchableOpacity 
+      activeOpacity={0.9} 
+      onPress={togglePlay}
+      className="w-full h-full items-center justify-center relative overflow-hidden"
+    >
+      <VideoView 
+        player={player} 
+        style={{ width: '100%', height: '100%' }} 
+        contentFit="contain" 
+        nativeControls={false} 
+      />
+      {!isPlaying && (
+        <View className="absolute inset-0 items-center justify-center bg-black/25">
+          <View 
+            style={{ backgroundColor: 'rgba(124, 58, 237, 0.85)' }} 
+            className="w-11 h-11 rounded-full items-center justify-center shadow-lg"
+          >
+            <Play size={20} color="#FFFFFF" style={{ marginLeft: 2 }} />
+          </View>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+});
 
 export default function AdsListScreen({ navigation }) {
   const { isDark } = useTheme();
@@ -85,7 +133,7 @@ export default function AdsListScreen({ navigation }) {
   const getBaseUrl = () => process.env.EXPO_PUBLIC_API_URL || 'https://coxcred.com/srads/api';
 
   const renderItem = ({ item }) => {
-    const isVideo = item.media_type === 'video';
+    const isVideo = item.media_type === 'video' || item.type === 'video' || (item.file_url && item.file_url.toLowerCase().endsWith('.mp4'));
     const mediaUri = item.file_url ? (item.file_url.startsWith('http') ? item.file_url : `${getBaseUrl().replace('/api', '')}${item.file_url.startsWith('/') ? '' : '/'}${item.file_url}`) : null;
     
     return (
@@ -104,11 +152,15 @@ export default function AdsListScreen({ navigation }) {
         {/* Creative Preview Hero */}
         <View style={{ backgroundColor: isDark ? '#090614' : '#F1F5F9' }} className="h-48 relative items-center justify-center">
           {mediaUri ? (
-            <Image 
-              source={{ uri: mediaUri }} 
-              className="w-full h-full"
-              resizeMode="contain"
-            />
+            isVideo ? (
+              <VideoCardPreview uri={mediaUri} isDark={isDark} />
+            ) : (
+              <Image 
+                source={{ uri: mediaUri }} 
+                className="w-full h-full"
+                resizeMode="contain"
+              />
+            )
           ) : (
             <View className="w-full h-full items-center justify-center">
               {isVideo ? <Video size={48} color={isDark ? '#38BDF8' : '#0284C7'} /> : <ImageIcon size={48} color="#A855F7" />}
