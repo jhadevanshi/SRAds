@@ -79,11 +79,7 @@ const FullscreenVideoPlayer = memo(({ uri, title, duration, trimStart, trimEnd, 
                 </Text>
               </TouchableOpacity>
             ) : (
-              <View style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)', borderColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16 }}>
-                <Text style={{ color: '#94A3B8', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  Commercial
-                </Text>
-              </View>
+              <View style={{ width: 44 }} />
             )}
           </View>
 
@@ -179,38 +175,20 @@ const FullscreenVideoPlayer = memo(({ uri, title, duration, trimStart, trimEnd, 
 
       {/* ── BOTTOM AREA: Info & Bottom Centre Play/Pause Button ──────────────── */}
       <SafeAreaView edges={['bottom']} style={{ zIndex: 30 }}>
-        <View style={{ backgroundColor: 'rgba(10, 8, 20, 0.94)', borderTopWidth: 1, borderTopColor: 'rgba(255, 255, 255, 0.12)', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 16, alignItems: 'center' }}>
+        <View style={{ backgroundColor: 'rgba(10, 8, 20, 0.94)', borderTopWidth: 1, borderTopColor: 'rgba(255, 255, 255, 0.12)', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16, alignItems: 'center' }}>
           
-          {/* Top Badges in Bottom Bar */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 8 }}>
-            <View style={{ backgroundColor: 'rgba(56, 189, 248, 0.18)', borderColor: 'rgba(56, 189, 248, 0.45)', borderWidth: 1, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, flexDirection: 'row', alignItems: 'center' }}>
-              <Film size={11} color="#38BDF8" style={{ marginRight: 4 }} />
-              <Text style={{ color: '#38BDF8', fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                Transit Video
+          {/* Trim info if active */}
+          {trimEnd && parseInt(trimEnd) > 0 ? (
+            <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.18)', borderColor: 'rgba(245, 158, 11, 0.45)', borderWidth: 1, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+              <Scissors size={11} color="#FBBF24" style={{ marginRight: 4 }} />
+              <Text style={{ color: '#FDE68A', fontSize: 10, fontWeight: '800' }}>
+                Trimmed: {parseInt(trimStart || 0)}s–{parseInt(trimEnd)}s
               </Text>
             </View>
-
-            {duration ? (
-              <View style={{ backgroundColor: 'rgba(192, 132, 252, 0.18)', borderColor: 'rgba(192, 132, 252, 0.45)', borderWidth: 1, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, flexDirection: 'row', alignItems: 'center' }}>
-                <Clock size={11} color="#C084FC" style={{ marginRight: 4 }} />
-                <Text style={{ color: '#E9D5FF', fontSize: 10, fontWeight: '800' }}>
-                  {duration}s Duration
-                </Text>
-              </View>
-            ) : null}
-
-            {trimEnd && parseInt(trimEnd) > 0 ? (
-              <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.18)', borderColor: 'rgba(245, 158, 11, 0.45)', borderWidth: 1, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, flexDirection: 'row', alignItems: 'center' }}>
-                <Scissors size={11} color="#FBBF24" style={{ marginRight: 4 }} />
-                <Text style={{ color: '#FDE68A', fontSize: 10, fontWeight: '800' }}>
-                  Trimmed: {parseInt(trimStart || 0)}s–{parseInt(trimEnd)}s
-                </Text>
-              </View>
-            ) : null}
-          </View>
+          ) : null}
 
           {/* Full Creative Name without truncation */}
-          <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '800', textAlign: 'center', lineHeight: 21, marginBottom: 12, paddingHorizontal: 10 }}>
+          <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '800', textAlign: 'center', lineHeight: 21, marginBottom: 14, paddingHorizontal: 10 }}>
             {title}
           </Text>
 
