@@ -1110,7 +1110,7 @@ export default function CreateCampaignScreen({ route, navigation }) {
                         >
                           <Text className="text-white text-xs font-black" numberOfLines={1}>{ad.title}</Text>
                           <Text className="text-purple-300 text-[10px] font-semibold">
-                            {isVideo ? `${ad.play_duration || 30}s Video` : 'Static Image'}
+                            {isVideo ? 'Video' : 'Static Image'}
                           </Text>
                         </LinearGradient>
                         

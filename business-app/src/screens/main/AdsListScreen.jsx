@@ -197,7 +197,7 @@ export default function AdsListScreen({ navigation }) {
                 style={{ color: isDark ? (isVideo ? '#38BDF8' : '#C084FC') : (isVideo ? '#0284C7' : '#7C3AED') }} 
                 className="text-[10px] font-bold ml-1.5 uppercase tracking-wider"
               >
-                {isVideo ? `${item.play_duration || 15}s Video` : 'Static Image'}
+                {isVideo ? 'Video' : 'Static Image'}
               </Text>
             </View>
           </View>
