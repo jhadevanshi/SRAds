@@ -1705,7 +1705,11 @@ export default function CreateCampaignScreen({ route, navigation }) {
                 gap: 8,
               }}
             >
-              {creating ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
+              {creating ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Sparkles size={18} color="#FFFFFF" />
+              )}
               <Text 
                 style={{
                   color: '#FFFFFF',
@@ -1719,7 +1723,7 @@ export default function CreateCampaignScreen({ route, navigation }) {
                 }}
                 numberOfLines={1}
               >
-                {creating ? 'Launching Flight...' : '🚀 Confirm & Launch Campaign'}
+                {creating ? 'Launching Flight...' : 'Confirm & Launch Campaign'}
               </Text>
             </LinearGradient>
           </TouchableOpacity>
