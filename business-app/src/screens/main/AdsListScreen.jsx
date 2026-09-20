@@ -7,15 +7,7 @@ import {
   Video, 
   Image as ImageIcon, 
   Trash2, 
-  Pause, 
-  Play, 
-  CheckCircle2, 
-  Clock, 
-  XCircle, 
-  Sparkles,
-  Rocket,
-  Megaphone,
-  Eye
+  Rocket
 } from 'lucide-react-native';
 import { businessService } from '../../services/business';
 import { useTheme } from '../../context/ThemeContext';
@@ -92,20 +84,8 @@ export default function AdsListScreen({ navigation }) {
 
   const getBaseUrl = () => process.env.EXPO_PUBLIC_API_URL || 'https://coxcred.com/srads/api';
 
-  const getStatusInfo = (status, approvalStatus) => {
-    return { 
-      text: 'Ready to Launch', 
-      color: '#10B981', 
-      bg: 'rgba(16, 185, 129, 0.15)', 
-      border: 'rgba(16, 185, 129, 0.35)', 
-      icon: CheckCircle2 
-    };
-  };
-
   const renderItem = ({ item }) => {
     const isVideo = item.media_type === 'video';
-    const statusInfo = getStatusInfo(item.status, item.approval_status);
-    const StatusIcon = statusInfo.icon;
     const mediaUri = item.file_url ? (item.file_url.startsWith('http') ? item.file_url : `${getBaseUrl().replace('/api', '')}${item.file_url.startsWith('/') ? '' : '/'}${item.file_url}`) : null;
     
     return (
@@ -122,7 +102,7 @@ export default function AdsListScreen({ navigation }) {
         className="border rounded-3xl mb-5 overflow-hidden"
       >
         {/* Creative Preview Hero */}
-        <View style={{ backgroundColor: isDark ? '#090614' : '#F1F5F9' }} className="h-48 relative">
+        <View style={{ backgroundColor: isDark ? '#090614' : '#F1F5F9' }} className="h-48 relative items-center justify-center">
           {mediaUri ? (
             <Image 
               source={{ uri: mediaUri }} 
@@ -134,41 +114,40 @@ export default function AdsListScreen({ navigation }) {
               {isVideo ? <Video size={48} color={isDark ? '#38BDF8' : '#0284C7'} /> : <ImageIcon size={48} color="#A855F7" />}
             </View>
           )}
-          
-          <LinearGradient
-            colors={['rgba(9, 6, 20, 0.6)', 'transparent', 'rgba(9, 6, 20, 0.8)']}
-            className="absolute inset-0 justify-between p-3.5"
-          >
-            {/* Status Badge */}
-            <View 
-              style={{ backgroundColor: statusInfo.bg, borderColor: statusInfo.border }}
-              className="self-start flex-row items-center px-3 py-1.5 rounded-full border backdrop-blur-md"
-            >
-              <StatusIcon size={12} color={statusInfo.color} />
-              <Text style={{ color: statusInfo.color }} className="text-[10px] font-black uppercase tracking-wider ml-1.5">
-                {statusInfo.text}
-              </Text>
-            </View>
-
-            {/* Media Type Chip */}
-            <View className="self-end bg-black/70 border border-white/10 px-2.5 py-1 rounded-lg flex-row items-center">
-              {isVideo ? <Video size={11} color="#38BDF8" /> : <ImageIcon size={11} color="#C084FC" />}
-              <Text className="text-white text-[10px] font-bold ml-1.5 uppercase tracking-wider">
-                {isVideo ? `${item.play_duration || 15}s Video` : 'Static Image'}
-              </Text>
-            </View>
-          </LinearGradient>
         </View>
 
         {/* Ad Details Section */}
         <View className="p-5">
-          <Text 
-            style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} 
-            className="font-extrabold text-lg tracking-tight mb-3" 
-            numberOfLines={1}
-          >
-            {item.title}
-          </Text>
+          {/* Title and Media Type Chip Row */}
+          <View className="flex-row items-center justify-between mb-3.5">
+            <Text 
+              style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} 
+              className="font-extrabold text-lg tracking-tight flex-1 mr-3" 
+              numberOfLines={1}
+            >
+              {item.title}
+            </Text>
+
+            <View 
+              style={{ 
+                backgroundColor: isDark ? (isVideo ? 'rgba(56, 189, 248, 0.12)' : 'rgba(192, 132, 252, 0.12)') : (isVideo ? '#E0F2FE' : '#F3E8FF'),
+                borderColor: isDark ? (isVideo ? 'rgba(56, 189, 248, 0.3)' : 'rgba(192, 132, 252, 0.3)') : (isVideo ? '#BAE6FD' : '#E9D5FF')
+              }}
+              className="border px-2.5 py-1 rounded-full flex-row items-center shrink-0"
+            >
+              {isVideo ? (
+                <Video size={11} color={isDark ? '#38BDF8' : '#0284C7'} />
+              ) : (
+                <ImageIcon size={11} color={isDark ? '#C084FC' : '#7C3AED'} />
+              )}
+              <Text 
+                style={{ color: isDark ? (isVideo ? '#38BDF8' : '#C084FC') : (isVideo ? '#0284C7' : '#7C3AED') }} 
+                className="text-[10px] font-bold ml-1.5 uppercase tracking-wider"
+              >
+                {isVideo ? `${item.play_duration || 15}s Video` : 'Static Image'}
+              </Text>
+            </View>
+          </View>
           
           {/* Performance Matrix */}
           <View 

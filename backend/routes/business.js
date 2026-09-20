@@ -312,9 +312,12 @@ router.post('/ads/upload', businessAuth, upload.single('media'), async (req, res
       return res.status(400).json({ success: false, message: 'Media file is required' });
     }
 
-    const { title, budget, cost_per_play, duration, area } = req.body;
+    const { title, budget, cost_per_play, duration, play_duration, video_trim_start, video_trim_end } = req.body;
     const mediaType = req.file.mimetype.startsWith('video') ? 'video' : 'image';
     const fileUrl = `/uploads/${req.file.filename}`;
+    const parsedDuration = parseInt(play_duration) || parseInt(duration) || (mediaType === 'image' ? 30 : 15);
+    const trimStart = video_trim_start ? parseInt(video_trim_start) : null;
+    const trimEnd = video_trim_end ? parseInt(video_trim_end) : null;
 
     // 1. Insert Media
     const mediaRes = await client.query(`
@@ -326,7 +329,7 @@ router.post('/ads/upload', businessAuth, upload.single('media'), async (req, res
       req.file.filename,
       fileUrl,
       mediaType,
-      parseInt(duration) || 15,
+      parsedDuration,
       req.file.size,
       req.businessId
     ]);
@@ -334,21 +337,23 @@ router.post('/ads/upload', businessAuth, upload.single('media'), async (req, res
 
     // 2. Insert Ad into Media Library (Ready to be used in campaigns)
     const numBudget = parseFloat(budget) || 0;
-    const numCostPerPlay = parseFloat(cost_per_play) || 0.35;
+    const numCostPerPlay = parseFloat(cost_per_play) || (mediaType === 'video' ? 2.0 : 1.0);
     const adRes = await client.query(`
       INSERT INTO ads (
-        advertiser_id, media_id, title, area, budget, remaining_budget,
-        cost_per_play, approval_status, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'Approved', 'Active')
+        advertiser_id, media_id, title, play_duration, budget, remaining_budget,
+        cost_per_play, approval_status, status, video_trim_start, video_trim_end
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'Approved', 'Active', $8, $9)
       RETURNING *
     `, [
       req.businessId,
       media.id,
       title || req.file.originalname,
-      area || 'General',
+      parsedDuration,
       numBudget,
       numBudget,
-      numCostPerPlay
+      numCostPerPlay,
+      trimStart,
+      trimEnd
     ]);
 
     await client.query('COMMIT');
