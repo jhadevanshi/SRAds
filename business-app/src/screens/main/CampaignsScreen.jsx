@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Image, Dimensions } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Image, Dimensions, Modal, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -7,6 +7,7 @@ import { businessService } from '../../services/business';
 import { useTheme } from '../../context/ThemeContext';
 import { colors } from '../../theme/designTokens';
 import AppLogo from '../../components/AppLogo';
+import VideoTrimmer from '../../components/VideoTrimmer';
 import { 
   Plus, 
   Megaphone, 
@@ -25,7 +26,14 @@ import {
   BarChart2,
   Navigation,
   Video,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Maximize2,
+  Volume2,
+  VolumeX,
+  Scissors,
+  X,
+  Eye,
+  Film
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -33,11 +41,61 @@ const { width } = Dimensions.get('window');
 const getBaseUrl = () => process.env.EXPO_PUBLIC_API_URL || 'https://coxcred.com/srads/api';
 
 // Dedicated Video Preview for Campaign Card
-const VideoCardPreview = memo(({ uri, isDark }) => {
+const VideoCardPreview = memo(({ uri, isDark, onFullScreen }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const player = useVideoPlayer(uri, (p) => {
     p.loop = true;
     p.muted = true;
+  });
+
+  const togglePlay = (e) => {
+    e?.stopPropagation?.();
+    if (!player) return;
+    if (isPlaying) {
+      player.pause();
+      setIsPlaying(false);
+    } else {
+      player.play();
+      setIsPlaying(true);
+    }
+  };
+
+  return (
+    <View className="w-full h-full items-center justify-center relative overflow-hidden">
+      <VideoView 
+        player={player} 
+        style={{ width: '100%', height: '100%' }} 
+        contentFit="contain" 
+        nativeControls={false} 
+      />
+      
+      {/* Play/Pause Center Tap Button */}
+      <TouchableOpacity 
+        activeOpacity={0.8}
+        onPress={togglePlay}
+        className="absolute inset-0 items-center justify-center bg-black/15"
+      >
+        {!isPlaying && (
+          <View 
+            style={{ backgroundColor: 'rgba(124, 58, 237, 0.85)' }} 
+            className="w-12 h-12 rounded-full items-center justify-center shadow-lg"
+          >
+            <Play size={22} color="#FFFFFF" style={{ marginLeft: 2 }} />
+          </View>
+        )}
+      </TouchableOpacity>
+    </View>
+  );
+});
+
+// Fullscreen Video Player with Audio controls
+const FullscreenVideoPlayer = memo(({ uri, title, duration, canTrim, onTrimPress, onClose }) => {
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
+  const player = useVideoPlayer(uri, (p) => {
+    p.loop = true;
+    p.muted = false; // Audio enabled by default!
+    p.play();
   });
 
   const togglePlay = () => {
@@ -51,29 +109,178 @@ const VideoCardPreview = memo(({ uri, isDark }) => {
     }
   };
 
+  const toggleMute = () => {
+    if (!player) return;
+    player.muted = !isMuted;
+    setIsMuted(!isMuted);
+  };
+
   return (
-    <TouchableOpacity 
-      activeOpacity={0.9} 
-      onPress={togglePlay}
-      className="w-full h-full items-center justify-center relative overflow-hidden"
-    >
-      <VideoView 
-        player={player} 
-        style={{ width: '100%', height: '100%' }} 
-        contentFit="contain" 
-        nativeControls={false} 
-      />
-      {!isPlaying && (
-        <View className="absolute inset-0 items-center justify-center bg-black/25">
-          <View 
-            style={{ backgroundColor: 'rgba(124, 58, 237, 0.85)' }} 
-            className="w-11 h-11 rounded-full items-center justify-center shadow-lg"
+    <View style={{ flex: 1, backgroundColor: '#000000', justifyContent: 'space-between' }}>
+      {/* Top Controls Header */}
+      <SafeAreaView edges={['top']} style={{ zIndex: 20 }}>
+        <View className="flex-row items-center justify-between px-5 py-3">
+          <TouchableOpacity 
+            onPress={onClose}
+            className="w-10 h-10 rounded-full bg-black/60 items-center justify-center border border-white/20"
+            activeOpacity={0.7}
           >
-            <Play size={20} color="#FFFFFF" style={{ marginLeft: 2 }} />
+            <X size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+
+          <View className="flex-row items-center gap-2">
+            <TouchableOpacity 
+              onPress={toggleMute}
+              className="px-3.5 py-2 rounded-full bg-black/60 border border-white/20 flex-row items-center"
+              activeOpacity={0.7}
+            >
+              {isMuted ? (
+                <>
+                  <VolumeX size={16} color="#F43F5E" />
+                  <Text className="text-white text-xs font-bold ml-1.5">Muted</Text>
+                </>
+              ) : (
+                <>
+                  <Volume2 size={16} color="#34D399" />
+                  <Text className="text-white text-xs font-bold ml-1.5">Audio On</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            {canTrim && (
+              <TouchableOpacity 
+                onPress={onTrimPress}
+                className="px-3.5 py-2 rounded-full bg-purple-600 border border-purple-400/40 flex-row items-center"
+                activeOpacity={0.8}
+              >
+                <Scissors size={14} color="#FFFFFF" />
+                <Text className="text-white text-xs font-black ml-1.5 uppercase tracking-wide">Trim Video</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
-      )}
-    </TouchableOpacity>
+      </SafeAreaView>
+
+      {/* Main Video View with tap to play/pause */}
+      <TouchableOpacity 
+        activeOpacity={1} 
+        onPress={togglePlay}
+        style={{ flex: 1, alignItems: 'center', justifyContent: 'center', position: 'relative' }}
+      >
+        <VideoView 
+          player={player} 
+          style={{ width: '100%', height: '100%' }} 
+          contentFit="contain" 
+          nativeControls={false} 
+        />
+        {!isPlaying && (
+          <View className="absolute inset-0 items-center justify-center bg-black/35">
+            <View className="w-16 h-16 rounded-full bg-purple-600/90 items-center justify-center shadow-2xl">
+              <Play size={28} color="#FFFFFF" style={{ marginLeft: 3 }} />
+            </View>
+          </View>
+        )}
+      </TouchableOpacity>
+
+      {/* Bottom Info Banner */}
+      <SafeAreaView edges={['bottom']} style={{ zIndex: 20 }}>
+        <View className="px-6 py-4 bg-black/90 border-t border-white/10">
+          <View className="flex-row items-center justify-between mb-1.5">
+            <View className="flex-row items-center">
+              <View className="px-2 py-0.5 rounded-md bg-sky-500/20 border border-sky-400/40 mr-2">
+                <Text className="text-sky-400 font-bold text-[10px] uppercase">Transit Commercial</Text>
+              </View>
+              {duration ? (
+                <Text className="text-purple-300 text-xs font-black">{duration}s Duration</Text>
+              ) : null}
+            </View>
+            <TouchableOpacity onPress={togglePlay} className="p-1">
+              {isPlaying ? <Pause size={18} color="#CBD5E1" /> : <Play size={18} color="#CBD5E1" />}
+            </TouchableOpacity>
+          </View>
+          <Text className="text-white font-extrabold text-base tracking-tight leading-snug">
+            {title}
+          </Text>
+        </View>
+      </SafeAreaView>
+    </View>
+  );
+});
+
+// Fullscreen Image Viewer
+const FullscreenImageViewer = memo(({ uri, title, onClose }) => {
+  return (
+    <View style={{ flex: 1, backgroundColor: '#000000', justifyContent: 'space-between' }}>
+      <SafeAreaView edges={['top']} style={{ zIndex: 20 }}>
+        <View className="flex-row items-center justify-between px-5 py-3">
+          <TouchableOpacity 
+            onPress={onClose}
+            className="w-10 h-10 rounded-full bg-black/60 items-center justify-center border border-white/20"
+            activeOpacity={0.7}
+          >
+            <X size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+          <View className="px-3 py-1 rounded-full bg-purple-500/20 border border-purple-400/30">
+            <Text className="text-purple-300 text-xs font-bold uppercase">Static Graphic</Text>
+          </View>
+        </View>
+      </SafeAreaView>
+
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 12 }}>
+        <Image 
+          source={{ uri }} 
+          style={{ width: '100%', height: '100%' }} 
+          resizeMode="contain" 
+        />
+      </View>
+
+      <SafeAreaView edges={['bottom']} style={{ zIndex: 20 }}>
+        <View className="px-6 py-4 bg-black/90 border-t border-white/10">
+          <Text className="text-white font-extrabold text-base tracking-tight leading-snug">
+            {title}
+          </Text>
+        </View>
+      </SafeAreaView>
+    </View>
+  );
+});
+
+// Fullscreen Media Player Modal with Audio & Full Mode
+const FullscreenMediaModal = memo(({ visible, media, onClose, onTrimPress }) => {
+  if (!visible || !media) return null;
+  const isVideo = media.media_type === 'video' || media.type === 'video' || (media.file_url && media.file_url.toLowerCase().endsWith('.mp4'));
+  const mediaUri = media.file_url ? (media.file_url.startsWith('http') ? media.file_url : `${getBaseUrl().replace('/api', '')}${media.file_url.startsWith('/') ? '' : '/'}${media.file_url}`) : null;
+  
+  return (
+    <Modal
+      visible={visible}
+      transparent={false}
+      animationType="fade"
+      statusBarTranslucent={true}
+      onRequestClose={onClose}
+    >
+      <View style={{ flex: 1, backgroundColor: '#05030A' }}>
+        {isVideo ? (
+          <FullscreenVideoPlayer 
+            uri={mediaUri} 
+            title={media.ad_title || media.campaign_name}
+            duration={media.play_duration}
+            canTrim={media.canTrim}
+            onTrimPress={() => {
+              onClose();
+              onTrimPress(media);
+            }}
+            onClose={onClose} 
+          />
+        ) : (
+          <FullscreenImageViewer 
+            uri={mediaUri} 
+            title={media.ad_title || media.campaign_name}
+            onClose={onClose} 
+          />
+        )}
+      </View>
+    </Modal>
   );
 });
 
@@ -84,6 +291,15 @@ export default function CampaignsScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
   const [filter, setFilter] = useState('ALL'); // ALL, ACTIVE, PENDING, COMPLETED
+
+  // Fullscreen Preview Modal State
+  const [fullscreenMedia, setFullscreenMedia] = useState(null);
+
+  // Video Trimmer Modal State
+  const [trimModal, setTrimModal] = useState({
+    visible: false,
+    campaign: null,
+  });
 
   const fetchCampaigns = useCallback(async () => {
     try {
@@ -130,8 +346,11 @@ export default function CampaignsScreen({ navigation }) {
           const fileUrl = camp.file_url || matchedAd?.file_url || null;
           const isVideo = camp.media_type === 'video' || camp.type === 'video' || matchedAd?.media_type === 'video' || matchedAd?.type === 'video' || (fileUrl && fileUrl.toLowerCase().endsWith('.mp4'));
           const mediaType = isVideo ? 'video' : 'image';
-          const playDuration = camp.play_duration || matchedAd?.play_duration || 15;
+          const playDuration = camp.play_duration || matchedAd?.play_duration || 20;
+          const originalDuration = camp.original_duration || matchedAd?.duration || playDuration;
           const adTitle = camp.ad_title || matchedAd?.title || camp.campaign_name;
+          const videoTrimStart = camp.video_trim_start !== undefined ? camp.video_trim_start : matchedAd?.video_trim_start;
+          const videoTrimEnd = camp.video_trim_end !== undefined ? camp.video_trim_end : matchedAd?.video_trim_end;
 
           return {
             ...camp,
@@ -139,7 +358,10 @@ export default function CampaignsScreen({ navigation }) {
             media_type: mediaType,
             type: mediaType,
             play_duration: playDuration,
+            original_duration: originalDuration,
             ad_title: adTitle,
+            video_trim_start: videoTrimStart,
+            video_trim_end: videoTrimEnd,
           };
         });
 
@@ -184,6 +406,35 @@ export default function CampaignsScreen({ navigation }) {
     setExpandedId(expandedId === id ? null : id);
   };
 
+  const handleSaveTrim = async (trimData) => {
+    if (!trimModal.campaign) return;
+    if (trimData.duration < 19.9) {
+      Alert.alert('Invalid Duration', 'Transit commercial videos must be at least 20 seconds long.');
+      return;
+    }
+    
+    try {
+      const res = await businessService.trimCampaignVideo(trimModal.campaign.id, {
+        trim_start: Math.floor(trimData.start),
+        trim_end: Math.ceil(trimData.end),
+      });
+      
+      if (res.success) {
+        Alert.alert(
+          'Video Trim Updated',
+          `Transit commercial trimmed to ${trimData.duration.toFixed(1)}s. The updated video is submitted for admin compliance verification.`
+        );
+        setTrimModal({ visible: false, campaign: null });
+        setFullscreenMedia(null);
+        fetchCampaigns();
+      } else {
+        Alert.alert('Trim Failed', res.message || 'Could not update video trim');
+      }
+    } catch (err) {
+      Alert.alert('Error', err.response?.data?.message || err.message);
+    }
+  };
+
   const getCampaignStatus = (item) => {
     if (item.approval_status === 'Pending' || (item.pending_ad_count && parseInt(item.pending_ad_count) > 0)) {
       return { text: 'Pending Approval', color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.12)', border: 'rgba(245, 158, 11, 0.3)' };
@@ -221,6 +472,7 @@ export default function CampaignsScreen({ navigation }) {
     const spendPercentage = budget > 0 ? Math.min(100, Math.round((spend / budget) * 100)) : 0;
     const isVideo = item.media_type === 'video' || item.type === 'video' || (item.file_url && item.file_url.toLowerCase().endsWith('.mp4'));
     const mediaUri = item.file_url ? (item.file_url.startsWith('http') ? item.file_url : `${getBaseUrl().replace('/api', '')}${item.file_url.startsWith('/') ? '' : '/'}${item.file_url}`) : null;
+    const isPendingApproval = item.approval_status === 'Pending' || (item.pending_ad_count && parseInt(item.pending_ad_count) > 0);
 
     return (
       <View 
@@ -235,8 +487,16 @@ export default function CampaignsScreen({ navigation }) {
         }}
         className="border rounded-3xl mb-5 overflow-hidden"
       >
-        {/* Creative Preview Hero - Exact Match with Media Hub */}
-        <View style={{ backgroundColor: isDark ? '#090614' : '#F1F5F9' }} className="h-48 relative items-center justify-center">
+        {/* Creative Preview Hero - Tap for Full Mode Preview */}
+        <TouchableOpacity 
+          activeOpacity={0.92}
+          onPress={() => setFullscreenMedia({
+            ...item,
+            canTrim: isVideo && isPendingApproval
+          })}
+          style={{ backgroundColor: isDark ? '#090614' : '#F1F5F9' }} 
+          className="h-48 relative items-center justify-center overflow-hidden"
+        >
           {mediaUri ? (
             isVideo ? (
               <VideoCardPreview uri={mediaUri} isDark={isDark} />
@@ -252,7 +512,13 @@ export default function CampaignsScreen({ navigation }) {
               {isVideo ? <Video size={48} color={isDark ? '#38BDF8' : '#0284C7'} /> : <ImageIcon size={48} color="#A855F7" />}
             </View>
           )}
-        </View>
+
+          {/* Full Mode Tap Badge */}
+          <View className="absolute top-3 right-3 bg-black/60 px-2.5 py-1 rounded-full border border-white/20 flex-row items-center">
+            <Maximize2 size={11} color="#FFFFFF" />
+            <Text className="text-white text-[10px] font-bold ml-1 uppercase tracking-wider">Full View</Text>
+          </View>
+        </TouchableOpacity>
 
         {/* Card Header & Controls (Always Visible) */}
         <TouchableOpacity 
@@ -261,13 +527,12 @@ export default function CampaignsScreen({ navigation }) {
           activeOpacity={0.7}
         >
           {/* Title and Media Type Chip Row */}
-          <View className="flex-row items-center justify-between mb-3">
+          <View className="flex-row items-start justify-between mb-3">
             <Text 
               style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} 
-              className="font-extrabold text-lg tracking-tight flex-1 mr-3" 
-              numberOfLines={1}
+              className="font-black text-lg tracking-tight flex-1 mr-3 leading-snug" 
             >
-              {item.campaign_name}
+              {item.ad_title || item.campaign_name}
             </Text>
 
             <View 
@@ -275,7 +540,7 @@ export default function CampaignsScreen({ navigation }) {
                 backgroundColor: isDark ? (isVideo ? 'rgba(56, 189, 248, 0.12)' : 'rgba(192, 132, 252, 0.12)') : (isVideo ? '#E0F2FE' : '#F3E8FF'),
                 borderColor: isDark ? (isVideo ? 'rgba(56, 189, 248, 0.3)' : 'rgba(192, 132, 252, 0.3)') : (isVideo ? '#BAE6FD' : '#E9D5FF')
               }}
-              className="border px-2.5 py-1 rounded-full flex-row items-center shrink-0"
+              className="border px-2.5 py-1 rounded-full flex-row items-center shrink-0 mt-0.5"
             >
               {isVideo ? (
                 <Video size={11} color={isDark ? '#38BDF8' : '#0284C7'} />
@@ -354,7 +619,7 @@ export default function CampaignsScreen({ navigation }) {
             className="px-5 pb-5 pt-3 border-t"
           >
             {/* Status alerts */}
-            {(item.approval_status === 'Pending' || (item.pending_ad_count && parseInt(item.pending_ad_count) > 0)) && (
+            {isPendingApproval && (
               <View 
                 style={{ backgroundColor: 'rgba(245, 158, 11, 0.08)', borderColor: 'rgba(245, 158, 11, 0.25)' }}
                 className="p-4 rounded-2xl flex-row items-start border mb-4"
@@ -363,7 +628,7 @@ export default function CampaignsScreen({ navigation }) {
                 <View className="flex-1">
                   <Text className="text-amber-500 font-bold text-xs uppercase tracking-wider">Awaiting Verification</Text>
                   <Text style={{ color: isDark ? '#CBD5E1' : '#475569' }} className="text-xs mt-1 leading-relaxed">
-                    Creative is under automatic QA review for high-resolution transit display safety.
+                    Creative is awaiting administrator approval. You can preview in full mode or adjust video trimming before approval.
                   </Text>
                 </View>
               </View>
@@ -383,6 +648,83 @@ export default function CampaignsScreen({ navigation }) {
                 </View>
               </View>
             )}
+
+            {/* Dedicated Creative Showcase & Action Card */}
+            <View 
+              style={{ backgroundColor: isDark ? '#140F24' : '#FFFFFF', borderColor: isDark ? '#281B4B' : '#E2E8F0' }}
+              className="p-4 rounded-2xl border mb-4 shadow-sm"
+            >
+              <View className="flex-row items-center justify-between mb-2">
+                <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="text-[10px] font-black uppercase tracking-widest">
+                  Creative Asset
+                </Text>
+                <View className="flex-row items-center">
+                  <Clock size={11} color={isDark ? '#94A3B8' : '#64748B'} style={{ marginRight: 4 }} />
+                  <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-xs font-extrabold">
+                    {item.play_duration || 20}s broadcast
+                  </Text>
+                </View>
+              </View>
+
+              {/* Full Creative Name without truncation */}
+              <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-black text-base leading-snug mb-1">
+                {item.ad_title || item.campaign_name}
+              </Text>
+
+              {item.campaign_name && item.campaign_name !== (item.ad_title || item.campaign_name) && (
+                <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold mb-2">
+                  Campaign: {item.campaign_name}
+                </Text>
+              )}
+
+              {/* Video Trim indicator */}
+              {isVideo && item.video_trim_end && parseInt(item.video_trim_end) > 0 && (
+                <View 
+                  style={{ backgroundColor: isDark ? '#181033' : '#F8F7FF', borderColor: isDark ? '#281B4B' : '#EDE9FE' }} 
+                  className="px-3 py-1.5 rounded-xl border flex-row items-center mb-3 self-start"
+                >
+                  <Scissors size={12} color={isDark ? '#C084FC' : '#7C3AED'} style={{ marginRight: 6 }} />
+                  <Text style={{ color: isDark ? '#CBD5E1' : '#475569' }} className="text-[11px] font-bold">
+                    Trim: {parseInt(item.video_trim_start || 0)}s – {parseInt(item.video_trim_end)}s ({parseInt(item.play_duration || 20)}s duration)
+                  </Text>
+                </View>
+              )}
+
+              {/* Creative Actions Row */}
+              <View className="flex-row gap-2 mt-2">
+                <TouchableOpacity
+                  onPress={() => setFullscreenMedia({
+                    ...item,
+                    canTrim: isVideo && isPendingApproval
+                  })}
+                  style={{ backgroundColor: isDark ? '#1F1735' : '#EDE9FE', borderColor: isDark ? '#3B2A68' : '#DDD6FE' }}
+                  className="flex-1 py-2.5 px-3 rounded-xl border flex-row items-center justify-center"
+                  activeOpacity={0.8}
+                >
+                  <Maximize2 size={13} color={isDark ? '#C084FC' : '#7C3AED'} />
+                  <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="font-extrabold text-xs ml-1.5">
+                    View Full Mode {isVideo ? '(Audio)' : ''}
+                  </Text>
+                </TouchableOpacity>
+
+                {isVideo && isPendingApproval && (
+                  <TouchableOpacity
+                    onPress={() => setTrimModal({
+                      visible: true,
+                      campaign: item,
+                    })}
+                    style={{ backgroundColor: isDark ? 'rgba(124, 58, 237, 0.18)' : '#F3E8FF', borderColor: isDark ? '#7C3AED' : '#C084FC' }}
+                    className="py-2.5 px-3.5 rounded-xl border flex-row items-center justify-center"
+                    activeOpacity={0.8}
+                  >
+                    <Scissors size={13} color={isDark ? '#C084FC' : '#7C3AED'} />
+                    <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="font-extrabold text-xs ml-1.5 uppercase tracking-wider">
+                      Adjust Trim
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
 
             {/* Schedule & Target Grid */}
             <View className="flex-row justify-between mb-4">
@@ -648,6 +990,36 @@ export default function CampaignsScreen({ navigation }) {
           }
         />
       )}
+
+      {/* Fullscreen Media Viewer Modal with Audio */}
+      <FullscreenMediaModal 
+        visible={!!fullscreenMedia}
+        media={fullscreenMedia}
+        onClose={() => setFullscreenMedia(null)}
+        onTrimPress={(media) => {
+          setTrimModal({
+            visible: true,
+            campaign: media,
+          });
+        }}
+      />
+
+      {/* Video Trimmer Modal for Pending Approval Campaigns */}
+      <Modal 
+        visible={trimModal.visible} 
+        animationType="slide" 
+        onRequestClose={() => setTrimModal({ visible: false, campaign: null })}
+      >
+        {trimModal.campaign && (
+          <VideoTrimmer 
+            uri={trimModal.campaign.file_url ? (trimModal.campaign.file_url.startsWith('http') ? trimModal.campaign.file_url : `${getBaseUrl().replace('/api', '')}${trimModal.campaign.file_url.startsWith('/') ? '' : '/'}${trimModal.campaign.file_url}`) : ''}
+            originalDurationSec={trimModal.campaign.original_duration || trimModal.campaign.play_duration || 20}
+            onSave={handleSaveTrim}
+            onCancel={() => setTrimModal({ visible: false, campaign: null })}
+          />
+        )}
+      </Modal>
+
     </SafeAreaView>
   );
 }

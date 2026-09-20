@@ -107,6 +107,10 @@ export const businessService = {
     const res = await api.post('/business/campaigns', data);
     return res.data;
   },
+  trimCampaignVideo: async (campaignId, data) => {
+    const res = await api.put(`/business/campaigns/${campaignId}/trim`, data);
+    return res.data;
+  },
 
   // Analytics
   getAnalytics: async (range, date) => {

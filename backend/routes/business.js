@@ -437,6 +437,35 @@ router.get('/campaigns', businessAuth, async (req, res) => {
           LIMIT 1
         ) as ad_title,
         (
+          SELECT a2.id 
+          FROM campaign_ads ca2 
+          JOIN ads a2 ON ca2.ad_id = a2.id 
+          WHERE ca2.campaign_id = c.id 
+          LIMIT 1
+        ) as ad_id,
+        (
+          SELECT a2.video_trim_start 
+          FROM campaign_ads ca2 
+          JOIN ads a2 ON ca2.ad_id = a2.id 
+          WHERE ca2.campaign_id = c.id 
+          LIMIT 1
+        ) as video_trim_start,
+        (
+          SELECT a2.video_trim_end 
+          FROM campaign_ads ca2 
+          JOIN ads a2 ON ca2.ad_id = a2.id 
+          WHERE ca2.campaign_id = c.id 
+          LIMIT 1
+        ) as video_trim_end,
+        (
+          SELECT m.duration 
+          FROM campaign_ads ca2 
+          JOIN ads a2 ON ca2.ad_id = a2.id 
+          JOIN media m ON a2.media_id = m.id 
+          WHERE ca2.campaign_id = c.id 
+          LIMIT 1
+        ) as original_duration,
+        (
           SELECT COALESCE(a2.play_duration, m.duration, 15)
           FROM campaign_ads ca2 
           JOIN ads a2 ON ca2.ad_id = a2.id 
@@ -461,6 +490,63 @@ router.get('/campaigns', businessAuth, async (req, res) => {
     res.json({ success: true, campaigns: result.rows });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.put('/campaigns/:id/trim', businessAuth, async (req, res) => {
+  try {
+    const { trim_start, trim_end } = req.body;
+    const trimStart = parseInt(trim_start) || 0;
+    const trimEnd = parseInt(trim_end);
+    
+    if (isNaN(trimEnd) || trimEnd <= trimStart) {
+      return res.status(400).json({ success: false, message: 'Invalid trim range. End time must be greater than start time.' });
+    }
+    
+    const newPlayDuration = trimEnd - trimStart;
+    if (newPlayDuration < 20) {
+      return res.status(400).json({ success: false, message: 'Transit video commercial duration must be at least 20 seconds.' });
+    }
+
+    // Verify campaign belongs to advertiser
+    const campRes = await pool.query(
+      `SELECT * FROM campaigns WHERE id = $1 AND advertiser_id = $2`,
+      [req.params.id, req.businessId]
+    );
+
+    if (campRes.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Campaign not found' });
+    }
+
+    const campaign = campRes.rows[0];
+    if (campaign.approval_status !== 'Pending' && campaign.approval_status !== 'Rejected') {
+      return res.status(400).json({ success: false, message: 'Video trimming is only allowed before campaign approval or if revisions are requested.' });
+    }
+
+    // Update the linked ad's trim settings and play duration
+    const adUpdateRes = await pool.query(`
+      UPDATE ads 
+      SET 
+        video_trim_start = $1, 
+        video_trim_end = $2, 
+        play_duration = $3,
+        status = 'Active',
+        approval_status = 'Pending'
+      WHERE id IN (SELECT ad_id FROM campaign_ads WHERE campaign_id = $4)
+      RETURNING *
+    `, [trimStart, trimEnd, newPlayDuration, req.params.id]);
+
+    res.json({
+      success: true,
+      message: 'Video trim updated successfully for admin review',
+      updatedAds: adUpdateRes.rows,
+      play_duration: newPlayDuration,
+      video_trim_start: trimStart,
+      video_trim_end: trimEnd
+    });
+  } catch (error) {
+    console.error('[Business Trim Campaign Video] Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update trim: ' + error.message });
   }
 });
 
