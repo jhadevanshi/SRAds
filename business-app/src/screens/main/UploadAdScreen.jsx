@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, ActivityIndicator, Alert, Modal } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, ActivityIndicator, Alert, Modal, Platform } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { businessService } from '../../services/business';
@@ -21,6 +21,8 @@ import { colors } from '../../theme/designTokens';
 
 export default function UploadAdScreen({ navigation }) {
   const { isDark } = useTheme();
+  const insets = useSafeAreaInsets();
+  const bottomInset = insets.bottom > 0 ? insets.bottom : (Platform.OS === 'android' ? 24 : 16);
   const [form, setForm] = useState({ title: '' });
   const [media, setMedia] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -255,7 +257,7 @@ export default function UploadAdScreen({ navigation }) {
         </View>
       </View>
 
-      <ScrollView className="flex-1 px-5 pt-6 pb-10">
+      <ScrollView className="flex-1 px-5 pt-6" contentContainerStyle={{ paddingBottom: 60 + bottomInset }}>
         
         {/* Step 1: Media Format Selection */}
         <View className="mb-6">

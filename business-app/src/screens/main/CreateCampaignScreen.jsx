@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, Image, Modal, Dimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, Image, Modal, Dimensions, Platform } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { 
   ArrowLeft, 
@@ -126,6 +126,8 @@ const formatDateString = (date) => {
 
 export default function CreateCampaignScreen({ route, navigation }) {
   const { isDark } = useTheme();
+  const insets = useSafeAreaInsets();
+  const bottomInset = insets.bottom > 0 ? insets.bottom : (Platform.OS === 'android' ? 24 : 16);
 
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
@@ -542,7 +544,7 @@ export default function CreateCampaignScreen({ route, navigation }) {
     
     return (
       <SafeAreaView style={{ backgroundColor: isDark ? '#090614' : '#F8F7FF' }} className="flex-1">
-        <ScrollView className="flex-1 px-6 pt-8 pb-20">
+        <ScrollView className="flex-1 px-6 pt-8" contentContainerStyle={{ paddingBottom: 60 + bottomInset }}>
           
           {/* Hero Section */}
           <View className="items-center mb-8">
@@ -795,7 +797,7 @@ export default function CreateCampaignScreen({ route, navigation }) {
         })}
       </View>
 
-      <ScrollView className="flex-1" contentContainerStyle={{ padding: 18, paddingBottom: 110 }}>
+      <ScrollView className="flex-1" contentContainerStyle={{ padding: 18, paddingBottom: 140 + bottomInset }}>
         
         {/* STEP 1: AD CREATIVE */}
         {step === 1 && (
@@ -929,19 +931,41 @@ export default function CreateCampaignScreen({ route, navigation }) {
                   disabled={uploading || !newAdTitle || !newAdMedia}
                   className="rounded-xl overflow-hidden shadow-md"
                   style={{ shadowColor: '#9333EA', shadowRadius: 8, opacity: (uploading || !newAdTitle || !newAdMedia) ? 0.6 : 1 }}
+                  activeOpacity={0.8}
                 >
                   <LinearGradient
                     colors={['#7C3AED', '#9333EA', '#C084FC']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
-                    className="py-3.5 items-center justify-center flex-row"
+                    style={{
+                      width: '100%',
+                      height: 48,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                    }}
                   >
                     {uploading ? (
                       <ActivityIndicator color="#FFF" size="small" />
                     ) : (
                       <>
-                        <UploadCloud size={16} color="#FFF" />
-                        <Text className="text-white font-extrabold ml-2 text-xs tracking-wide uppercase">Save & Select</Text>
+                        <UploadCloud size={18} color="#FFF" />
+                        <Text 
+                          style={{
+                            color: '#FFFFFF',
+                            fontWeight: '900',
+                            fontSize: 13,
+                            textTransform: 'uppercase',
+                            letterSpacing: 0.6,
+                            textAlign: 'center',
+                            includeFontPadding: false,
+                            textAlignVertical: 'center',
+                          }}
+                          numberOfLines={1}
+                        >
+                          Save & Select Creative
+                        </Text>
                       </>
                     )}
                   </LinearGradient>
@@ -1609,9 +1633,12 @@ export default function CreateCampaignScreen({ route, navigation }) {
       <View 
         style={{ 
           backgroundColor: isDark ? '#120C26' : '#FFFFFF',
-          borderTopColor: isDark ? '#281B4B' : '#EDE9FE' 
+          borderTopColor: isDark ? '#281B4B' : '#EDE9FE',
+          paddingBottom: bottomInset + 14,
+          paddingTop: 12,
+          paddingHorizontal: 20
         }}
-        className="px-5 pt-3.5 pb-8 border-t"
+        className="border-t"
       >
         {step === 4 ? (
           <TouchableOpacity 
@@ -1627,13 +1654,32 @@ export default function CreateCampaignScreen({ route, navigation }) {
             activeOpacity={0.8}
           >
             <LinearGradient
-              colors={safeCost > safeWalletBalance ? ['#7C3AED', '#9333EA', '#C084FC'] : ['#7C3AED', '#9333EA', '#C084FC']}
+              colors={['#7C3AED', '#9333EA', '#C084FC']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              className="py-4 items-center justify-center flex-row"
+              style={{
+                width: '100%',
+                height: 52,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+              }}
             >
-              {creating ? <ActivityIndicator color="#FFFFFF" className="mr-2" size="small" /> : null}
-              <Text className="text-white font-black text-base tracking-wide uppercase">
+              {creating ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
+              <Text 
+                style={{
+                  color: '#FFFFFF',
+                  fontWeight: '900',
+                  fontSize: 14,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.6,
+                  textAlign: 'center',
+                  includeFontPadding: false,
+                  textAlignVertical: 'center',
+                }}
+                numberOfLines={1}
+              >
                 {creating ? 'Launching Flight...' : '🚀 Confirm & Launch Campaign'}
               </Text>
             </LinearGradient>
@@ -1650,9 +1696,30 @@ export default function CreateCampaignScreen({ route, navigation }) {
               colors={['#7C3AED', '#9333EA', '#C084FC']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              className="py-4 items-center justify-center flex-row"
+              style={{
+                width: '100%',
+                height: 52,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+              }}
             >
-              <Text className="text-white font-black text-base tracking-wide uppercase mr-1.5">Next Step</Text>
+              <Text 
+                style={{
+                  color: '#FFFFFF',
+                  fontWeight: '900',
+                  fontSize: 14,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.6,
+                  textAlign: 'center',
+                  includeFontPadding: false,
+                  textAlignVertical: 'center',
+                }}
+                numberOfLines={1}
+              >
+                Next Step
+              </Text>
               <ChevronRight size={18} color="#FFFFFF" strokeWidth={3} />
             </LinearGradient>
           </TouchableOpacity>
