@@ -258,6 +258,7 @@ export default function CreateCampaignScreen({ route, navigation }) {
       } else if (fetchedAds.length > 0) {
         setForm(prev => ({ ...prev, ad: fetchedAds[0] }));
       } else {
+        setForm(prev => ({ ...prev, ad: null }));
         setUploadMode(true);
       }
 
@@ -300,22 +301,22 @@ export default function CreateCampaignScreen({ route, navigation }) {
     }
   };
 
-  const handleInlineUpload = async () => {
-    if (!newAdTitle || !newAdMedia) {
-      Alert.alert('Incomplete', 'Please provide an ad title and select media.');
-      return;
+  const handleInlineUpload = async (advanceToNextStep = false) => {
+    if (!newAdTitle.trim() || !newAdMedia) {
+      Alert.alert('Incomplete Creative', 'Please provide a creative title and select a media file.');
+      return false;
     }
 
     const duration = newAdMedia.type === 'image' ? 30 : (parseInt(form.trimEnd) - parseInt(form.trimStart));
     if (newAdMedia.type === 'video' && duration < 20) {
       Alert.alert('Invalid Duration', 'Transit campaign videos must be at least 20 seconds long.');
-      return;
+      return false;
     }
 
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append('title', newAdTitle);
+      formData.append('title', newAdTitle.trim());
       formData.append('budget', '0');
       formData.append('cost_per_play', '0');
       
@@ -338,9 +339,9 @@ export default function CreateCampaignScreen({ route, navigation }) {
           setAds(updatedAds);
         }
         
-        const newAd = updatedAds.find(a => a.title === newAdTitle) || {
+        const newAd = updatedAds.find(a => a.id === res.ad?.id || a.title === newAdTitle.trim()) || {
           id: res.ad?.id || Date.now(),
-          title: newAdTitle,
+          title: newAdTitle.trim(),
           media_type: newAdMedia.type,
           type: newAdMedia.type,
           file_url: res.media?.file_url || res.ad?.file_url || newAdMedia.uri,
@@ -351,12 +352,20 @@ export default function CreateCampaignScreen({ route, navigation }) {
         setUploadMode(false);
         setNewAdTitle('');
         setNewAdMedia(null);
-        Alert.alert('Success', 'Creative uploaded and selected.');
+        
+        if (advanceToNextStep) {
+          setStep(2);
+        } else {
+          Alert.alert('Success', 'Creative uploaded and selected.');
+        }
+        return true;
       } else {
-        Alert.alert('Error', res.message);
+        Alert.alert('Error', res.message || 'Failed to upload creative.');
+        return false;
       }
     } catch (err) {
       Alert.alert('Upload Failed', err.response?.data?.message || err.message);
+      return false;
     } finally {
       setUploading(false);
     }
@@ -440,9 +449,26 @@ export default function CreateCampaignScreen({ route, navigation }) {
   const safeTotalPlays = Number(totalPlays) || 0;
   const safeScheduledDays = Number(scheduledDays) || 0;
 
-  const handleNext = () => {
-    if (step === 1 && !form.ad) return Alert.alert('Required', 'Please select or upload a creative.');
-    if (step === 2 && form.routes.length === 0) return Alert.alert('Required', 'Please select at least one transit route.');
+  const handleNext = async () => {
+    if (step === 1) {
+      if (uploadMode) {
+        if (!newAdMedia || !newAdTitle.trim()) {
+          return Alert.alert(
+            'Incomplete Creative',
+            'Please choose a media file (video or image) and enter a creative name before proceeding to Step 2.'
+          );
+        }
+        await handleInlineUpload(true);
+        return;
+      }
+
+      if (!form.ad || !form.ad.id) {
+        return Alert.alert('Creative Required', 'Please select or upload an approved creative for your campaign.');
+      }
+    }
+    if (step === 2 && (!form.routes || form.routes.length === 0)) {
+      return Alert.alert('Required', 'Please select at least one transit route.');
+    }
     if (step === 3) {
       if (!startDate || !endDate || !startTime || !endTime) return Alert.alert('Required', 'Please configure your dates and daily hours.');
       
@@ -824,7 +850,16 @@ export default function CreateCampaignScreen({ route, navigation }) {
                     <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-black text-sm">Upload Creative</Text>
                   </View>
                   <TouchableOpacity 
-                    onPress={() => setUploadMode(false)} 
+                    onPress={() => {
+                      if (ads.length === 0) {
+                        Alert.alert('Upload Required', 'Your media library is empty. Please upload a creative to continue.');
+                        return;
+                      }
+                      setUploadMode(false);
+                      if (!form.ad && ads.length > 0) {
+                        setForm(prev => ({ ...prev, ad: ads[0] }));
+                      }
+                    }} 
                     style={{ backgroundColor: isDark ? '#1F1735' : '#F1F5F9' }}
                     className="p-1.5 rounded-full"
                   >
@@ -927,10 +962,10 @@ export default function CreateCampaignScreen({ route, navigation }) {
                 />
 
                 <TouchableOpacity 
-                  onPress={handleInlineUpload}
-                  disabled={uploading || !newAdTitle || !newAdMedia}
+                  onPress={() => handleInlineUpload(false)}
+                  disabled={uploading || !newAdTitle.trim() || !newAdMedia}
                   className="rounded-xl overflow-hidden shadow-md"
-                  style={{ shadowColor: '#9333EA', shadowRadius: 8, opacity: (uploading || !newAdTitle || !newAdMedia) ? 0.6 : 1 }}
+                  style={{ shadowColor: '#9333EA', shadowRadius: 8, opacity: (uploading || !newAdTitle.trim() || !newAdMedia) ? 0.6 : 1 }}
                   activeOpacity={0.8}
                 >
                   <LinearGradient
@@ -973,7 +1008,11 @@ export default function CreateCampaignScreen({ route, navigation }) {
               </View>
             ) : (
               <TouchableOpacity 
-                onPress={() => setUploadMode(true)}
+                onPress={() => {
+                  setUploadMode(true);
+                  setNewAdMedia(null);
+                  setNewAdTitle('');
+                }}
                 style={{ 
                   backgroundColor: isDark ? 'rgba(124, 58, 237, 0.08)' : '#F8F7FF',
                   borderColor: isDark ? '#7C3AED' : '#C084FC',
@@ -1687,9 +1726,9 @@ export default function CreateCampaignScreen({ route, navigation }) {
         ) : (
           <TouchableOpacity 
             onPress={handleNext} 
-            disabled={uploadMode && uploading}
+            disabled={uploading}
             className="rounded-2xl overflow-hidden shadow-lg"
-            style={{ shadowColor: '#9333EA', shadowRadius: 10, shadowOpacity: 0.35 }}
+            style={{ shadowColor: '#9333EA', shadowRadius: 10, shadowOpacity: 0.35, opacity: uploading ? 0.7 : 1 }}
             activeOpacity={0.8}
           >
             <LinearGradient
@@ -1705,22 +1744,44 @@ export default function CreateCampaignScreen({ route, navigation }) {
                 gap: 8,
               }}
             >
-              <Text 
-                style={{
-                  color: '#FFFFFF',
-                  fontWeight: '900',
-                  fontSize: 14,
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.6,
-                  textAlign: 'center',
-                  includeFontPadding: false,
-                  textAlignVertical: 'center',
-                }}
-                numberOfLines={1}
-              >
-                Next Step
-              </Text>
-              <ChevronRight size={18} color="#FFFFFF" strokeWidth={3} />
+              {uploading ? (
+                <>
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                  <Text 
+                    style={{
+                      color: '#FFFFFF',
+                      fontWeight: '900',
+                      fontSize: 14,
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.6,
+                      textAlign: 'center',
+                      includeFontPadding: false,
+                      textAlignVertical: 'center',
+                    }}
+                  >
+                    Uploading Creative...
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text 
+                    style={{
+                      color: '#FFFFFF',
+                      fontWeight: '900',
+                      fontSize: 14,
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.6,
+                      textAlign: 'center',
+                      includeFontPadding: false,
+                      textAlignVertical: 'center',
+                    }}
+                    numberOfLines={1}
+                  >
+                    Next Step
+                  </Text>
+                  <ChevronRight size={18} color="#FFFFFF" strokeWidth={3} />
+                </>
+              )}
             </LinearGradient>
           </TouchableOpacity>
         )}
