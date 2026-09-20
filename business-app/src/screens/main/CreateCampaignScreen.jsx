@@ -617,19 +617,23 @@ export default function CreateCampaignScreen({ route, navigation }) {
             {/* Timeline */}
             <View className="ml-1 my-2">
               <View className="flex-row items-center mb-4">
-                <View className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/40 items-center justify-center z-10">
+                <View className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/40 items-center justify-center z-10 shrink-0">
                   <Check size={12} color="#10B981" strokeWidth={3} />
                 </View>
-                <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="ml-3 font-bold text-xs">Campaign Configured & Submitted</Text>
+                <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="ml-3 font-bold text-xs flex-1 leading-snug">
+                  Campaign Configured & Submitted
+                </Text>
               </View>
               
               <View className="absolute left-[11px] top-4 w-[2px] h-10 bg-purple-500/30" />
               
               <View className="flex-row items-center mb-4">
-                <View className="w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/40 items-center justify-center z-10">
+                <View className="w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/40 items-center justify-center z-10 shrink-0">
                   <Clock size={12} color="#F59E0B" />
                 </View>
-                <Text className="ml-3 font-bold text-xs text-amber-500">Security & Display QA in Progress</Text>
+                <Text className="ml-3 font-bold text-xs text-amber-500 flex-1 leading-snug">
+                  Security & Display QA in Progress
+                </Text>
               </View>
               
               <View className="absolute left-[11px] top-[52px] w-[2px] h-10 bg-purple-500/20" />
@@ -637,11 +641,13 @@ export default function CreateCampaignScreen({ route, navigation }) {
               <View className="flex-row items-center">
                 <View 
                   style={{ backgroundColor: isDark ? '#1F1735' : '#F1F5F9', borderColor: isDark ? '#3B2A68' : '#CBD5E1' }}
-                  className="w-6 h-6 rounded-full border items-center justify-center z-10"
+                  className="w-6 h-6 rounded-full border items-center justify-center z-10 shrink-0"
                 >
                   <Sparkles size={11} color={isDark ? '#64748B' : '#94A3B8'} />
                 </View>
-                <Text style={{ color: isDark ? '#64748B' : '#94A3B8' }} className="ml-3 font-bold text-xs">Live Broadcast on City Screens</Text>
+                <Text style={{ color: isDark ? '#64748B' : '#94A3B8' }} className="ml-3 font-bold text-xs flex-1 leading-snug">
+                  Live Broadcast on City Screens
+                </Text>
               </View>
             </View>
           </View>
@@ -693,9 +699,26 @@ export default function CreateCampaignScreen({ route, navigation }) {
                 colors={['#7C3AED', '#9333EA', '#C084FC']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                className="py-4 items-center justify-center flex-row"
+                style={{
+                  height: 52,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexDirection: 'row',
+                }}
               >
-                <Text className="text-white font-extrabold text-sm tracking-wide">View In Campaigns →</Text>
+                <Text 
+                  style={{
+                    color: '#FFFFFF',
+                    fontWeight: '800',
+                    fontSize: 15,
+                    letterSpacing: 0.3,
+                    textAlign: 'center',
+                    includeFontPadding: false,
+                    textAlignVertical: 'center',
+                  }}
+                >
+                  View In Campaigns
+                </Text>
               </LinearGradient>
             </TouchableOpacity>
 
@@ -703,12 +726,27 @@ export default function CreateCampaignScreen({ route, navigation }) {
               onPress={() => navigation.navigate('MainTabs', { screen: 'Home' })}
               style={{ 
                 backgroundColor: isDark ? '#181033' : '#FFFFFF',
-                borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+                borderColor: isDark ? '#281B4B' : '#EDE9FE',
+                height: 52,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 16,
+                borderWidth: 1,
               }}
-              className="py-4 rounded-2xl items-center border"
               activeOpacity={0.8}
             >
-              <Text style={{ color: isDark ? '#CBD5E1' : '#475569' }} className="font-bold text-sm">Return to Dashboard</Text>
+              <Text 
+                style={{ 
+                  color: isDark ? '#CBD5E1' : '#475569',
+                  fontWeight: '700',
+                  fontSize: 14,
+                  textAlign: 'center',
+                  includeFontPadding: false,
+                  textAlignVertical: 'center',
+                }}
+              >
+                Return to Dashboard
+              </Text>
             </TouchableOpacity>
           </View>
           
