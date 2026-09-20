@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, Image, Modal, Dimensions, Platform, KeyboardAvoidingView } from 'react-native';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, Image, Modal, Dimensions, Platform, KeyboardAvoidingView, Keyboard } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { 
@@ -204,6 +204,35 @@ export default function CreateCampaignScreen({ route, navigation }) {
   const [campaignName, setCampaignName] = useState('');
   const [videoTrimmerVisible, setVideoTrimmerVisible] = useState(false);
   const [addFundsVisible, setAddFundsVisible] = useState(false);
+  const scrollViewRef = useRef(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        setKeyboardHeight(e.endCoordinates.height);
+      }
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardHeight(0);
+      }
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const scrollToInput = (yOffset = 360) => {
+    setTimeout(() => {
+      if (scrollViewRef.current) {
+        scrollViewRef.current.scrollTo({ y: yOffset, animated: true });
+      }
+    }, 150);
+  };
 
   // Where selector mode
   const [whereMode, setWhereMode] = useState('everywhere'); // 'everywhere' | 'specific'
@@ -833,8 +862,12 @@ export default function CreateCampaignScreen({ route, navigation }) {
       </View>
 
       <ScrollView 
+        ref={scrollViewRef}
         className="flex-1" 
-        contentContainerStyle={{ padding: 18, paddingBottom: 180 + bottomInset }}
+        contentContainerStyle={{ 
+          padding: 18, 
+          paddingBottom: keyboardHeight > 0 ? keyboardHeight + 160 : (180 + bottomInset) 
+        }}
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets={true}
         showsVerticalScrollIndicator={false}
@@ -966,6 +999,7 @@ export default function CreateCampaignScreen({ route, navigation }) {
                 <TextInput
                   value={newAdTitle}
                   onChangeText={setNewAdTitle}
+                  onFocus={() => scrollToInput(360)}
                   placeholder="e.g. Diwali Weekend Special Promo"
                   placeholderTextColor={isDark ? '#64748B' : '#94A3B8'}
                   style={{ 
@@ -1027,6 +1061,7 @@ export default function CreateCampaignScreen({ route, navigation }) {
                   setUploadMode(true);
                   setNewAdMedia(null);
                   setNewAdTitle('');
+                  scrollToInput(100);
                 }}
                 style={{ 
                   backgroundColor: isDark ? 'rgba(124, 58, 237, 0.08)' : '#F8F7FF',
@@ -1483,6 +1518,7 @@ export default function CreateCampaignScreen({ route, navigation }) {
               <TextInput
                 value={campaignName}
                 onChangeText={setCampaignName}
+                onFocus={() => scrollToInput(120)}
                 placeholder={form.ad?.title ? `${form.ad.title} Transit Campaign` : 'e.g. Navratri Festival Mega Campaign'}
                 placeholderTextColor={isDark ? '#64748B' : '#94A3B8'}
                 style={{ 

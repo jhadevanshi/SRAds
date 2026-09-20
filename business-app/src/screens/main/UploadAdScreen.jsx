@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, ActivityIndicator, Alert, Modal, Platform, KeyboardAvoidingView } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, ActivityIndicator, Alert, Modal, Platform, KeyboardAvoidingView, Keyboard } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
@@ -30,6 +30,35 @@ export default function UploadAdScreen({ navigation }) {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showTrimmer, setShowTrimmer] = useState(false);
   const [trimData, setTrimData] = useState(null);
+  const scrollViewRef = useRef(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        setKeyboardHeight(e.endCoordinates.height);
+      }
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardHeight(0);
+      }
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const scrollToInput = () => {
+    setTimeout(() => {
+      if (scrollViewRef.current) {
+        scrollViewRef.current.scrollToEnd({ animated: true });
+      }
+    }, 150);
+  };
 
   const pickMedia = async (type) => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -262,8 +291,9 @@ export default function UploadAdScreen({ navigation }) {
         </View>
 
         <ScrollView 
+          ref={scrollViewRef}
           className="flex-1 px-5 pt-6" 
-          contentContainerStyle={{ paddingBottom: 160 + bottomInset }}
+          contentContainerStyle={{ paddingBottom: keyboardHeight > 0 ? keyboardHeight + 140 : (160 + bottomInset) }}
           keyboardShouldPersistTaps="handled"
           automaticallyAdjustKeyboardInsets={true}
           showsVerticalScrollIndicator={false}
@@ -469,6 +499,7 @@ export default function UploadAdScreen({ navigation }) {
               placeholder="e.g. Navratri Festival Mega Sale 2026"
               placeholderTextColor={isDark ? '#64748B' : '#94A3B8'}
               value={form.title}
+              onFocus={scrollToInput}
               onChangeText={(t) => setForm({...form, title: t})}
             />
           </View>
