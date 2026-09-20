@@ -18,7 +18,7 @@ const REAL_STEPS = [
     id: '1',
     stepNumber: 'STEP 1 OF 4',
     title: 'Select or Upload Creative',
-    shortDesc: 'Choose 15s–30s HD video commercials or crisp static posters ready for smart transit displays.',
+    shortDesc: 'Choose 20s–60s HD video commercials or crisp static posters ready for smart transit displays.',
     tagIcon: Video,
     tagColor: '#38BDF8',
     image: require('../../../assets/steps/step1_creative.jpg'),

@@ -18,7 +18,7 @@ const TRACK_WIDTH = SCREEN_WIDTH - (CARD_HORIZONTAL_PADDING * 2);
 const THUMB_WIDTH = 22;
 const MIN_SELECTION_WIDTH = 28;
 const MAX_TRACK_WIDTH = TRACK_WIDTH - (THUMB_WIDTH * 2);
-const MIN_TRIM_DURATION_SEC = 30;
+const MIN_TRIM_DURATION_SEC = 20;
 
 const formatTimeCode = (seconds) => {
   if (isNaN(seconds) || seconds < 0) return '00:00.0';
@@ -28,9 +28,9 @@ const formatTimeCode = (seconds) => {
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}.${tenths}`;
 };
 
-export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, onCancel }) {
+export default function VideoTrimmer({ uri, originalDurationSec = 20, onSave, onCancel }) {
   const insets = useSafeAreaInsets();
-  const [duration, setDuration] = useState(originalDurationSec > 0 ? originalDurationSec : 30);
+  const [duration, setDuration] = useState(originalDurationSec > 0 ? originalDurationSec : 20);
   const [leftPos, setLeftPos] = useState(0);
   const [rightPos, setRightPos] = useState(MAX_TRACK_WIDTH);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -50,8 +50,8 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
     durationRef.current = duration;
     if (duration > 0 && duration < MIN_TRIM_DURATION_SEC) {
       Alert.alert(
-        'Video Under 30 Seconds',
-        `Transit commercial videos must be at least 30 seconds long. This video is only ${duration.toFixed(1)}s.`
+        'Video Under 20 Seconds',
+        `Transit commercial videos must be at least 20 seconds long. This video is only ${duration.toFixed(1)}s.`
       );
     }
   }, [duration]);
@@ -255,7 +255,7 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
     if (selectedDuration < (MIN_TRIM_DURATION_SEC - 0.1)) {
       Alert.alert(
         'Minimum Duration Required',
-        `Transit campaign commercial videos must be at least 30 seconds long. Current selection is ${selectedDuration.toFixed(1)}s.`
+        `Transit campaign commercial videos must be at least 20 seconds long. Current selection is ${selectedDuration.toFixed(1)}s.`
       );
       return;
     }
@@ -328,12 +328,12 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
           </TouchableOpacity>
         </View>
 
-        {/* Duration Warning banner if video < 30s */}
+        {/* Duration Warning banner if video < 20s */}
         {duration < MIN_TRIM_DURATION_SEC && (
           <View style={styles.warningBanner}>
             <AlertTriangle size={14} color="#F59E0B" />
             <Text style={styles.warningBannerText}>
-              Video is {duration.toFixed(1)}s (Must be ≥ 30s)
+              Video is {duration.toFixed(1)}s (Must be ≥ 20s)
             </Text>
           </View>
         )}
@@ -361,7 +361,7 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
               styles.durationBadgeText, 
               !isValidDuration ? styles.durationBadgeTextInvalid : null
             ]}>
-              {formatTimeCode(currentTime)} • {selectedDuration.toFixed(1)}s {isValidDuration ? '✓' : '(Min 30s)'}
+              {formatTimeCode(currentTime)} • {selectedDuration.toFixed(1)}s {isValidDuration ? '✓' : '(Min 20s)'}
             </Text>
           </View>
 
@@ -418,11 +418,21 @@ export default function VideoTrimmer({ uri, originalDurationSec = 30, onSave, on
           <View style={styles.presetChipsRow}>
             <TouchableOpacity 
               style={styles.presetChip} 
-              onPress={() => applyPreset(30)}
+              onPress={() => applyPreset(20)}
               activeOpacity={0.75}
             >
-              <Text style={styles.presetChipText}>30s (Min)</Text>
+              <Text style={styles.presetChipText}>20s (Min)</Text>
             </TouchableOpacity>
+
+            {duration >= 30 && (
+              <TouchableOpacity 
+                style={styles.presetChip} 
+                onPress={() => applyPreset(30)}
+                activeOpacity={0.75}
+              >
+                <Text style={styles.presetChipText}>30s</Text>
+              </TouchableOpacity>
+            )}
 
             {duration >= 45 && (
               <TouchableOpacity 

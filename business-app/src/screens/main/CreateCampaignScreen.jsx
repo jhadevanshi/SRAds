@@ -283,14 +283,14 @@ export default function CreateCampaignScreen({ route, navigation }) {
       const asset = result.assets[0];
       if (asset.type === 'video') {
         const durationSec = asset.duration ? (asset.duration > 1000 ? asset.duration / 1000 : asset.duration) : 0;
-        if (durationSec > 0 && durationSec < 30) {
+        if (durationSec > 0 && durationSec < 20) {
           Alert.alert(
             'Video Too Short',
-            `Transit campaign videos must be at least 30 seconds long. The selected video is only ${durationSec.toFixed(1)} seconds. Please choose a video of 30 seconds or longer.`
+            `Transit campaign videos must be at least 20 seconds long. The selected video is only ${durationSec.toFixed(1)} seconds. Please choose a video of 20 seconds or longer.`
           );
           return;
         }
-        const validDur = durationSec > 0 ? durationSec : 30;
+        const validDur = durationSec > 0 ? durationSec : 20;
         setForm(prev => ({ ...prev, trimStart: '0', trimEnd: String(Math.floor(validDur)) }));
         setNewAdMedia(asset);
         setVideoTrimmerVisible(true);
@@ -307,8 +307,8 @@ export default function CreateCampaignScreen({ route, navigation }) {
     }
 
     const duration = newAdMedia.type === 'image' ? 30 : (parseInt(form.trimEnd) - parseInt(form.trimStart));
-    if (newAdMedia.type === 'video' && duration < 30) {
-      Alert.alert('Invalid Duration', 'Transit campaign videos must be at least 30 seconds long.');
+    if (newAdMedia.type === 'video' && duration < 20) {
+      Alert.alert('Invalid Duration', 'Transit campaign videos must be at least 20 seconds long.');
       return;
     }
 
@@ -1731,14 +1731,14 @@ export default function CreateCampaignScreen({ route, navigation }) {
         {newAdMedia && newAdMedia.type === 'video' && (
           <VideoTrimmer 
             uri={newAdMedia.uri} 
-            originalDurationSec={newAdMedia.duration ? (newAdMedia.duration > 1000 ? newAdMedia.duration / 1000 : newAdMedia.duration) : 30}
+            originalDurationSec={newAdMedia.duration ? (newAdMedia.duration > 1000 ? newAdMedia.duration / 1000 : newAdMedia.duration) : 20}
             onSave={(trimData) => {
               if (trimData.start >= trimData.end) {
                 Alert.alert('Invalid Trim', 'Start time must be less than end time.');
                 return;
               }
-              if (trimData.duration < 29.9) {
-                Alert.alert('Invalid Duration', 'Transit campaign videos must be at least 30 seconds long.');
+              if (trimData.duration < 19.9) {
+                Alert.alert('Invalid Duration', 'Transit campaign videos must be at least 20 seconds long.');
                 return;
               }
               setForm(prev => ({

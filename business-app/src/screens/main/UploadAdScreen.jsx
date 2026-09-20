@@ -45,17 +45,17 @@ export default function UploadAdScreen({ navigation }) {
         const rawDur = asset.duration || 0;
         const durationSec = rawDur > 1000 ? rawDur / 1000 : (rawDur > 0 ? rawDur : 0);
         
-        if (durationSec > 0 && durationSec < 30) {
+        if (durationSec > 0 && durationSec < 20) {
           Alert.alert(
             'Video Too Short',
-            `Transit campaign videos must be at least 30 seconds long. The selected video is only ${durationSec.toFixed(1)} seconds. Please choose a video of 30 seconds or longer.`
+            `Transit campaign videos must be at least 20 seconds long. The selected video is only ${durationSec.toFixed(1)} seconds. Please choose a video of 20 seconds or longer.`
           );
           return;
         }
 
-        const validDur = durationSec > 0 ? durationSec : 30;
+        const validDur = durationSec > 0 ? durationSec : 20;
         setMedia({ ...asset, calculatedDuration: validDur });
-        setTrimData({ start: 0, end: Math.max(30, validDur), duration: Math.max(30, validDur) });
+        setTrimData({ start: 0, end: Math.max(20, validDur), duration: Math.max(20, validDur) });
         setShowTrimmer(true);
       } else {
         setMedia(asset);
@@ -71,9 +71,9 @@ export default function UploadAdScreen({ navigation }) {
     }
 
     if (media.type === 'video') {
-      const playDur = trimData ? (trimData.end - trimData.start) : (media.calculatedDuration || 30);
-      if (playDur < 29.9) {
-        Alert.alert('Invalid Duration', 'Transit campaign videos must be at least 30 seconds long.');
+      const playDur = trimData ? (trimData.end - trimData.start) : (media.calculatedDuration || 20);
+      if (playDur < 19.9) {
+        Alert.alert('Invalid Duration', 'Transit campaign videos must be at least 20 seconds long.');
         return;
       }
     }
@@ -101,7 +101,7 @@ export default function UploadAdScreen({ navigation }) {
 
       const res = await businessService.uploadAd(formData);
       if (res.success) {
-        const adDuration = media.type === 'image' ? 30 : (parseInt(trimData.end) - parseInt(trimData.start) || 30);
+        const adDuration = media.type === 'image' ? 30 : (parseInt(trimData.end) - parseInt(trimData.start) || 20);
         setUploadedAd({
           id: res.ad?.id || null,
           title: form.title,
@@ -124,7 +124,7 @@ export default function UploadAdScreen({ navigation }) {
     return (
       <VideoTrimmer 
         uri={media.uri}
-        originalDurationSec={media.calculatedDuration || (media.duration ? (media.duration > 1000 ? media.duration / 1000 : media.duration) : 30)}
+        originalDurationSec={media.calculatedDuration || (media.duration ? (media.duration > 1000 ? media.duration / 1000 : media.duration) : 20)}
         onSave={(data) => {
           setTrimData(data);
           setShowTrimmer(false);
@@ -403,7 +403,7 @@ export default function UploadAdScreen({ navigation }) {
                       className="border px-4 py-2 rounded-2xl items-center justify-center my-3 self-center"
                     >
                       <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="text-xs font-black">
-                        Full Duration: {(media.calculatedDuration || 30).toFixed(1)}s
+                        Full Duration: {(media.calculatedDuration || 20).toFixed(1)}s
                       </Text>
                     </View>
                   )}
