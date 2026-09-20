@@ -14,6 +14,7 @@ import {
   Megaphone, Calendar, Receipt, PlayCircle, ShieldCheck, Zap, Sparkles, Lock
 } from 'lucide-react-native';
 import { fonts } from '../../theme/designTokens';
+import AppLogo from '../../components/AppLogo';
 
 const aggregateTransactions = (transactions) => {
   if (!transactions) return [];
@@ -272,12 +273,21 @@ export default function WalletScreen({ navigation }) {
         styles.topHeader,
         { 
           backgroundColor: isDarkMode ? '#090614' : '#F8F7FF',
-          borderBottomColor: isDarkMode ? '#1E153D' : '#EDE9FE'
+          borderBottomColor: isDarkMode ? '#1E153D' : '#EDE9FE',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12
         }
       ]}>
-        <Text style={[styles.screenTitle, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]}>
-          Wallet & Billing
-        </Text>
+        <AppLogo size={38} isDark={isDarkMode} />
+        <View>
+          <Text style={[styles.screenTitle, { color: isDarkMode ? '#F8FAFC' : '#1E1B4B' }]}>
+            Wallet & Billing
+          </Text>
+          <Text style={{ color: isDarkMode ? '#94A3B8' : '#64748B', fontSize: 12, fontWeight: '600', marginTop: 1 }}>
+            Campaign Balance & Funds
+          </Text>
+        </View>
       </View>
 
       <SectionList

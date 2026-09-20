@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Soft Purple Gradient -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FDFDFF"/>
+      <stop offset="100%" stop-color="#F1F0FB"/>
+    </linearGradient>
+
+    <!-- Main Purple Left Pillar Gradient -->
+    <linearGradient id="mainBarGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7C63F5"/>
+      <stop offset="100%" stop-color="#5A4FCF"/>
+    </linearGradient>
+
+    <!-- Light Lavender Right Accent Bar Gradient -->
+    <linearGradient id="accentBarGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#B2A8FA"/>
+      <stop offset="100%" stop-color="#9385F7"/>
+    </linearGradient>
+
+    <!-- Soft Base Shadow -->
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#6C5CE7" flood-opacity="0.18"/>
+    </filter>
+
+    <!-- Inner Mark Shadow for Depth -->
+    <filter id="markShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#3A2D9C" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Container Squircle Background -->
+  <rect 
+    x="32" 
+    y="32" 
+    width="448" 
+    height="448" 
+    rx="112" 
+    ry="112" 
+    fill="url(#bgGradient)" 
+    filter="url(#softShadow)"
+    stroke="#EAEAFA" 
+    stroke-width="4"
+  />
+
+  <!-- 'A' Logo Mark Group -->
+  <g filter="url(#markShadow)">
+    <!-- Right Accent Bar (Soft Lavender Short Stroke) -->
+    <rect 
+      x="284" 
+      y="226" 
+      width="72" 
+      height="150" 
+      rx="36" 
+      ry="36" 
+      fill="url(#accentBarGradient)" 
+      transform="rotate(-28 320 301)"
+    />
+
+    <!-- Left Main Bar (Deep Electric Purple Long Stroke) -->
+    <rect 
+      x="182" 
+      y="136" 
+      width="76" 
+      height="250" 
+      rx="38" 
+      ry="38" 
+      fill="url(#mainBarGradient)" 
+      transform="rotate(28 220 261)"
+    />
+  </g>
+</svg>

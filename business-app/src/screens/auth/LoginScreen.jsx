@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Mail, Lock, Eye, EyeOff, Check, MonitorSmartphone } from 'lucide-react-native';
+import AppLogo from '../../components/AppLogo';
 
 // Authentic Google 4-Color Vector Icon
 function GoogleIcon({ size = 20 }) {
@@ -151,22 +152,10 @@ export default function LoginScreen({ navigation }) {
         >
           <View style={styles.container}>
             
-            {/* ── Brand & 3D Glowing Icon ───────────────────────────────── */}
+            {/* ── Brand & Official Vector Logo ───────────────────────────────── */}
             <View style={styles.headerSection}>
-              <View style={styles.logoContainer}>
-                <LinearGradient
-                  colors={['#8B5CF6', '#7C3AED', '#6D28D9']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={[
-                    styles.logoGradient,
-                    isDark ? styles.neonGlowDark : styles.neonGlowLight
-                  ]}
-                >
-                  <View style={styles.logoInner}>
-                    <MonitorSmartphone size={32} color="#FFFFFF" strokeWidth={2.2} />
-                  </View>
-                </LinearGradient>
+              <View style={[styles.logoContainer, isDark ? styles.neonGlowDark : styles.neonGlowLight]}>
+                <AppLogo size={78} isDark={isDark} />
               </View>
 
               <Text style={[styles.brandTitle, { color: isDark ? '#F8FAFC' : '#1E1B4B' }]}>

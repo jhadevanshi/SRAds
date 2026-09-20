@@ -22,6 +22,7 @@ import {
 import { useTheme } from '../../context/ThemeContext';
 import AnimatedBarChart from '../../components/AnimatedBarChart';
 import { colors } from '../../theme/designTokens';
+import AppLogo from '../../components/AppLogo';
 
 const TABS = [
   { id: 'today', label: 'Today' },
@@ -208,13 +209,16 @@ export default function AnalyticsScreen({ route }) {
         }}
         className="flex-row justify-between items-center px-5 py-4 border-b z-10"
       >
-        <View>
-          <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-2xl font-black tracking-tight">
-            Analytics
-          </Text>
-          <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold mt-0.5">
-            Real-Time Broadcast Intelligence
-          </Text>
+        <View className="flex-row items-center">
+          <AppLogo size={38} isDark={isDark} style={{ marginRight: 12 }} />
+          <View>
+            <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-2xl font-black tracking-tight">
+              Analytics
+            </Text>
+            <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold mt-0.5">
+              Real-Time Broadcast Intelligence
+            </Text>
+          </View>
         </View>
 
         <TouchableOpacity 

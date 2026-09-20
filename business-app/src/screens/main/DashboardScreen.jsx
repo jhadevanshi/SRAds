@@ -15,6 +15,7 @@ import {
   Radio, ShieldCheck, Zap, Moon, Sun
 } from 'lucide-react-native';
 import { fonts } from '../../theme/designTokens';
+import AppLogo from '../../components/AppLogo';
 
 const { width } = Dimensions.get('window');
 
@@ -145,12 +146,7 @@ export default function DashboardScreen({ navigation }) {
       ]}>
         <View style={styles.headerLeft}>
           <View style={[styles.avatarBox, isDarkMode ? styles.neonGlowSmall : null]}>
-            <LinearGradient
-              colors={['#8B5CF6', '#7C3AED']}
-              style={styles.avatarGradient}
-            >
-              <Building2 size={20} color="#FFFFFF" />
-            </LinearGradient>
+            <AppLogo size={42} isDark={isDarkMode} />
           </View>
           <View style={styles.headerTextBox}>
             <View style={styles.tagRow}>

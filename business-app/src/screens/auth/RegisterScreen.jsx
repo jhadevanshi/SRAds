@@ -11,6 +11,7 @@ import {
   Building2, User, Mail, Phone, Lock, Eye, EyeOff, 
   ArrowLeft, Check, MapPin 
 } from 'lucide-react-native';
+import AppLogo from '../../components/AppLogo';
 
 export default function RegisterScreen({ navigation }) {
   const { isDark } = useTheme();
@@ -188,8 +189,11 @@ export default function RegisterScreen({ navigation }) {
               </View>
             </View>
 
-            {/* ── Heading ──────────────────────────────────────────────── */}
+            {/* ── Heading & Brand ──────────────────────────────────────── */}
             <View style={styles.headingSection}>
+              <View style={{ alignItems: 'center', marginBottom: 14 }}>
+                <AppLogo size={68} isDark={isDark} />
+              </View>
               <Text style={[styles.mainTitle, { color: isDark ? '#F8FAFC' : '#111827' }]}>
                 {step === 1 ? 'Create Business Account' : 'Security & Location'}
               </Text>

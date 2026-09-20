@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ChevronRight, BadgeCheck, Sparkles, Building2 } from 'lucide-react-native';
+import { ChevronRight, BadgeCheck, Sparkles } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
+import AppLogo from '../AppLogo';
 
 export default function ProfileCard({ name, businessId, onPress }) {
   const { isDark } = useTheme();
@@ -23,12 +24,7 @@ export default function ProfileCard({ name, businessId, onPress }) {
         }}
         className="rounded-3xl p-5 border flex-row items-center"
       >
-        <LinearGradient
-          colors={['#7C3AED', '#9333EA', '#C084FC']}
-          className="w-14 h-14 rounded-2xl items-center justify-center mr-4 shadow-sm"
-        >
-          <Building2 size={26} color="#FFFFFF" />
-        </LinearGradient>
+        <AppLogo size={56} isDark={isDark} style={{ marginRight: 14 }} />
 
         <View className="flex-1 justify-center">
           <View className="flex-row items-center mb-0.5">
