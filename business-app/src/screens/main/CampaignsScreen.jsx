@@ -521,15 +521,23 @@ export default function CampaignsScreen({ navigation }) {
           backgroundColor: isDark ? '#120C26' : '#FFFFFF',
           borderBottomColor: isDark ? '#281B4B' : '#EDE9FE'
         }}
-        className="flex-row justify-between items-center px-5 py-4 border-b z-10"
+        className="flex-row justify-between items-center px-4 py-3.5 border-b z-10"
       >
-        <View className="flex-row items-center">
-          <AppLogo size={38} isDark={isDark} style={{ marginRight: 12 }} />
-          <View>
-            <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-2xl font-black tracking-tight">
+        <View className="flex-row items-center flex-1 mr-2.5">
+          <AppLogo size={36} isDark={isDark} style={{ marginRight: 10 }} />
+          <View className="flex-1">
+            <Text 
+              style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} 
+              className="text-xl font-black tracking-tight"
+              numberOfLines={1}
+            >
               Campaigns
             </Text>
-            <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold mt-0.5">
+            <Text 
+              style={{ color: isDark ? '#94A3B8' : '#64748B' }} 
+              className="text-[11px] font-semibold"
+              numberOfLines={1}
+            >
               Real-Time Transit Broadcasts
             </Text>
           </View>
@@ -538,17 +546,17 @@ export default function CampaignsScreen({ navigation }) {
         <TouchableOpacity 
           onPress={() => navigation.navigate('CreateCampaign')}
           activeOpacity={0.8}
-          className="rounded-full overflow-hidden shadow-lg"
-          style={{ shadowColor: '#9333EA', shadowRadius: 10, shadowOpacity: 0.35 }}
+          className="rounded-full overflow-hidden shadow-md shrink-0"
+          style={{ shadowColor: '#9333EA', shadowRadius: 8, shadowOpacity: 0.3 }}
         >
           <LinearGradient
             colors={['#7C3AED', '#9333EA', '#C084FC']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            className="flex-row items-center px-4 py-2.5 rounded-full"
+            className="flex-row items-center px-3.5 py-2 rounded-full"
           >
-            <Plus size={16} color="#FFFFFF" strokeWidth={3} />
-            <Text className="text-white font-extrabold ml-1.5 text-xs tracking-wide uppercase">New Campaign</Text>
+            <Plus size={14} color="#FFFFFF" strokeWidth={3} />
+            <Text className="text-white font-extrabold ml-1.5 text-[11px] tracking-wide uppercase">New Campaign</Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>
