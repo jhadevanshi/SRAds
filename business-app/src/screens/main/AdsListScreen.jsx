@@ -251,10 +251,18 @@ export default function AdsListScreen({ navigation }) {
                 colors={['#7C3AED', '#9333EA', '#C084FC']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                className="py-3 items-center justify-center flex-row"
+                style={{
+                  width: '100%',
+                  paddingVertical: 12,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
                 <Rocket size={15} color="#FFFFFF" style={{ marginRight: 6 }} />
-                <Text className="text-white font-extrabold text-xs tracking-wide uppercase">Launch Campaign</Text>
+                <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'center' }}>
+                  Launch Campaign
+                </Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>

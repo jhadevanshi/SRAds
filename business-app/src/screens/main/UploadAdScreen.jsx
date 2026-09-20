@@ -168,7 +168,7 @@ export default function UploadAdScreen({ navigation }) {
                 setShowSuccess(false);
                 navigation.replace('CreateCampaign', { preselectedAdId: uploadedAd?.id, preselectedAdTitle: uploadedAd?.title });
               }}
-              className="rounded-2xl overflow-hidden shadow-lg mb-3"
+              className="rounded-2xl overflow-hidden shadow-lg mb-3 w-full"
               style={{ shadowColor: '#9333EA', shadowRadius: 10, shadowOpacity: 0.35 }}
               activeOpacity={0.8}
             >
@@ -176,10 +176,18 @@ export default function UploadAdScreen({ navigation }) {
                 colors={['#7C3AED', '#9333EA', '#C084FC']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                className="py-4 flex-row items-center justify-center"
+                style={{
+                  width: '100%',
+                  paddingVertical: 16,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
                 <Megaphone size={18} color="#FFF" style={{ marginRight: 8 }} />
-                <Text className="text-white font-black text-sm uppercase tracking-wide">Launch Campaign Now</Text>
+                <Text style={{ color: '#FFFFFF', fontWeight: '900', fontSize: 14, textTransform: 'uppercase', letterSpacing: 0.6, textAlign: 'center' }}>
+                  Launch Campaign Now
+                </Text>
               </LinearGradient>
             </TouchableOpacity>
 
@@ -190,12 +198,16 @@ export default function UploadAdScreen({ navigation }) {
               }}
               style={{ 
                 backgroundColor: isDark ? '#181033' : '#F8F7FF',
-                borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+                borderColor: isDark ? '#281B4B' : '#EDE9FE',
+                paddingVertical: 14,
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '100%'
               }}
-              className="py-3.5 rounded-2xl items-center border"
+              className="rounded-2xl border"
               activeOpacity={0.8}
             >
-              <Text style={{ color: isDark ? '#CBD5E1' : '#475569' }} className="font-bold text-xs uppercase tracking-wider">
+              <Text style={{ color: isDark ? '#CBD5E1' : '#475569', textAlign: 'center' }} className="font-bold text-xs uppercase tracking-wider">
                 Back to Media Hub
               </Text>
             </TouchableOpacity>
@@ -409,14 +421,20 @@ export default function UploadAdScreen({ navigation }) {
             colors={['#7C3AED', '#9333EA', '#C084FC']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            className="w-full py-4 items-center justify-center flex-row"
+            style={{
+              width: '100%',
+              paddingVertical: 16,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           >
             {loading ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
-              <View className="flex-row items-center justify-center">
-                <UploadCloud size={18} color="#FFFFFF" strokeWidth={2.5} style={{ marginRight: 8 }} />
-                <Text className="text-white font-black text-sm uppercase tracking-wider text-center">
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                <UploadCloud size={20} color="#FFFFFF" strokeWidth={2.5} style={{ marginRight: 8 }} />
+                <Text style={{ color: '#FFFFFF', fontWeight: '900', fontSize: 14, textTransform: 'uppercase', letterSpacing: 0.8, textAlign: 'center' }}>
                   Save to Media
                 </Text>
               </View>
