@@ -86,9 +86,63 @@ export default function CampaignsScreen({ navigation }) {
 
   const fetchCampaigns = useCallback(async () => {
     try {
-      const res = await businessService.getCampaigns();
-      if (res.success) {
-        setCampaigns(res.campaigns || []);
+      const [campRes, adsRes] = await Promise.all([
+        businessService.getCampaigns().catch(e => ({ success: false, error: e })),
+        businessService.getAds().catch(e => ({ success: false, error: e })),
+      ]);
+
+      if (campRes && campRes.success) {
+        const rawCampaigns = campRes.campaigns || [];
+        const adsList = (adsRes && adsRes.success && Array.isArray(adsRes.ads)) ? adsRes.ads : [];
+
+        // Enrich campaigns with creative media metadata if missing
+        const enriched = rawCampaigns.map(camp => {
+          let matchedAd = null;
+          
+          // 1. Direct ad_id match if available
+          if (camp.ad_id) {
+            matchedAd = adsList.find(a => String(a.id) === String(camp.ad_id));
+          }
+          
+          // 2. Match by campaign name and ad title
+          if (!matchedAd && camp.campaign_name && adsList.length > 0) {
+            const cleanCampName = camp.campaign_name.replace(/Transit Campaign/i, '').trim().toLowerCase();
+            // Try exact title match after stripping "Transit Campaign"
+            matchedAd = adsList.find(a => a.title && a.title.trim().toLowerCase() === cleanCampName);
+            
+            // Try prefix / contains match
+            if (!matchedAd) {
+              matchedAd = adsList.find(a => 
+                a.title && (
+                  camp.campaign_name.toLowerCase().includes(a.title.trim().toLowerCase()) ||
+                  a.title.trim().toLowerCase().includes(cleanCampName)
+                )
+              );
+            }
+          }
+
+          // 3. Fallback: if there's only 1 ad in the advertiser's media hub, match it
+          if (!matchedAd && adsList.length === 1) {
+            matchedAd = adsList[0];
+          }
+
+          const fileUrl = camp.file_url || matchedAd?.file_url || null;
+          const isVideo = camp.media_type === 'video' || camp.type === 'video' || matchedAd?.media_type === 'video' || matchedAd?.type === 'video' || (fileUrl && fileUrl.toLowerCase().endsWith('.mp4'));
+          const mediaType = isVideo ? 'video' : 'image';
+          const playDuration = camp.play_duration || matchedAd?.play_duration || 15;
+          const adTitle = camp.ad_title || matchedAd?.title || camp.campaign_name;
+
+          return {
+            ...camp,
+            file_url: fileUrl,
+            media_type: mediaType,
+            type: mediaType,
+            play_duration: playDuration,
+            ad_title: adTitle,
+          };
+        });
+
+        setCampaigns(enriched);
       }
     } catch (err) {
       console.error(err);
