@@ -299,28 +299,50 @@ export default function UploadAdScreen({ navigation }) {
                   >
                     <Video size={30} color="#FFFFFF" />
                   </LinearGradient>
+                  
                   <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-black text-base text-center mb-1" numberOfLines={1}>
-                    {media.fileName || 'Video Creative.mp4'}
+                    {media.fileName || 'Video Commercial.mp4'}
                   </Text>
+                  
                   {trimData ? (
-                    <View style={{ backgroundColor: isDark ? 'rgba(168, 85, 247, 0.18)' : '#EDE9FE', borderColor: isDark ? 'rgba(168, 85, 247, 0.4)' : '#DDD6FE' }} className="border px-3 py-1.5 rounded-full flex-row items-center gap-1.5 mt-1 mb-3">
-                      <Scissors size={13} color={isDark ? '#C084FC' : '#7C3AED'} />
-                      <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="text-xs font-black">
-                        Playback Range: {trimData.start.toFixed(1)}s – {trimData.end.toFixed(1)}s ({trimData.duration.toFixed(1)}s duration)
-                      </Text>
+                    <View 
+                      style={{ 
+                        backgroundColor: isDark ? 'rgba(168, 85, 247, 0.14)' : '#EDE9FE', 
+                        borderColor: isDark ? 'rgba(168, 85, 247, 0.35)' : '#DDD6FE' 
+                      }} 
+                      className="border px-4 py-2 rounded-2xl items-center justify-center my-3 self-center"
+                    >
+                      <View className="flex-row items-center justify-center">
+                        <Scissors size={12} color={isDark ? '#C084FC' : '#7C3AED'} style={{ marginRight: 6 }} />
+                        <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-xs font-black">
+                          {trimData.start.toFixed(1)}s – {trimData.end.toFixed(1)}s
+                        </Text>
+                        <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="text-xs font-bold ml-2">
+                          ({trimData.duration.toFixed(1)}s duration)
+                        </Text>
+                      </View>
                     </View>
                   ) : (
-                    <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold mt-0.5 mb-3">
-                      Full Duration: {(media.calculatedDuration || 30).toFixed(1)}s
-                    </Text>
+                    <View 
+                      style={{ 
+                        backgroundColor: isDark ? 'rgba(168, 85, 247, 0.14)' : '#EDE9FE', 
+                        borderColor: isDark ? 'rgba(168, 85, 247, 0.35)' : '#DDD6FE' 
+                      }} 
+                      className="border px-4 py-2 rounded-2xl items-center justify-center my-3 self-center"
+                    >
+                      <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="text-xs font-black">
+                        Full Duration: {(media.calculatedDuration || 30).toFixed(1)}s
+                      </Text>
+                    </View>
                   )}
+
                   <TouchableOpacity 
                     onPress={() => setShowTrimmer(true)}
                     style={{ backgroundColor: isDark ? '#201642' : '#EDE9FE', borderColor: isDark ? '#3B2A68' : '#DDD6FE' }}
-                    className="px-4 py-2.5 rounded-xl border flex-row items-center shadow-sm"
+                    className="px-5 py-2.5 rounded-xl border flex-row items-center justify-center shadow-sm"
                     activeOpacity={0.8}
                   >
-                    <Scissors size={14} color={isDark ? '#C084FC' : '#7C3AED'} style={{ marginRight: 6 }} />
+                    <Scissors size={13} color={isDark ? '#C084FC' : '#7C3AED'} style={{ marginRight: 6 }} />
                     <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="font-extrabold text-xs uppercase tracking-wider">
                       {trimData ? 'Adjust Video Trim' : 'Trim Video'}
                     </Text>
@@ -374,7 +396,7 @@ export default function UploadAdScreen({ navigation }) {
         <TouchableOpacity 
           onPress={handleUpload}
           disabled={!form.title || !media || loading}
-          className="rounded-2xl overflow-hidden shadow-lg mb-10"
+          className="rounded-2xl overflow-hidden shadow-lg mb-10 w-full"
           style={{ 
             shadowColor: '#9333EA', 
             shadowRadius: 10, 
@@ -387,17 +409,17 @@ export default function UploadAdScreen({ navigation }) {
             colors={['#7C3AED', '#9333EA', '#C084FC']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            className="py-4 items-center justify-center flex-row"
+            className="w-full py-4 items-center justify-center flex-row"
           >
             {loading ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
-              <>
+              <View className="flex-row items-center justify-center">
                 <UploadCloud size={18} color="#FFFFFF" strokeWidth={2.5} style={{ marginRight: 8 }} />
-                <Text className="text-white font-black text-sm uppercase tracking-wide">
-                  Save to Media Library
+                <Text className="text-white font-black text-sm uppercase tracking-wider text-center">
+                  Save to Media
                 </Text>
-              </>
+              </View>
             )}
           </LinearGradient>
         </TouchableOpacity>
