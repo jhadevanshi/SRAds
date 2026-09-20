@@ -260,39 +260,89 @@ export default function UploadAdScreen({ navigation }) {
               <TouchableOpacity 
                 style={{ 
                   backgroundColor: isDark ? '#140F24' : '#FFFFFF',
-                  borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+                  borderColor: isDark ? '#281B4B' : '#EDE9FE',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
-                className="flex-1 border rounded-3xl p-6 items-center shadow-sm"
+                className="flex-1 border rounded-3xl p-5 items-center justify-center shadow-sm"
                 onPress={() => pickMedia('image')}
                 activeOpacity={0.8}
               >
                 <LinearGradient
                   colors={isDark ? ['#7C3AED', '#4C1D95'] : ['#EDE9FE', '#DDD6FE']}
-                  className="w-14 h-14 rounded-2xl items-center justify-center mb-3"
+                  style={{ width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}
                 >
-                  <ImageIcon size={28} color={isDark ? '#FFFFFF' : '#7C3AED'} />
+                  <ImageIcon size={26} color={isDark ? '#FFFFFF' : '#7C3AED'} />
                 </LinearGradient>
-                <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-extrabold text-sm mb-0.5">Image Asset</Text>
-                <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-[10px] uppercase tracking-wider font-bold">JPG, PNG up to 10MB</Text>
+                <Text 
+                  style={{ 
+                    color: isDark ? '#F8FAFC' : '#1E1B4B',
+                    textAlign: 'center',
+                    fontWeight: '800',
+                    fontSize: 14,
+                    marginBottom: 4,
+                    includeFontPadding: false,
+                  }}
+                >
+                  Image Asset
+                </Text>
+                <Text 
+                  style={{ 
+                    color: isDark ? '#94A3B8' : '#64748B',
+                    textAlign: 'center',
+                    fontSize: 10,
+                    fontWeight: '700',
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.5,
+                    includeFontPadding: false,
+                  }}
+                >
+                  JPG, PNG up to 10MB
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity 
                 style={{ 
                   backgroundColor: isDark ? '#140F24' : '#FFFFFF',
-                  borderColor: isDark ? '#281B4B' : '#EDE9FE' 
+                  borderColor: isDark ? '#281B4B' : '#EDE9FE',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
-                className="flex-1 border rounded-3xl p-6 items-center shadow-sm"
+                className="flex-1 border rounded-3xl p-5 items-center justify-center shadow-sm"
                 onPress={() => pickMedia('video')}
                 activeOpacity={0.8}
               >
                 <LinearGradient
                   colors={isDark ? ['#38BDF8', '#0284C7'] : ['#E0F2FE', '#BAE6FD']}
-                  className="w-14 h-14 rounded-2xl items-center justify-center mb-3"
+                  style={{ width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}
                 >
-                  <Video size={28} color={isDark ? '#FFFFFF' : '#0284C7'} />
+                  <Video size={26} color={isDark ? '#FFFFFF' : '#0284C7'} />
                 </LinearGradient>
-                <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-extrabold text-sm mb-0.5">Video Commercial</Text>
-                <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-[10px] uppercase tracking-wider font-bold">MP4 with Trimmer</Text>
+                <Text 
+                  style={{ 
+                    color: isDark ? '#F8FAFC' : '#1E1B4B',
+                    textAlign: 'center',
+                    fontWeight: '800',
+                    fontSize: 14,
+                    marginBottom: 4,
+                    includeFontPadding: false,
+                  }}
+                >
+                  Video Commercial
+                </Text>
+                <Text 
+                  style={{ 
+                    color: isDark ? '#94A3B8' : '#64748B',
+                    textAlign: 'center',
+                    fontSize: 10,
+                    fontWeight: '700',
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.5,
+                    includeFontPadding: false,
+                  }}
+                >
+                  MP4 with Trimmer
+                </Text>
               </TouchableOpacity>
             </View>
           ) : (
