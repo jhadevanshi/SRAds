@@ -242,7 +242,13 @@ export default function AdsListScreen({ navigation }) {
             </TouchableOpacity>
 
             <TouchableOpacity 
-              onPress={() => navigation.navigate('CreateCampaign', { preselectedAdId: item.id, preselectedAdTitle: item.title })}
+              onPress={() => navigation.navigate('CreateCampaign', { 
+                preselectedAdId: item.id, 
+                preselectedAdTitle: item.title,
+                preselectedMediaType: item.media_type || item.type,
+                preselectedMediaUri: item.file_url,
+                preselectedPlayDuration: item.play_duration
+              })}
               className="flex-1 rounded-xl overflow-hidden shadow-md"
               style={{ shadowColor: '#9333EA', shadowRadius: 6 }}
               activeOpacity={0.8}

@@ -410,11 +410,52 @@ router.put('/ads/:id/status', businessAuth, async (req, res) => {
 router.get('/campaigns', businessAuth, async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT c.*, COUNT(ca.ad_id) as total_ads
+      SELECT 
+        c.*, 
+        COUNT(ca.ad_id) as total_ads,
+        (
+          SELECT m.file_url 
+          FROM campaign_ads ca2 
+          JOIN ads a2 ON ca2.ad_id = a2.id 
+          JOIN media m ON a2.media_id = m.id 
+          WHERE ca2.campaign_id = c.id 
+          LIMIT 1
+        ) as file_url,
+        (
+          SELECT m.media_type 
+          FROM campaign_ads ca2 
+          JOIN ads a2 ON ca2.ad_id = a2.id 
+          JOIN media m ON a2.media_id = m.id 
+          WHERE ca2.campaign_id = c.id 
+          LIMIT 1
+        ) as media_type,
+        (
+          SELECT a2.title 
+          FROM campaign_ads ca2 
+          JOIN ads a2 ON ca2.ad_id = a2.id 
+          WHERE ca2.campaign_id = c.id 
+          LIMIT 1
+        ) as ad_title,
+        (
+          SELECT COALESCE(a2.play_duration, m.duration, 15)
+          FROM campaign_ads ca2 
+          JOIN ads a2 ON ca2.ad_id = a2.id 
+          JOIN media m ON a2.media_id = m.id 
+          WHERE ca2.campaign_id = c.id 
+          LIMIT 1
+        ) as play_duration,
+        COALESCE(p.total_plays, 0) as total_plays,
+        COALESCE(p.total_spend, 0) as total_spend
       FROM campaigns c
       LEFT JOIN campaign_ads ca ON ca.campaign_id = c.id
+      LEFT JOIN (
+        SELECT ca3.campaign_id, COUNT(*) as total_plays, SUM(pl.duration * 0.35) as total_spend
+        FROM playback_logs pl
+        JOIN campaign_ads ca3 ON pl.ad_id = ca3.ad_id
+        GROUP BY ca3.campaign_id
+      ) p ON p.campaign_id = c.id
       WHERE c.advertiser_id = $1
-      GROUP BY c.id
+      GROUP BY c.id, p.total_plays, p.total_spend
       ORDER BY c.created_at DESC
     `, [req.businessId]);
     res.json({ success: true, campaigns: result.rows });

@@ -99,11 +99,13 @@ export default function UploadAdScreen({ navigation }) {
 
       const res = await businessService.uploadAd(formData);
       if (res.success) {
+        const adDuration = media.type === 'image' ? 30 : (parseInt(trimData.end) - parseInt(trimData.start) || 30);
         setUploadedAd({
           id: res.ad?.id || null,
           title: form.title,
           type: media.type,
-          uri: media.uri
+          uri: res.media?.file_url || res.ad?.file_url || media.uri,
+          play_duration: res.ad?.play_duration || adDuration
         });
         setShowSuccess(true);
       } else {
@@ -166,7 +168,13 @@ export default function UploadAdScreen({ navigation }) {
             <TouchableOpacity 
               onPress={() => {
                 setShowSuccess(false);
-                navigation.replace('CreateCampaign', { preselectedAdId: uploadedAd?.id, preselectedAdTitle: uploadedAd?.title });
+                navigation.replace('CreateCampaign', { 
+                  preselectedAdId: uploadedAd?.id, 
+                  preselectedAdTitle: uploadedAd?.title,
+                  preselectedMediaType: uploadedAd?.type,
+                  preselectedMediaUri: uploadedAd?.uri,
+                  preselectedPlayDuration: uploadedAd?.play_duration
+                });
               }}
               className="rounded-2xl overflow-hidden shadow-lg mb-3 w-full"
               style={{ shadowColor: '#9333EA', shadowRadius: 10, shadowOpacity: 0.35 }}

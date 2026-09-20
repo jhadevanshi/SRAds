@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Dimensions } from 'react-native';
+import React, { useState, useEffect, useCallback, memo } from 'react';
+import { View, Text, FlatList, TouchableOpacity, RefreshControl, ActivityIndicator, Image, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { businessService } from '../../services/business';
 import { useTheme } from '../../context/ThemeContext';
 import { colors } from '../../theme/designTokens';
@@ -21,10 +22,59 @@ import {
   AlertCircle,
   Sparkles,
   BarChart2,
-  Navigation
+  Navigation,
+  Video,
+  Image as ImageIcon
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
+
+const getBaseUrl = () => process.env.EXPO_PUBLIC_API_URL || 'https://coxcred.com/srads/api';
+
+// Dedicated Video Preview for Campaign Card
+const VideoCardPreview = memo(({ uri, isDark }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const player = useVideoPlayer(uri, (p) => {
+    p.loop = true;
+    p.muted = true;
+  });
+
+  const togglePlay = () => {
+    if (!player) return;
+    if (isPlaying) {
+      player.pause();
+      setIsPlaying(false);
+    } else {
+      player.play();
+      setIsPlaying(true);
+    }
+  };
+
+  return (
+    <TouchableOpacity 
+      activeOpacity={0.9} 
+      onPress={togglePlay}
+      className="w-full h-full items-center justify-center relative overflow-hidden"
+    >
+      <VideoView 
+        player={player} 
+        style={{ width: '100%', height: '100%' }} 
+        contentFit="contain" 
+        nativeControls={false} 
+      />
+      {!isPlaying && (
+        <View className="absolute inset-0 items-center justify-center bg-black/25">
+          <View 
+            style={{ backgroundColor: 'rgba(124, 58, 237, 0.85)' }} 
+            className="w-11 h-11 rounded-full items-center justify-center shadow-lg"
+          >
+            <Play size={20} color="#FFFFFF" style={{ marginLeft: 2 }} />
+          </View>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+});
 
 export default function CampaignsScreen({ navigation }) {
   const { isDark } = useTheme();
@@ -114,6 +164,8 @@ export default function CampaignsScreen({ navigation }) {
     const budget = Number(item.budget || 0);
     const spend = Number(item.total_spend || 0);
     const spendPercentage = budget > 0 ? Math.min(100, Math.round((spend / budget) * 100)) : 0;
+    const isVideo = item.media_type === 'video' || item.type === 'video' || (item.file_url && item.file_url.toLowerCase().endsWith('.mp4'));
+    const mediaUri = item.file_url ? (item.file_url.startsWith('http') ? item.file_url : `${getBaseUrl().replace('/api', '')}${item.file_url.startsWith('/') ? '' : '/'}${item.file_url}`) : null;
 
     return (
       <View 
@@ -126,61 +178,94 @@ export default function CampaignsScreen({ navigation }) {
           shadowRadius: isExpanded ? 12 : 6,
           elevation: isExpanded ? 6 : 2,
         }}
-        className="border rounded-3xl mb-4 overflow-hidden"
+        className="border rounded-3xl mb-5 overflow-hidden"
       >
-        {/* Card Header (Always Visible) */}
+        {/* Creative Preview Hero - Exact Match with Media Hub */}
+        <View style={{ backgroundColor: isDark ? '#090614' : '#F1F5F9' }} className="h-48 relative items-center justify-center">
+          {mediaUri ? (
+            isVideo ? (
+              <VideoCardPreview uri={mediaUri} isDark={isDark} />
+            ) : (
+              <Image 
+                source={{ uri: mediaUri }} 
+                className="w-full h-full"
+                resizeMode="contain"
+              />
+            )
+          ) : (
+            <View className="w-full h-full items-center justify-center">
+              {isVideo ? <Video size={48} color={isDark ? '#38BDF8' : '#0284C7'} /> : <ImageIcon size={48} color="#A855F7" />}
+            </View>
+          )}
+        </View>
+
+        {/* Card Header & Controls (Always Visible) */}
         <TouchableOpacity 
           onPress={() => toggleExpand(item.id)}
           className="p-5"
           activeOpacity={0.7}
         >
-          <View className="flex-row items-start justify-between">
-            <View className="flex-row items-center flex-1 pr-3">
-              {/* Campaign Icon */}
-              <LinearGradient
-                colors={isDark ? ['#7C3AED', '#4C1D95'] : ['#EDE9FE', '#DDD6FE']}
-                className="w-12 h-12 rounded-2xl items-center justify-center mr-3.5 shadow-sm"
+          {/* Title and Media Type Chip Row */}
+          <View className="flex-row items-center justify-between mb-3">
+            <Text 
+              style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} 
+              className="font-extrabold text-lg tracking-tight flex-1 mr-3" 
+              numberOfLines={1}
+            >
+              {item.campaign_name}
+            </Text>
+
+            <View 
+              style={{ 
+                backgroundColor: isDark ? (isVideo ? 'rgba(56, 189, 248, 0.12)' : 'rgba(192, 132, 252, 0.12)') : (isVideo ? '#E0F2FE' : '#F3E8FF'),
+                borderColor: isDark ? (isVideo ? 'rgba(56, 189, 248, 0.3)' : 'rgba(192, 132, 252, 0.3)') : (isVideo ? '#BAE6FD' : '#E9D5FF')
+              }}
+              className="border px-2.5 py-1 rounded-full flex-row items-center shrink-0"
+            >
+              {isVideo ? (
+                <Video size={11} color={isDark ? '#38BDF8' : '#0284C7'} />
+              ) : (
+                <ImageIcon size={11} color={isDark ? '#C084FC' : '#7C3AED'} />
+              )}
+              <Text 
+                style={{ color: isDark ? (isVideo ? '#38BDF8' : '#C084FC') : (isVideo ? '#0284C7' : '#7C3AED') }} 
+                className="text-[10px] font-bold ml-1.5 uppercase tracking-wider"
               >
-                <Megaphone size={22} color={isDark ? '#FFFFFF' : '#7C3AED'} />
-              </LinearGradient>
-              
-              <View className="flex-1">
-                <Text 
-                  style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} 
-                  className="font-extrabold text-base tracking-tight mb-1" 
-                  numberOfLines={1}
-                >
-                  {item.campaign_name}
-                </Text>
-                
-                {/* Status Badge */}
-                <View 
-                  style={{ backgroundColor: status.bg, borderColor: status.border }}
-                  className="self-start px-2.5 py-0.5 rounded-full border flex-row items-center"
-                >
-                  <View style={{ backgroundColor: status.color }} className="w-1.5 h-1.5 rounded-full mr-1.5" />
-                  <Text style={{ color: status.color }} className="text-[11px] font-bold">
-                    {status.text}
-                  </Text>
-                </View>
-              </View>
+                {isVideo ? `${item.play_duration || 15}s Video` : 'Static Image'}
+              </Text>
             </View>
-            
-            <View className="items-center justify-center pt-2">
+          </View>
+
+          {/* Status Badge & Expand Toggle Row */}
+          <View className="flex-row items-center justify-between mb-3.5">
+            <View 
+              style={{ backgroundColor: status.bg, borderColor: status.border }}
+              className="self-start px-3 py-1 rounded-full border flex-row items-center"
+            >
+              <View style={{ backgroundColor: status.color }} className="w-1.5 h-1.5 rounded-full mr-2" />
+              <Text style={{ color: status.color }} className="text-xs font-bold">
+                {status.text}
+              </Text>
+            </View>
+
+            <View className="flex-row items-center">
+              <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold mr-1.5">
+                {isExpanded ? 'Hide Details' : 'View Details'}
+              </Text>
               {isExpanded ? (
-                <View style={{ backgroundColor: isDark ? '#201642' : '#F3F0FF' }} className="p-1.5 rounded-full">
-                  <ChevronUp size={18} color={isDark ? '#C084FC' : '#7C3AED'} />
+                <View style={{ backgroundColor: isDark ? '#201642' : '#F3F0FF' }} className="p-1 rounded-full">
+                  <ChevronUp size={16} color={isDark ? '#C084FC' : '#7C3AED'} />
                 </View>
               ) : (
-                <View style={{ backgroundColor: isDark ? '#181033' : '#F8F7FF' }} className="p-1.5 rounded-full">
-                  <ChevronDown size={18} color={isDark ? '#94A3B8' : '#64748B'} />
+                <View style={{ backgroundColor: isDark ? '#181033' : '#F8F7FF' }} className="p-1 rounded-full">
+                  <ChevronDown size={16} color={isDark ? '#94A3B8' : '#64748B'} />
                 </View>
               )}
             </View>
           </View>
 
           {/* Quick Metrics Bar in Collapsed Mode */}
-          <View className="flex-row items-center justify-between mt-4 pt-3 border-t" style={{ borderColor: isDark ? '#281B4B' : '#F1F5F9' }}>
+          <View className="flex-row items-center justify-between pt-3 border-t" style={{ borderColor: isDark ? '#281B4B' : '#F1F5F9' }}>
             <View className="flex-row items-center">
               <MapPin size={13} color={isDark ? '#94A3B8' : '#64748B'} />
               <Text style={{ color: isDark ? '#CBD5E1' : '#475569' }} className="text-xs font-semibold ml-1.5" numberOfLines={1}>

@@ -14,19 +14,22 @@ import {
   CheckCircle2, 
   UploadCloud, 
   Trash2, 
-  X,
-  Clock,
-  Sparkles,
-  Zap,
-  Layers,
-  ChevronRight,
-  ShieldCheck,
-  Lock,
-  AlertTriangle,
-  Wallet
+  X, 
+  Clock, 
+  Sparkles, 
+  Zap, 
+  Layers, 
+  ChevronRight, 
+  ShieldCheck, 
+  Lock, 
+  AlertTriangle, 
+  Wallet,
+  Play,
+  Pause
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { businessService } from '../../services/business';
 import VideoTrimmer from '../../components/VideoTrimmer';
 import AddFundsBottomSheet from '../../components/AddFundsBottomSheet';
@@ -34,6 +37,76 @@ import { useTheme } from '../../context/ThemeContext';
 import { colors } from '../../theme/designTokens';
 
 const { width } = Dimensions.get('window');
+
+const getBaseUrl = () => process.env.EXPO_PUBLIC_API_URL || 'https://coxcred.com/srads/api';
+
+// Dedicated Video Preview for Active Selection with Play/Pause
+const VideoCardPreview = React.memo(({ uri, isDark }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const player = useVideoPlayer(uri, (p) => {
+    p.loop = true;
+    p.muted = true;
+  });
+
+  const togglePlay = () => {
+    if (!player) return;
+    if (isPlaying) {
+      player.pause();
+      setIsPlaying(false);
+    } else {
+      player.play();
+      setIsPlaying(true);
+    }
+  };
+
+  return (
+    <TouchableOpacity 
+      activeOpacity={0.9} 
+      onPress={togglePlay}
+      className="w-full h-full items-center justify-center relative overflow-hidden"
+    >
+      <VideoView 
+        player={player} 
+        style={{ width: '100%', height: '100%' }} 
+        contentFit="contain" 
+        nativeControls={false} 
+      />
+      {!isPlaying && (
+        <View className="absolute inset-0 items-center justify-center bg-black/25">
+          <View 
+            style={{ backgroundColor: 'rgba(124, 58, 237, 0.85)' }} 
+            className="w-11 h-11 rounded-full items-center justify-center shadow-lg"
+          >
+            <Play size={20} color="#FFFFFF" style={{ marginLeft: 2 }} />
+          </View>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+});
+
+// Grid thumbnail preview for selecting ads
+const VideoThumbnailPreview = React.memo(({ uri, isDark }) => {
+  const player = useVideoPlayer(uri, (p) => {
+    p.loop = true;
+    p.muted = true;
+  });
+
+  return (
+    <View style={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
+      <VideoView 
+        player={player} 
+        style={{ width: '100%', height: '100%' }} 
+        contentFit="cover" 
+        nativeControls={false} 
+      />
+      <View className="absolute top-2 left-2 bg-black/60 px-2 py-0.5 rounded-md flex-row items-center">
+        <Video size={10} color="#38BDF8" style={{ marginRight: 4 }} />
+        <Text className="text-white text-[9px] font-bold">VIDEO</Text>
+      </View>
+    </View>
+  );
+});
 
 const ROUTES = [
   { id: '1', name: 'Bopal Area', brts: 10, screens: 20, area: 'Bopal' },
@@ -168,9 +241,14 @@ export default function CreateCampaignScreen({ route, navigation }) {
         if (preAd) {
           setForm(prev => ({ ...prev, ad: preAd }));
         } else {
+          const isVideo = route.params.preselectedMediaType === 'video' || (route.params.preselectedMediaUri && route.params.preselectedMediaUri.toLowerCase().endsWith('.mp4'));
           const mockAd = { 
             id: route.params.preselectedAdId, 
-            title: route.params.preselectedAdTitle || 'New Uploaded Ad' 
+            title: route.params.preselectedAdTitle || 'New Uploaded Ad',
+            media_type: isVideo ? 'video' : 'image',
+            type: isVideo ? 'video' : 'image',
+            file_url: route.params.preselectedMediaUri || null,
+            play_duration: route.params.preselectedPlayDuration || 30
           };
           setForm(prev => ({ ...prev, ad: mockAd }));
           setAds([mockAd, ...fetchedAds]);
@@ -262,7 +340,9 @@ export default function CreateCampaignScreen({ route, navigation }) {
           id: res.ad?.id || Date.now(),
           title: newAdTitle,
           media_type: newAdMedia.type,
-          file_url: null
+          type: newAdMedia.type,
+          file_url: res.media?.file_url || res.ad?.file_url || newAdMedia.uri,
+          play_duration: duration
         };
 
         setForm(prev => ({ ...prev, ad: newAd }));
@@ -889,15 +969,86 @@ export default function CreateCampaignScreen({ route, navigation }) {
               </TouchableOpacity>
             )}
 
+            {/* Active Selected Creative Preview Card */}
+            {form.ad && !uploadMode && (
+              <View 
+                style={{
+                  backgroundColor: isDark ? '#140F24' : '#FFFFFF',
+                  borderColor: isDark ? '#7C3AED' : '#C084FC',
+                  shadowColor: '#9333EA',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.18,
+                  shadowRadius: 10,
+                  elevation: 4
+                }}
+                className="border-2 rounded-3xl mb-6 overflow-hidden"
+              >
+                {/* Hero Media Preview */}
+                <View style={{ backgroundColor: isDark ? '#090614' : '#F1F5F9' }} className="h-48 relative items-center justify-center">
+                  {(() => {
+                    const isVideo = form.ad.media_type === 'video' || form.ad.type === 'video' || (form.ad.file_url && form.ad.file_url.toLowerCase().endsWith('.mp4'));
+                    const mediaUri = form.ad.file_url ? (form.ad.file_url.startsWith('http') ? form.ad.file_url : `${getBaseUrl().replace('/api', '')}${form.ad.file_url.startsWith('/') ? '' : '/'}${form.ad.file_url}`) : null;
+                    
+                    if (mediaUri) {
+                      return isVideo ? (
+                        <VideoCardPreview uri={mediaUri} isDark={isDark} />
+                      ) : (
+                        <Image 
+                          source={{ uri: mediaUri }} 
+                          className="w-full h-full"
+                          resizeMode="contain"
+                        />
+                      );
+                    }
+                    return (
+                      <View className="w-full h-full items-center justify-center">
+                        {isVideo ? <Video size={48} color={isDark ? '#38BDF8' : '#0284C7'} /> : <ImageIcon size={48} color="#A855F7" />}
+                      </View>
+                    );
+                  })()}
+                </View>
+
+                {/* Selected Details Bar */}
+                <View className="p-4 flex-row items-center justify-between">
+                  <View className="flex-1 mr-3">
+                    <View className="flex-row items-center mb-1">
+                      <View className="w-2 h-2 rounded-full bg-emerald-400 mr-2" />
+                      <Text style={{ color: '#10B981' }} className="text-[10px] font-black uppercase tracking-wider">
+                        Selected for Campaign
+                      </Text>
+                    </View>
+                    <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="font-black text-base tracking-tight" numberOfLines={1}>
+                      {form.ad.title}
+                    </Text>
+                  </View>
+
+                  <View 
+                    style={{ 
+                      backgroundColor: isDark ? 'rgba(124, 58, 237, 0.15)' : '#EDE9FE',
+                      borderColor: isDark ? 'rgba(124, 58, 237, 0.3)' : '#DDD6FE'
+                    }}
+                    className="border px-3 py-1.5 rounded-full flex-row items-center"
+                  >
+                    <Sparkles size={12} color="#A855F7" style={{ marginRight: 5 }} />
+                    <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="text-xs font-black">
+                      {safeDuration}s Flight
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
             {ads.length > 0 && !uploadMode && (
               <View>
                 <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-black uppercase tracking-wider mb-3">
-                  Or select from media library
+                  Media Library Assets
                 </Text>
                 <View className="flex-row flex-wrap justify-between">
                   {ads.map(ad => {
                     const isSelected = form.ad?.id === ad.id;
-                    const isVideo = ad.media_type === 'video';
+                    const isVideo = ad.media_type === 'video' || ad.type === 'video' || (ad.file_url && ad.file_url.toLowerCase().endsWith('.mp4'));
+                    const mediaUri = ad.file_url ? (ad.file_url.startsWith('http') ? ad.file_url : `${getBaseUrl().replace('/api', '')}${ad.file_url.startsWith('/') ? '' : '/'}${ad.file_url}`) : null;
+
                     return (
                       <TouchableOpacity 
                         key={ad.id} 
@@ -913,28 +1064,34 @@ export default function CreateCampaignScreen({ route, navigation }) {
                         className="h-44 rounded-2xl mb-4 overflow-hidden border-2 relative"
                         activeOpacity={0.8}
                       >
-                        {ad.file_url ? (
-                          <Image 
-                            source={{ uri: `${getBaseUrl().replace('/api', '')}${ad.file_url}` }} 
-                            className="w-full h-full" 
-                            resizeMode="cover" 
-                          />
+                        {mediaUri ? (
+                          isVideo ? (
+                            <VideoThumbnailPreview uri={mediaUri} isDark={isDark} />
+                          ) : (
+                            <Image 
+                              source={{ uri: mediaUri }} 
+                              className="w-full h-full" 
+                              resizeMode="cover" 
+                            />
+                          )
                         ) : (
                           <View style={{ backgroundColor: isDark ? '#181033' : '#F1F5F9' }} className="w-full h-full items-center justify-center">
-                            {isVideo ? <Video size={32} color="#A855F7" /> : <ImageIcon size={32} color="#A855F7" />}
+                            {isVideo ? <Video size={32} color="#38BDF8" /> : <ImageIcon size={32} color="#A855F7" />}
                           </View>
                         )}
                         
                         <LinearGradient
-                          colors={['transparent', 'rgba(9, 6, 20, 0.85)']}
+                          colors={['transparent', 'rgba(9, 6, 20, 0.9)']}
                           className="absolute inset-0 justify-end p-2.5"
                         >
                           <Text className="text-white text-xs font-black" numberOfLines={1}>{ad.title}</Text>
-                          <Text className="text-purple-300 text-[10px] font-semibold">{isVideo ? 'Video' : 'Static Image'}</Text>
+                          <Text className="text-purple-300 text-[10px] font-semibold">
+                            {isVideo ? `${ad.play_duration || 30}s Video` : 'Static Image'}
+                          </Text>
                         </LinearGradient>
                         
                         {isSelected && (
-                          <View className="absolute top-2 right-2 bg-[#7C3AED] w-6 h-6 rounded-full items-center justify-center shadow-md">
+                          <View className="absolute top-2 right-2 bg-[#7C3AED] w-6 h-6 rounded-full items-center justify-center shadow-md z-20">
                             <Check size={14} color="#FFF" strokeWidth={3} />
                           </View>
                         )}
@@ -1240,11 +1397,41 @@ export default function CreateCampaignScreen({ route, navigation }) {
                 backgroundColor: isDark ? '#140F24' : '#FFFFFF',
                 borderColor: isDark ? '#281B4B' : '#EDE9FE' 
               }}
-              className="border rounded-2xl p-5 mb-4 shadow-sm"
+              className="border rounded-2xl p-5 mb-4 shadow-sm overflow-hidden"
             >
-              <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="text-[11px] font-black uppercase tracking-widest mb-4">
+              <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="text-[11px] font-black uppercase tracking-widest mb-3">
                 Campaign Summary
               </Text>
+
+              {/* Creative Hero Preview */}
+              {form.ad && (
+                <View 
+                  style={{ backgroundColor: isDark ? '#090614' : '#F1F5F9', borderColor: isDark ? '#281B4B' : '#EDE9FE' }} 
+                  className="h-36 rounded-xl overflow-hidden border mb-4 relative items-center justify-center"
+                >
+                  {(() => {
+                    const isVideo = form.ad.media_type === 'video' || form.ad.type === 'video' || (form.ad.file_url && form.ad.file_url.toLowerCase().endsWith('.mp4'));
+                    const mediaUri = form.ad.file_url ? (form.ad.file_url.startsWith('http') ? form.ad.file_url : `${getBaseUrl().replace('/api', '')}${form.ad.file_url.startsWith('/') ? '' : '/'}${form.ad.file_url}`) : null;
+                    
+                    if (mediaUri) {
+                      return isVideo ? (
+                        <VideoCardPreview uri={mediaUri} isDark={isDark} />
+                      ) : (
+                        <Image 
+                          source={{ uri: mediaUri }} 
+                          className="w-full h-full"
+                          resizeMode="contain"
+                        />
+                      );
+                    }
+                    return (
+                      <View className="w-full h-full items-center justify-center">
+                        {isVideo ? <Video size={36} color={isDark ? '#38BDF8' : '#0284C7'} /> : <ImageIcon size={36} color="#A855F7" />}
+                      </View>
+                    );
+                  })()}
+                </View>
+              )}
               
               <View className="flex-row justify-between mb-3 items-center">
                 <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-xs font-semibold">Creative</Text>
