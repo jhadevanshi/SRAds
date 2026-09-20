@@ -253,14 +253,26 @@ export default function AdsListScreen({ navigation }) {
                 end={{ x: 1, y: 0 }}
                 style={{
                   width: '100%',
-                  paddingVertical: 12,
+                  height: 44,
                   flexDirection: 'row',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  gap: 6,
                 }}
               >
-                <Rocket size={15} color="#FFFFFF" style={{ marginRight: 6 }} />
-                <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'center' }}>
+                <Rocket size={15} color="#FFFFFF" />
+                <Text 
+                  style={{ 
+                    color: '#FFFFFF', 
+                    fontWeight: '800', 
+                    fontSize: 12, 
+                    textTransform: 'uppercase', 
+                    letterSpacing: 0.5, 
+                    textAlign: 'center',
+                    includeFontPadding: false,
+                    textAlignVertical: 'center',
+                  }}
+                >
                   Launch Campaign
                 </Text>
               </LinearGradient>

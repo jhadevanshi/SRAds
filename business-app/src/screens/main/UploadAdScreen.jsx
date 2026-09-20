@@ -423,21 +423,33 @@ export default function UploadAdScreen({ navigation }) {
             end={{ x: 1, y: 0 }}
             style={{
               width: '100%',
-              paddingVertical: 16,
+              height: 54,
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'center',
+              gap: 8,
             }}
           >
             {loading ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                <UploadCloud size={20} color="#FFFFFF" strokeWidth={2.5} style={{ marginRight: 8 }} />
-                <Text style={{ color: '#FFFFFF', fontWeight: '900', fontSize: 14, textTransform: 'uppercase', letterSpacing: 0.8, textAlign: 'center' }}>
+              <>
+                <UploadCloud size={19} color="#FFFFFF" strokeWidth={2.4} />
+                <Text 
+                  style={{ 
+                    color: '#FFFFFF', 
+                    fontWeight: '900', 
+                    fontSize: 14, 
+                    textTransform: 'uppercase', 
+                    letterSpacing: 0.8, 
+                    textAlign: 'center',
+                    includeFontPadding: false,
+                    textAlignVertical: 'center',
+                  }}
+                >
                   Save to Media
                 </Text>
-              </View>
+              </>
             )}
           </LinearGradient>
         </TouchableOpacity>
