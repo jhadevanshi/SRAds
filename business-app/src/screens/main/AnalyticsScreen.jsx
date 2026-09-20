@@ -314,10 +314,17 @@ export default function AnalyticsScreen({ route }) {
             </Text>
             <TouchableOpacity 
               onPress={openCalendar} 
-              style={{ backgroundColor: isDark ? '#281B4B' : '#EDE9FE' }}
-              className="px-5 py-2.5 rounded-full"
+              style={{ 
+                backgroundColor: isDark ? '#281B4B' : '#EDE9FE',
+                borderColor: isDark ? '#3B2773' : '#DDD6FE',
+                borderWidth: 1
+              }}
+              className="px-6 py-2.5 rounded-full flex-row items-center justify-center shadow-sm"
             >
-              <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="font-bold text-xs">Select Another Date</Text>
+              <Calendar size={14} color={isDark ? '#C084FC' : '#7C3AED'} style={{ marginRight: 6 }} />
+              <Text style={{ color: isDark ? '#C084FC' : '#7C3AED' }} className="font-bold text-xs text-center">
+                Select Another Date
+              </Text>
             </TouchableOpacity>
           </View>
         ) : (
