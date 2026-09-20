@@ -368,7 +368,7 @@ export default function AdsListScreen({ navigation }) {
               </LinearGradient>
 
               <Text style={{ color: isDark ? '#F8FAFC' : '#1E1B4B' }} className="text-xl font-extrabold tracking-tight mb-2 text-center">
-                Your Media Library is Empty
+                Your media library is empty
               </Text>
               
               <Text style={{ color: isDark ? '#94A3B8' : '#64748B' }} className="text-center text-sm leading-relaxed mb-6 px-4">
