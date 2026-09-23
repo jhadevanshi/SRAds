@@ -23,10 +23,14 @@ router.post('/webhook', (req, res) => {
   });
 
   // Execute pull and reload asynchronously
-  const projectRoot = path.resolve(__dirname, '..');
-  const deployCommand = `git pull origin main && pm2 restart all`;
+  const fs = require('fs');
+  let gitRoot = path.resolve(__dirname, '..');
+  if (!fs.existsSync(path.join(gitRoot, '.git')) && fs.existsSync(path.join(gitRoot, '..', '.git'))) {
+    gitRoot = path.resolve(gitRoot, '..');
+  }
+  const deployCommand = `git pull origin main && pm2 restart srads-backend`;
 
-  exec(deployCommand, { cwd: projectRoot }, (error, stdout, stderr) => {
+  exec(deployCommand, { cwd: gitRoot }, (error, stdout, stderr) => {
     if (error) {
       console.error('❌ [Auto-Deploy Error]:', error.message);
       console.error('STDERR:', stderr);
@@ -38,11 +42,16 @@ router.post('/webhook', (req, res) => {
 
 // Manual status check for deploy route
 router.get('/status', (req, res) => {
+  const fs = require('fs');
+  let gitRoot = path.resolve(__dirname, '..');
+  if (!fs.existsSync(path.join(gitRoot, '.git')) && fs.existsSync(path.join(gitRoot, '..', '.git'))) {
+    gitRoot = path.resolve(gitRoot, '..');
+  }
   res.json({
     success: true,
     service: 'SRAds Auto-Deploy Webhook',
     status: 'Ready',
-    configuredRoot: path.resolve(__dirname, '..')
+    configuredGitRoot: gitRoot
   });
 });
 
